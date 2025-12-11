@@ -4,8 +4,6 @@ import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
 
-import { Button } from "@/components/ui/button";
-
 export const SignOutButton = () => {
   const router = useRouter();
 
@@ -19,5 +17,16 @@ export const SignOutButton = () => {
     });
   }
 
-  return <Button onClick={onSignOut}>Sign Out</Button>;
+  return (
+    <button 
+      onClick={onSignOut}
+      className="select-none transition hover:bg-accent w-full flex rounded-sm"
+    >
+      <div className="flex items-center gap-2 leading-[120%] select-none min-h-7 text-sm px-2">
+        <div className="flex text-secondary text-xs ps-0">
+          Logout
+        </div>
+      </div>
+    </button>
+  );
 }

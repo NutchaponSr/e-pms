@@ -1,11 +1,12 @@
-import { db } from "@/db";
-import { employee, user } from "@/db/schema";
+import db from "@/lib/db";
 
 export const clear = async () => {
   console.log("Clearing database...");
 
-  await db.delete(user);
-  await db.delete(employee);
+  await db.$transaction([
+    db.user.deleteMany(),
+    db.employee.deleteMany(), 
+  ]);
 
   console.log("Database cleared successfully");
 }

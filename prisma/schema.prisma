@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model User {
+  id String @id @default(uuid())
+  name String
+  email String?
+  emailVerified Boolean
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role UserRole @default(USER)
+  username String
+  displayUsername String?
+  banned Boolean?  @default(false)
+  banReason String?
+  banExpires DateTime?
+
+  accounts Account[]
+  sessions Session[]
+
+  employee Employee @relation(fields: [username], references: [id], onDelete: Cascade)
+
+  @@unique([username])
+  @@map("user")
+}
+
+model Session {
+  id String @id @default(uuid())
+  expiresAt DateTime
+  token String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  impersonatedBy String?
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id String @id @default(uuid())
+  accountId String
+  providerId String
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Employee {
+  id String @id @db.VarChar(10)
+  name String
+  email String?
+  position String
+  division String
+  level String
+  rank String
+  department String
+
+  user User?
+
+  @@map("employee")
+}

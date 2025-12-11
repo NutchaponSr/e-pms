@@ -1,7 +1,6 @@
 import path from "path";
+import db from "@/lib/db";
 
-import { db } from "@/db";
-import { employee } from "@/db/schema";
 import { authClient } from "@/lib/auth-client";
 
 import { readCSV } from "@/seeds/lib/utils";
@@ -38,18 +37,18 @@ export const seedEmployee = async () => {
   }
   
   for (const record of records) {
-   await db
-      .insert(employee)
-      .values({
-        id: record.id,
-        name: record.fullName,
-        email: record.email,
-        position: record.position,
-        division: record.division,
-        level: record.level,
-        rank: record.rank,
-        department: record.department,
-      });
+   await db.employee.create({
+    data: {
+      id: record.id.toString(),
+      name: record.fullName,
+      email: record.email,
+      position: record.position,
+      division: record.division,
+      level: record.level,
+      rank: record.rank,
+      department: record.department,
+    },
+   });
   }
 
   await Promise.all(records.map(async record => {
