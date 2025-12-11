@@ -4,6 +4,10 @@ import "./globals.css";
 
 import { cn } from "@/lib/utils";
 
+import { Toaster } from "@/components/ui/sonner";
+
+import { Providers } from "@/components/providers";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,7 +31,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={cn(geistSans.className, geistMono.variable, "antialiased")}>
-        {children}
+        <Providers
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          storageKey="e-pms-theme"
+        >
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

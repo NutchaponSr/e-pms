@@ -1,16 +1,16 @@
+import db from "@/lib/db";
 import bcrypt from "bcryptjs";
 
 import { betterAuth } from "better-auth";
 import { admin, username } from "better-auth/plugins";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { prismaAdapter } from "better-auth/adapters/prisma";
 
-import { db } from "@/db";
 import { ac, roles } from "@/lib/permission";
-import { role } from "@/db/schema";
+import { UserRole } from "@/generated/prisma/enums";
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
+  database: prismaAdapter(db, {
+    provider: "postgresql",
   }),
   emailAndPassword: {
     enabled: true,
@@ -64,8 +64,8 @@ export const auth = betterAuth({
     admin({
       ac,
       roles,
-      defaultRole: role.enumValues[0],
-      adminRoles: [role.enumValues[1]],
+      defaultRole: UserRole.USER,
+      adminRoles: [UserRole.ADMIN],
     })
   ],
 });

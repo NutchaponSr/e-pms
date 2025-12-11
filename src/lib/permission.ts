@@ -1,7 +1,7 @@
 import { createAccessControl } from "better-auth/plugins/access";
 import { defaultStatements, adminAc } from "better-auth/plugins/admin/access";
 
-import { role } from "@/db/schema";
+import { UserRole } from "@/generated/prisma/enums";
 
 const statements = {
   ...defaultStatements,
@@ -12,12 +12,12 @@ const statements = {
 export const ac = createAccessControl(statements);
 
 export const roles = {
-  [role.enumValues[1]]: ac.newRole({
+  [UserRole.ADMIN]: ac.newRole({
     backend: ["access"],
     tasks: ["create", "read", "update", "delete", "update:own", "delete:own"],
     ...adminAc.statements,
   }),
-  [role.enumValues[0]]: ac.newRole({
+  [UserRole.USER]: ac.newRole({
     backend: [],
     tasks: ["create", "read", "update:own", "delete:own"],
   }),
