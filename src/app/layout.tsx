@@ -4,6 +4,8 @@ import "./globals.css";
 
 import { cn } from "@/lib/utils";
 
+import { Toaster } from "@/components/ui/sonner";
+
 import { Providers } from "@/components/providers";
 
 const geistSans = Geist({
@@ -28,7 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={cn(geistSans.className, geistMono.variable, "antialiased")}>
+      <body
+        className={cn(geistSans.className, geistMono.variable, "antialiased")}
+      >
         <Providers
           attribute="class"
           defaultTheme="system"
@@ -37,6 +41,7 @@ export default function RootLayout({
           storageKey="e-pms-theme"
         >
           {children}
+          <Toaster />
         </Providers>
       </body>
     </html>
