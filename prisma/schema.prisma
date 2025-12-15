@@ -1,0 +1,328 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model User {
+  id String @id @default(uuid())
+  name String
+  email String?
+  emailVerified Boolean
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role UserRole @default(USER)
+  username String
+  displayUsername String?
+  banned Boolean?  @default(false)
+  banReason String?
+  banExpires DateTime?
+
+  accounts Account[]
+  sessions Session[]
+
+  employee Employee @relation(fields: [username], references: [id], onDelete: Cascade)
+
+  @@unique([username])
+  @@map("user")
+}
+
+model Session {
+  id String @id @default(uuid())
+  expiresAt DateTime
+  token String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  impersonatedBy String?
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id String @id @default(uuid())
+  accountId String
+  providerId String
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Employee {
+  id String @id @db.VarChar(10)
+  name String
+  email String?
+  position String
+  division String
+  level String
+  rank String
+  department String
+
+  user User?
+  owner Task[] @relation("Owner")
+  checker Task[] @relation("Checker")
+  approver Task[] @relation("Approver")
+
+  @@map("employee")
+}
+
+enum Status {
+  NOT_STARTED
+  IN_DRAFT
+  PENDING_CHECKER
+  REJECTED_BY_CHECKER
+  PENDING_APPROVER
+  REJECTED_BY_APPROVER
+  DONE
+}
+
+model Task {
+  id String @id
+  context Json? @default("{}")
+  status Status @default(NOT_STARTED)
+  updatedAt DateTime @updatedAt
+
+  ownerId String 
+  createdAt DateTime @default(now())
+  owner Employee  @relation("Owner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  checkerId String?
+  checkedAt DateTime?
+  checker Employee? @relation("Checker", fields: [checkerId], references: [id], onDelete: SetNull)
+
+  approverId String?
+  approvedAt DateTime?
+  approver Employee? @relation("Approver", fields: [approverId], references: [id], onDelete: SetNull)
+
+  formId String
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@map("task")
+}
+
+enum FormType {
+  MERIT
+  KPI
+}
+
+enum Period {
+  IN_DRAFT
+  EVALUATION
+  EVALUATION_1ST
+  EVALUATION_2ND
+}
+
+model Form {
+  id String @id @default(cuid())
+  type FormType 
+  year Int  
+  period Period @default(IN_DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks Task[]
+  kpis KpiEvaluation[] @relation("KpiForm")
+  // cultureRecords CultureRecord[] @relation("CultureForm")
+  // competencyRecords CompetencyRecord[] @relation("CompetencyForm")
+}
+
+enum KpiCategory {
+  FP
+  CP
+  IP
+  L_G
+}
+
+model KpiEvaluation {
+  id String @id @unique @default(uuid())
+  name String?
+  category KpiCategory?
+  weight Int @default(0)
+  objective String? @db.Text
+  strategy String?
+  method String?
+
+  target100 String? @db.Text
+  target120 String? @db.Text
+  target80 String? @db.Text
+  target90 String? @db.Text
+  target70 String? @db.Text
+  definition String? @db.Text
+  type String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  result String?
+  actualOwner String?
+  achievementOwner Int?
+  actualChecker String?
+  achievementChecker Int?
+  actualApprover String?
+  achievementApprover Int?
+  fileUrl String?
+
+  formId String
+  form Form @relation("KpiForm", fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("kpi")
+}
+
+// model CultureRecord {
+//   id String @id @default(uuid())
+//   cultureId Int
+//   meritFormId String
+//   evidence String? @db.Text
+
+//   form Form @relation("CultureForm", fields: [meritFormId], references: [id], onDelete: Cascade)
+//   culture Culture @relation(fields: [cultureId], references: [id], onDelete: Cascade)
+
+//   cultureEvaluations CultureEvaluation[]
+
+//   @@index([meritFormId])
+//   @@index([cultureId])
+//   @@map("cultureRecord")
+// }
+
+// model CultureEvaluation {
+//   id  String  @id @default(uuid())
+//   cultureRecordId String
+//   period  Period
+
+//   result String?
+//   levelBehaviorOwner Int?
+//   levelBehaviorChecker Int?
+//   levelBehaviorApprover Int?
+
+//   actualOwner String? @db.Text
+//   actualChecker String? @db.Text
+//   actualApprover String? @db.Text
+//   fileUrl String?
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   cultureRecord CultureRecord @relation(fields: [cultureRecordId], references: [id], onDelete: Cascade)
+
+//   @@index([cultureRecordId])
+//   @@map("cultureEvaluation")
+// }
+
+// model Culture {
+//   id Int @id @default(autoincrement())
+//   name String @db.Text
+//   code String @db.VarChar(1)
+//   description String @db.Text
+//   belief Json?
+
+//   createdAt DateTime @default(now())
+//   cultureRecords CultureRecord[]
+
+//   @@map("culture")
+// }
+
+// enum CompetencyType {
+//   CC
+//   FC
+//   MC
+//   TC
+// }
+
+// model Competency {
+//   id String @id @default(cuid())
+//   name String
+//   definition String?
+//   t5 String?
+//   t4 String?
+//   t3 String?
+//   t2 String?
+//   t1 String?
+//   type CompetencyType
+//   competencyRecords CompetencyRecord[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   @@map("competency")
+// }
+
+// model CompetencyRecord {
+//   id String @id @default(uuid())
+//   competencyId String?
+//   meritFormId String
+//   weight Int @default(0)
+//   expectedLevel Int?
+//   input String? @db.Text
+//   output String? @db.Text
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   competency Competency? @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+//   meritForm Form @relation("CompetencyForm", fields: [meritFormId], references: [id], onDelete: Cascade)
+
+//   competencyEvaluations CompetencyEvaluation[]
+
+//   @@index([competencyId])
+//   @@index([meritFormId])
+//   @@map("competencyRecord")
+// }
+
+// model CompetencyEvaluation {
+//   id String @id @default(uuid())
+//   period Period
+
+//   result String?
+//   actualOwner String? @db.Text
+//   levelOwner Int?
+
+//   actualChecker String? @db.Text
+//   levelChecker Int?
+
+//   actualApprover String? @db.Text
+//   levelApprover Int?
+
+//   createdAt DateTime @default(now())
+//   fileUrl String?
+
+//   competencyRecordId String
+//   competencyRecord CompetencyRecord @relation(fields: [competencyRecordId], references: [id], onDelete: Cascade)
+
+//   @@index([competencyRecordId])
+//   @@map("competencyEvaluation")
+// }
