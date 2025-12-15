@@ -1,0 +1,139 @@
+﻿order,id,fullName,position,division,level,rank,department,email,password
+1,8736,วัชรธร กิตะพาณิชย์,กรรมการผู้อำนวยการ,SAT,President,President,สำนักกรรมการผู้อำนวยการ,vacharatorn.k@somboon.co.th,14745
+2,4326,วารสา สวนดี,กรรมการผู้จัดการ กลุ่มบริษัท - SBM&ICP,SAT,MD,MD,สำนักกรรมการผู้จัดการ,varasa.s@somboon.co.th,14092
+3,6222,โสภณ ฉัตรวัฒนานนท์,กรรมการผู้จัดการ กลุ่มบริษัท - SFT,SAT,MD,MD,สำนักกรรมการผู้จัดการ,sophon.c@somboon.co.th,67133
+4,6521,พัฒน์พงษ์ วีระศิลป์,รองกรรมการผู้อำนวยการ - สายงานพัฒนาห่วงโซ่อุปทานและงานระบบ และ (รักษาการ) รองกรรมการผู้อำนวยการ – สายงานการค้า,SAT,VP,VP,สำนักรองกรรมการผู้อำนวยการ - สายงานพัฒนาห่วงโซ่อุปทานและงานระบบ,patpong.w@somboon.co.th,62341
+5,6659,พรทิพย์ สังข์สุข,รองกรรมการผู้อำนวยการ - สายงานการเงิน และบัญชี ,SAT,VP,VP,สำนักรองกรรมการผู้อำนวยการ - สายงานการเงิน และบัญชี ,porntip.s@somboon.co.th,23521
+6,9974,ธันธัช ฤทธิ์น้ำ,กรรมการผู้จัดการ กลุ่มบริษัท - SAA,SAT,MD,VP,สำนักกรรมการผู้จัดการ,thanthach.r@somboon.co.th,68655
+7,14906,Hiroshi Kondo,Executive Advisor,SAT,VP,VP,สำนักกรรมการผู้อำนวยการ,kondo.h@somboon.co.th,28313
+8,15122,วุฒิชัย สิทธิสุวรรณ,รองกรรมการผู้อำนวยการ - สายงานทรัพยากรบุคคล,SAT,VP,VP,สำนักรองกรรมการผู้อำนวยการ - สายงานทรัพยากรบุคคล,wuttichai.sit@somboon.co.th,95348
+9,8217,เสรี เนตรหัสนัยน์,ผู้จัดการทั่วไป - ฝ่ายรับประกันคุณภาพและวิศวกรรม SBM & ICP,ICP2,GM,GM,สำนักผู้จัดการทั่วไป,seree.n@somboon.co.th,00586
+10,12774,กิตติพล นันทวงศ์,ผู้จัดการทั่วไป - ฝ่าย Commercial,SAT,GM,GM,ฝ่าย Commercial,kittiphol.nan@somboon.co.th,20948
+11,12914,พัชราภา กิตะพาณิชย์,หัวหน้าสายกลยุทธ์องค์กรและพัฒนาความยั่งยืน,SAT,GM,GM,ฝ่ายกลยุทธ์องค์กรและพัฒนาความยั่งยืน,patcharapa.k@somboon.co.th,83787
+12,12980,ฑิตพงศ์ พงษ์เภตรารัตน์,ผู้จัดการทั่วไป - ฝ่ายพัฒนาธุรกิจ (Automation & Robotics),SAT,GM,GM, ฝ่ายพัฒนาธุรกิจ (Automation & Robotics),tithaphong.p@somboon.co.th,79787
+13,15067,เพทาย ประจงพิมพ์,ผู้จัดการทั่วไป - ฝ่ายปฏิบัติการและพัฒนา,SAA,GM,GM,ฝ่าย Agriculture Product & Business Development,phethai.p@somboon.co.th,08261
+14,15248,Mr.Yasuhiro Naoi,Shaft and New Product Development Advisor,SAT,GM,GM,ฝ่าย Product Development and Testing - Automotive Part (B1&B2),naoi.y@somboon.co.th,43891
+15,4435,อานนธ์ เพชรม่อม,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายรับประกันคุณภาพและวิศวกรรม - SFT,SFT1,AGM,AGM,สำนักผู้จัดการทั่วไป,arnon.p@somboon.co.th,60845
+16,5105,ยุทธนา เขตรักษ์,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายพัฒนาผลิตภัณฑ์และทดสอบ - Automotive Part (B1&B2),SAT,AGM,AGM,ฝ่าย Product Development and Testing - Automotive Part (B1&B2),yutthana.k@somboon.co.th,18714
+17,5263,เกียรติศักดิ์ นิยมลาภ,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายพัฒนาทรัพยากรบุคคล,SAT,AGM,AGM,ฝ่ายพัฒนาทรัพยากรบุคคล (Learning and Development),keattisak.n@somboon.co.th,20622
+18,5394,ปัฐม์ เปี่ยมรุ่งเรือง,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายผลิตภัณฑ์และทดสอบ - E-Mobility Platform and Modules (B3&G),SAT,AGM,AGM,ฝ่าย Product Development and Testing - E-Mobility Platform and Modules (B3&G),pat.p@somboon.co.th,07557
+19,5428,นพมาศ ปานทอง,ผู้ช่วยผู้จัดการทั่วไป – ฝ่ายเลขานุการบริษัท,SAT,AGM,AGM,สำนักกรรมการผู้อำนวยการ (ฝ่ายเลขานุการบริษัท),nopamas.p@somboon.co.th,47091
+20,5433,วิรัช เมตมันกุล,ผู้ช่วยผู้จัดการทั่วไป – ฝ่าย BPI & Digitalization,SAT,AGM,AGM,ฝ่าย BPI & Digitalization,wirat.m@somboon.co.th,14532
+21,5536,กฤตยา เทียบคุณ,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายวางแผนต้นทุนและงบประมาณ,SAT,AGM,AGM,ฝ่ายวางแผนต้นทุนและงบประมาณ,krittaya.t@somboon.co.th,28384
+22,5717,เสรี สงขำ,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายบริหารสำนักงาน SBM&ICP,SBM,AGM,AGM,สำนักผู้จัดการทั่วไป,seri.s@somboon.co.th,44574
+23,5730,ต่อพงษ์ แพรต่วน,ผู้ช่วยผู้จัดการทั่วไป – ฝ่ายพัฒนาระบบและรับผิดชอบเพิ่ม  ผู้ช่วยผู้จัดการทั่วไป – ฝ่ายพัฒนาห่วงโซ่อุปทาน และรับผิดชอบเพิ่ม แผนกพัฒนาความยั่งยืน,SAT,AGM,AGM,สำนักรองกรรมการผู้อำนวยการ - สายงานพัฒนาห่วงโซ่อุปทานและงานระบบ,torpong.p@somboon.co.th,55099
+24,5827,ทวีศักดิ์ สายด้วง,ผู้ช่วยผู้จัดการทั่วไป - ฝ่าย Commercial (Casting & Machining),SAT,AGM,AGM,ฝ่าย Commercial,thaweesak.s@somboon.co.th,18838
+25,5988,กฤต เอื้ออนันตสันต์,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายพัฒนาธุรกิจ และรับผิดชอบเพิ่ม แผนกกลยุทธ์,SAT,AGM,AGM,ฝ่ายพัฒนาธุรกิจ,krit.u@somboon.co.th,47630
+26,6762,สุคนธ์ เมฆฉาย,ผู้จัดการโรงงาน Casting,ICP2,AGM,AGM,สำนักผู้จัดการทั่วไป,sukon.m@somboon.co.th,01181
+27,6898,เอกชัย เอี้ยงแจ้ง,ผู้ช่วยผู้จัดการทั่วไป - ฝ่าย Commercial (Agriculture Parts and Implememted) ,SAT,AGM,AGM,ฝ่าย Commercial,ekkachai.i@somboon.co.th,92147
+28,7127,มารุต บุญประเสริฐ,ผู้จัดการโรงงาน - SFT,SFT1,AGM,AGM,สำนักผู้จัดการทั่วไป,marut.b@somboon.co.th,94765
+29,13890,วสุเมธ กุลโชติ,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายตรวจสอบภายใน ,SAT,AGM,AGM,สำนักกรรมการผู้อำนวยการ (แผนกตรวจสอบภายใน),wasumeth.kul@somboon.co.th,86688
+30,14555,Masaki Takahashi,AGM - Machining & Casting,SBM,AGM,AGM,สำนักผู้จัดการทั่วไป,masaki.tak@somboon.co.th,12517
+31,14744,องอาจ สินธทียากร,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายพัฒนาระบบและปฏิบัติการสารสนเทศ,SAT,AGM,AGM,ฝ่ายเทคโลยีสารสนเทศ,ong-ard.sin@somboon.co.th,11937
+32,14911,วรพันธ์ ลุนเผ่,ผู้ช่วยผู้จัดการทั่วไป - ฝ่าย Commercial (Forging),SAT,AGM,AGM,ฝ่าย Commercial,worapan.loo@somboon.co.th,12701
+33,14960,ณัฐพล เลิศทัศนวนิช,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายการเงิน,SAT,AGM,AGM,ฝ่ายการเงิน,nuttapon.ler@somboon.co.th,82330
+34,15024,สาธิต ตั้งจิตปรีชาทัย,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายกฎหมายและกำกับองค์กร,SAT,AGM,AGM,สำนักกรรมการผู้อำนวยการ (ฝ่ายกฎหมาย และกำกับองค์กร),sathit.tun@somboon.co.th,04223
+35,15025,เดชาพล พรมแหยม,ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายบริหารทรัพยากรบุคคล,SAT,AGM,AGM,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),daychapon.pro@somboon.co.th,37784
+36,15057,สุจินต์ ประชากูล,ผู้จัดการโรงงาน  Machining,SBM,AGM,AGM,สำนักผู้จัดการทั่วไป,sujin.pra@somboon.co.th,09423
+37,15133,Tokihisa Shioya,Disc Brake and Braking system module Advisor,SAT,AGM,AGM,ฝ่าย Product Development and Testing - E-Mobility Platform and Modules (B3&G),shioya.t@somboon.co.th,02947
+38,15146,Wenfeng Cui,ผู้ช่วยผู้จัดการทั่วไป - ฝ่าย Commercial (Chinese),SAT,AGM,AGM,ฝ่าย Commercial,wenfeng.cui@somboon.co.th,17761
+39,15250,Hiroyuki Nishikawa,AGM - Continuous Improvement,ICP2,AGM,AGM,สำนักกรรมการผู้จัดการ กลุ่มธุรกิจ - SBM & ICP,,55361
+40,1107,กลยุทธ จั่นเทศ,ผู้จัดการ - สำนักผู้จัดการทั่วไป (SFT),SFT1,MGR,MGR,สำนักผู้จัดการทั่วไป,konlayut.c@somboon.co.th,46376
+41,1211,นิชาภา โลกานิตย์,Sales Administration Manager,SAT,MGR,MGR,ฝ่ายบริหารและสนับสนุนการค้า,nichapa.l@somboon.co.th,96982
+42,1319,สนิท เสียนทอง,ผู้จัดการแผนกซ่อมบำรุง,SBM,MGR,MGR,แผนกซ่อมบำรุง,sanit.s@somboon.co.th,78244
+43,2392,พิศิษฐ์ ชายเกลี้ยง,ผู้จัดการแผนก Project,SBM,MGR,MGR,สำนักกรรมการผู้จัดการ กลุ่มธุรกิจ - SBM & ICP,phisit.c@somboon.co.th,70441
+44,3371,กิตติ์ดนัย แก้ไข,ผู้จัดการแผนกผลิต FG,SFT1,MGR,MGR,แผนกผลิต,kitdanai.k@somboon.co.th,12969
+45,4059,วิระ พันธ์ดี,ผู้จัดการแผนกบุคคล (SFT1&SFT2),SFT1,MGR,MGR,แผนกบุคคล,vira.p@somboon.co.th,16202
+46,4226,ลำยงค์ มีโทน,ผู้จัดการแผนกบุคคล (SFT3),SFT3,MGR,MGR,แผนกบุคคล,lamyong.m@somboon.co.th,33613
+47,4373,ชัยวัฒน์ มีแสง,ผู้จัดการแผนกวิศวกรรม Casting,ICP2,MGR,MGR,แผนกวิศวกรรม Casting,chaiwat.m@somboon.co.th,09577
+48,4481,มาวิน ชินฝั่น,Lean Manufacturing Manager,SFT1,MGR,MGR,สำนักผู้จัดการทั่วไป,mawin.c@somboon.co.th,48580
+49,4756,นพดล ฤกษ์ศิริ,People Transformation Manager,SAT,MGR,MGR,ฝ่ายพัฒนาทรัพยากรบุคคล (People Transformation),noppadol.r@somboon.co.th,56000
+50,4925,คมสรรค์ เพียรราษฎร์,"ผู้จัดการแผนกผลิต, ซ่อมบำรุง และคลังสินค้า",SFT2,MGR,MGR,แผนกผลิต,komsan.p@somboon.co.th,63394
+51,4979,วรรณนิภา อ่อนตา,ผู้จัดการแผนกวางแผนต้นทุนและงบประมาณ,SAT,MGR,MGR,ฝ่ายวางแผนต้นทุนและงบประมาณ,wannipa.o@somboon.co.th,19048
+52,4986,จิราพร ชาวบล,ผู้จัดการแผนกพัฒนาระบบงาน และ JV,SAT,MGR,MGR,ฝ่ายบัญชี / แผนกบัญชีกลาง,jiraporn.c@somboon.co.th,11121
+53,5048,สมพล ตันติเมธานนท์,ผู้จัดการแผนกคลังสินค้า,SBM,MGR,MGR,แผนกคลังสินค้า,sompol.t@somboon.co.th,65570
+54,5058,อรอนงค์ ใยยะธรรม,ผู้จัดการแผนกตรวจสอบภายใน,SAT,MGR,MGR,สำนักกรรมการผู้อำนวยการ (แผนกตรวจสอบภายใน),onanong.y@somboon.co.th,73209
+55,5074,วิเชษฎ์ ถาวรเกรียงไกร,ผู้จัดการแผนกพัฒนาบุคคลากร SBM&ICP,ICP2,MGR,MGR,แผนกบุคคล,wichet.t@somboon.co.th,85407
+56,5088,เอกศักดิ์ เสียนทอง,ผู้จัดการแผนกผลิต,SBM_AUTO,MGR,MGR,แผนกผลิต,Ekasak.s@somboon.co.th,09425
+57,5210,สมคิด วิยาสิงห์,"ผู้จัดการแผนกผลิต, ซ่อมบำรุง และคลังสินค้า",SFT3,MGR,MGR,แผนกผลิต,somkid.wiy@somboon.co.th,70518
+58,5355,วิรัตน์ บุตรชีวัน,Manager - Design and Prototype Development (Agriculture Components),SAA,MGR,MGR,ฝ่าย Agriculture Product & Business Development,wirat.b@somboon.co.th,18436
+59,5450,พิศสมัย ธรรมพินิจ,Senior ERP Speialist (FI/CO),SAT,MGR,MGR,ฝ่ายเทคโลยีสารสนเทศ,pissamai.t@somboon.co.th,98408
+60,5482,บุญญารักษ์ ทองใจสด,ผู้จัดการแผนกรัฐกิจสัมพันธ์,SAT,MGR,MGR,สำนักกรรมการผู้อำนวยการ (ฝ่ายกฎหมาย และกำกับองค์กร),bunyarak.t@somboon.co.th,30522
+61,5521,ชาติชาย โล้วโสภณกุล,ผู้จัดการแผนกวิศวกรรมและรับประกันคุณภาพ,SFT2,MGR,MGR,แผนกวิศวกรรม,chatchai.l@somboon.co.th,04155
+62,5535,ชตินี พูลพิพัฒน์,Talent Acquisition and Service Manager,SAT,MGR,MGR,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),chatinee.j@somboon.co.th,57946
+63,5555,วัชราภรณ์ คงโหมด,ผู้จัดการแผนกคลังสินค้า SFT1 ,SFT1,MGR,MGR,แผนกคลังสินค้า,watcharaporn.k@somboon.co.th,87373
+64,5573,ณัฐณิชา ดีพร้อม,ผู้จัดการแผนกการเงิน,SAT,MGR,MGR,ฝ่ายการเงิน,nutnicha.d@somboon.co.th,12172
+65,5748,มิลินญา กิ่งคำ,ผู้จัดการแผนกอาชีวอนามัยและความปลอดภัย (SAT&SAA),SAT,MGR,MGR,แผนก System Development,wichitra.k@somboon.co.th,18518
+66,5824,อภิชาติ คำเสียง,ผู้จัดการแผนกควบคุมคุณภาพ SFT,SFT1,MGR,MGR,แผนกวิศวกรรม,apichat.k@somboon.co.th,42431
+67,5926,ภานุสรรค์ อ่ำศรี,ผู้จัดการแผนกรับประกันคุณภาพ,ICP2,MGR,MGR,แผนกรับประกันคุณภาพ,panusan.a@somboon.co.th,87618
+68,6071,ชยพล เรืองศิลป์ประเสริฐ,ผู้จัดการแผนกธุรการ (อาคารสถานที่),SDS,MGR,MGR,แผนกอาคารสถานที่,chayaphol.r@somboon.co.th,03260
+69,6259,สิริธร วิหคหงษ์,Manager - Quality Management System,SAT,MGR,MGR,แผนก System Development,sirithorn.w@somboon.co.th,39381
+70,6276,สุชาติ เกตุน้อย,ผู้จัดการแผนกซ่อมบำรุง ,SFT1,MGR,MGR,แผนกซ่อมบำรุง,suchart.k@somboon.co.th,64529
+71,6277,จักรกฤษณ์ กลั่นเจริญ,ผู้จัดการแผนกผลิต,ICP2,MGR,MGR,แผนกผลิต,jakkrit.k@somboon.co.th,02579
+72,6701,ชาญชัย ภู่แสงสด,ผู้จัดการแผนก Project,ICP2,MGR,MGR,สำนักกรรมการผู้จัดการ กลุ่มธุรกิจ - SBM & ICP,chanchai.p@somboon.co.th,01324
+73,6734,ศิรสิทธิ์ ศิริสุรภกรณ์,ผู้จัดการแผนกรับประกันคุณภาพ,SBM,MGR,MGR,แผนกรับประกันคุณภาพ Plant1,sirasit.s@somboon.co.th,04241
+74,6736,ประภาส อักษรมณี,ผู้จัดการแผนกผลิต,ICP1,MGR,MGR,แผนกผลิต,prapat.a@somboon.co.th,75805
+75,6763,มนตรี ตาปิ๋วเครือ,ผู้จัดการแผนกซ่อมบำรุง,ICP2,MGR,MGR,แผนกซ่อมบำรุง,montri.t@somboon.co.th,51216
+76,7095,ภวกิตติพร อัญชันภาติ,ผู้จัดการแผนกวางแผนการผลิต,SBM,MGR,MGR,แผนกวางแผนการผลิต,pawakittiporn.a@somboon.co.th,69825
+77,7115,เนติพงษ์ ผลอาหาร,Operation Manager,SAA,MGR,MGR,สำนักผู้จัดการทั่วไป,netipong.p@somboon.co.th,65173
+78,7149,วิบูลย์ พงษ์ศิริกุล,ผู้จัดการแผนกจัดซื้อ (ส่วนวัตถุดิบ นำเข้า - ส่งออก),SFT1,MGR,MGR,แผนกจัดซื้อ SFT,wibul.p@somboon.co.th,09575
+79,7197,ศักดิ์สิทธิ์ เขื่อนแก้ว,ผู้จัดการแผนกวิศวกรรม Machining,SBM,MGR,MGR,แผนกวิศวกรรม Machining,saksit.k@somboon.co.th,59575
+80,7374,กรกนก แสงโชติ,ผู้จัดการแผนกบัญชี SBM&ICP,SBM,MGR,MGR,ฝ่ายบัญชี / แผนกบัญชี SBM,kornkanok.s@somboon.co.th,60982
+81,7395,ประหยัด วาทีรัมย์,KAM Manager,SAT,MGR,MGR,ฝ่าย Commercial,prayat.w@somboon.co.th,01814
+82,7482,ธัชชัย ไต่สวน,ผู้จัดการแผนกวิศวกรรมการผลิต,ICP1,MGR,MGR,แผนกวิศวกรรมการผลิต,thuchchai.t@somboon.co.th,08024
+83,8173,ชนินทร์ ทองแท้,ผู้จัดการแผนกพัฒนาผลิตภัณฑ์และทดสอบ - E-Mobility Platform and Modules (B3&G),SAT,MGR,MGR,ฝ่าย Product Development and Testing - E-Mobility Platform and Modules (B3&G),chanin.t@somboon.co.th,77637
+84,8207,ชำนาญ แตงโสภา,ผู้จัดการแผนกผลิต (Plant 1),SBM_NON_AUTO,MGR,MGR,แผนกผลิต,chamnan.t@somboon.co.th,63432
+85,8228,ชลธิชา เรืองกัลป์,ผู้จัดการแผนกจัดซื้อ (Project & SQD),ICP2,MGR,MGR,แผนกจัดซื้อ SBM & ICP,chonthicha.k@somboon.co.th,18611
+86,8235,ยศการ ศรีสวัสดิ์,ผู้จัดการแผนกวางแผนการผลิต,ICP2,MGR,MGR,แผนกวางแผนการผลิต,yotsakarn.s@somboon.co.th,51262
+87,8277,ไพบูลย์ กว้านทองธรรม,Manager - Environment System,SAT,MGR,MGR,แผนก System Development,paiboon.k@somboon.co.th,22156
+88,8472,ธนาภา เข็มทอง,ผู้จัดการแผนกวิศวกรรม,SFT1,MGR,MGR,แผนกวิศวกรรม,thanapa.k@somboon.co.th,80246
+89,8644,ขนิษฐา บุญชูชื่น,ผู้จัดการแผนกบัญชีกลาง,SAT,MGR,MGR,ฝ่ายบัญชี / แผนกบัญชีกลาง,khanittha.b@somboon.co.th,66560
+90,8964,ชญาณ์นันท์ จำปาทอง,ผู้จัดการแผนกบัญชี SFT,SFT1,MGR,MGR,ฝ่ายบัญชี / แผนกบัญชี SFT,Chayanun.c@somboon.co.th,07079
+91,8968,เนติพันธ์ พุทธรักษ์,ผู้จัดการแผนกพัฒนาผลิตภัณฑ์และทดสอบ (G),SAT,MGR,MGR,ฝ่าย Product Development and Testing - E-Mobility Platform and Modules (B3&G),natipan.p@somboon.co.th,40796
+92,9154,พงษ์ธร เลิศประเสริฐ,ผู้จัดการแผนกคลังสินค้า,ICP2,MGR,MGR,แผนกคลังสินค้า,phongsatorn.l@somboon.co.th,87861
+93,9972,อภิญญา สุนทรานนท์,ผู้จัดการแผนกวางแผนการผลิต,SFT1,MGR,MGR,แผนกวางแผนการผลิต,apinya.s@somboon.co.th,62709
+94,10195,กอบโชค กำธร,ผู้จัดการแผนก Pattern & Jig Shop,ICP2,MGR,MGR,แผนก PATTERN & JIG SHOP,kobchoke.g@somboon.co.th,52211
+95,10320,สุริยา โพธิ์พงศ์วิวัฒน์,Business Development Manager,SAT,MGR,MGR, ฝ่ายพัฒนาธุรกิจ (Automation & Robotics),suriya.p@somboon.co.th,49243
+96,10781,สัญชัย บุญพา,Technical Development Manager,SAT,MGR,MGR,ฝ่ายพัฒนาทรัพยากรบุคคล (Technical Development),sanchai.b@somboon.co.th,28698
+97,11092,เอกนาวิน ทับทวี,ผู้จัดการแผนกผลิต (Machining),SFT1,MGR,MGR,แผนกผลิต,,61706
+98,11273,เทวฤทธิ์ ศรีสุวอ,Continous Improvement Manager,SAT,MGR,MGR,ฝ่ายพัฒนาทรัพยากรบุคคล (Continous Improvement),tawarit.s@somboon.co.th,63883
+99,11482,เทพยุดา สุประดิษฐ์ ณ อยุธยา,ผู้จัดการแผนกพัฒนาที่ยั่งยืน,SAT,MGR,MGR,ฝ่ายกลยุทธ์องค์กรและพัฒนาความยั่งยืน,thepyuda.s@somboon.co.th,18481
+100,11897,สวลี ธิราช,Manager - Environment System,SFT1,MGR,MGR,แผนกสิ่งแวดล้อมและพลังงาน (SFT),sawalee.t@somboon.co.th,65229
+101,12193,สุชาดา ทอดแสน,Senior ERP Speialist (LO/BI),SAT,MGR,MGR,ฝ่ายเทคโลยีสารสนเทศ,Suchada.t@somboon.co.th,93859
+102,12567,วิทิต กมลรัตน์,Manager - Energy System,ICP2,MGR,MGR,แผนกสิ่งแวดล้อมและพลังงาน (SBM&ICP),withit.k@somboon.co.th,45617
+103,12575,วีรวัจน์ แมนสถิตย์,HR Analytic and Systems Manager,SAT,MGR,MGR,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),weerawat.m@somboon.co.th,80664
+104,12612,ปานหทัย เตียวแสงสุข,KAM Manager,SAT,MGR,MGR,ฝ่าย Commercial,panhatai.t@somboon.co.th,07635
+105,12613,กานต์พิชชา เศรษฐวัฒน์,Learning and Development Manager,SAT,MGR,MGR,ฝ่ายพัฒนาทรัพยากรบุคคล (Learning and Development),kanpichcha.s@somboon.co.th,60166
+106,13288,กรรณศิริ ทองคำ,ผู้จัดการแผนกนักลงทุนสัมพันธ์,SAT,MGR,MGR,ฝ่ายการเงิน,kansiri.tho@somboon.co.th ,55406
+107,13444,Teppei Matsuo,Product Development & Coordinator,SFT1,MGR,MGR,แผนกวิศวกรรม,teppei.mat@somboon.co.th,68057
+108,13842,ธีระศักดิ์ พงษ์สวัสดิ์,Business Development Manager,SAT,MGR,SMGR,ฝ่ายพัฒนาธุรกิจ,teerasak.pho@somboon.co.th,62158
+109,14967,คเณศ อยู่พันธุ์,ผู้จัดการแผนกรับประกันคุณภาพ,SBM,MGR,MGR,แผนกรับประกันคุณภาพ Plant2,kanade.you@somboon.co.th,86601
+110,14972,ชลธิชา บุญเลี้ยง,HR Business Partner Manager,SAT,MGR,MGR,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),chonthicha.boo@somboon.co.th,08440
+111,15085,วรปรัชญ์ สอนนา,ผู้จัดการแผนกพัฒนาระบบ,SAT,MGR,MGR,ฝ่ายเทคโลยีสารสนเทศ,woraprud.sor@somboon.co.th,40025
+112,15092,ศุภนัชชา ผิวละออ,Corporate Strategy & Risk Management Manager,SAT,MGR,MGR,ฝ่ายกลยุทธ์องค์กรและพัฒนาความยั่งยืน,supanatcha.piw@somboon.co.th,59220
+113,15182,นิณณยา ผลอนันต์,Compliance Manager,SAT,MGR,MGR,สำนักกรรมการผู้อำนวยการ (แผนก Compliance),ninnaya.pon@somboon.co.th,79001
+114,15191,กัลยา ด่านนคินทร์รัตน์,Strategic Analysis Manager,SAT,MGR,MGR,ฝ่ายกลยุทธ์องค์กรและพัฒนาความยั่งยืน,kanlaya.dan@somboon.co.th,26180
+115,15194,ยุทธชัย เรืองสุกใส,Advisor - Commercial (ชั่วคราว),SAT,MGR,MGR,ฝ่าย Commercial,yutthachai.rue@somboon.co.th,02543
+116,15249,ประเสริฐ คล้ายคลึง,ผู้จัดการแผนกบัญชี (Join Venture),SAT,MGR,MGR,ฝ่ายบัญชี / แผนกบัญชีกลาง,prasert.khl@somboon.co.th,05088
+117,15293,อภิลักษณ์ ณ นคร,ผู้จัดการแผนกจัดซื้อ (ส่วนโครงการ เครื่องจักรและส่วนควบ),SAT,MGR,MGR,ฝ่ายพัฒนาห่วงโซ่อุปทาน,apiluck.n@somboon.co.th,58408
+118,15344,Akitsugu Yamamoto,KAM Manager,SAT,MGR,MGR,ฝ่าย Commercial,yamamoto.a@somboon.co.th,99161
+119,15352,เพียงฤทัย ปราโมช,ผู้จัดการแผนกการเงิน,SAT,MGR,MGR,ฝ่ายการเงิน,peangrutai.pra@somboon.co.th,34696
+120,15341,จตุรงค์ บุญนำ,ผู้ช่วยผู้จัดการทั่วไป – ฝ่ายพัฒนาห่วงโซ่อุปทาน,SAT,AGM,AGM,สำนักรองกรรมการผู้อำนวยการ - สายงานพัฒนาห่วงโซ่อุปทานและงานระบบ,jaturong.boo@somboon.co.th,73933
+121,15346,Makoto Chino,ผู้ช่วยผู้จัดการทั่วไป - ฝ่าย Commercial,SAT,AGM,AGM,ฝ่าย Commercial,chino.m@somboon.co.th,98650
+122,4824,สุภาพร เกษทอง,Engagement and Activity Chief,SAT,Chief,Chief,ฝ่ายพัฒนาทรัพยากรบุคคล (People Transformation),suphaphorn.k@somboon.co.th,40518
+123,6223,เบญญาดา พิเชฐจินดากุล,Compensation and Benefit Chief,SAT,Chief,Chief,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),benyada.p@somboon.co.th,86832
+124,7410,พัชรินทร์ เจริญเขต,Functional Development and Platform Chief,SAT,Chief,Chief,ฝ่ายพัฒนาทรัพยากรบุคคล (Learning and Development),patcharin.j@somboon.co.th,93554
+125,9236,เอกรินทร์ จงทอง,Continous Improvement Chief,SAT,Chief,Chief,ฝ่ายพัฒนาทรัพยากรบุคคล (Continous Improvement),ekkarin.j@somboon.co.th,57391
+126,11133,ณัฐฐิญา ทองรัตนะ,Culture Change & Communication Chief,SAT,Chief,Chief,ฝ่ายพัฒนาทรัพยากรบุคคล (People Transformation),nutthiya.t@somboon.co.th,87788
+127,12158,สินีนาฏ คุลี,HR Analytic and Systems Chief,SAT,Chief,Chief,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),sineenard.k@somboon.co.th,20971
+128,12624,อธิชัย มูลสาร,Technical Development Chief,SAT,Chief,Chief,ฝ่ายพัฒนาทรัพยากรบุคคล (Technical Development),atichai.m@somboon.co.th,52923
+129,8607,วรานันท์ ทองหยิบ,Continous Improvement Foreman (ICP1 & ICP2/ SBM/ SFT2),SAT,Foreman,Foreman,ฝ่ายพัฒนาทรัพยากรบุคคล (Continous Improvement),waranan.p@somboon.co.th,19240
+130,13065,ชัยชนะ ตะสูงเนิน,Continous Improvement Foreman (SFT1 & SFT3/ SAT),SAT,Foreman,Foreman,ฝ่ายพัฒนาทรัพยากรบุคคล (Continous Improvement),chaichana.t@somboon.co.th,31696
+131,15119,พัชราภรณ์ วงค์ใหญ่,HR Business Partner Foreman,SAT,Foreman,Foreman,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),patcharaporn.won@somboon.co.th,44262
+132,12732,นิรมล แสงทับทิม,เจ้าหน้าที่ค่าจ้าง/เงินเดือน,SAT,Officer,Officer,ฝ่ายบริหารทรัพยากรบุคคล (แผนกธุรการกลาง),niramon.san@somboon.co.th,87161
+133,12849,เสาวนีย์ ทองเกิด,Employee Service Staff,SAT,Officer,Officer,ฝ่ายบริหารทรัพยากรบุคคล (แผนกธุรการกลาง),saowanee.thon@somboon.co.th   ,68391
+134,13119,จิราพร อิ่มวิเศษ,Functional Development and Platform Staff,SAT,Officer,Officer,ฝ่ายพัฒนาทรัพยากรบุคคล (Learning and Development),jiraporn.i@somboon.co.th,34571
+135,15125,กรรณิกา เกตมา,Benefit Staff,SAT,Staff,Staff,ฝ่ายบริหารทรัพยากรบุคคล (แผนกธุรการกลาง),kannika.kat@somboon.co.th,33338
+136,15127,วิลัยพร ศรีวิสิทธิ์,เจ้าหน้าที่สหกรณ์ออมทรัพย๋,SAT,Officer,Officer,ฝ่ายบริหารทรัพยากรบุคคล (แผนกธุรการกลาง),wilaiporn.s@somboon.co.th,91380
+137,15196,พัณฑิรา เอกวงศา,เจ้าหน้าที่ชั่วคราว,SAT,Officer,Officer,ฝ่ายบริหารทรัพยากรบุคคล (แผนกทรัพยากรบุคคล),Panthira.ake@somboon.co.th,00041
+138,299,วราภรณ์ ปรืองาม,Operator,SAT,Staff,Staff,Opertor,operator@somboon.co.th,55791
