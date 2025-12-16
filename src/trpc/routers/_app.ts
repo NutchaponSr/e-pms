@@ -1,13 +1,10 @@
-import z from "zod";
+import { createTRPCRouter } from "@/trpc/init";
 
-import { baseProcedure, createTRPCRouter } from "@/trpc/init";
+import { taskProcedure } from "@/modules/tasks/server/procedure";
 
 export const appRouter = createTRPCRouter({
-  greeting: baseProcedure.input(z.object({ name: z.string() })).query(({ input }) => {
-    return {
-      message: `Hello, ${input.name}!`,
-    };
-  }),
+
+  task: taskProcedure,
 });
 
 export type AppRouter = typeof appRouter;
