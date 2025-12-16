@@ -1,4 +1,4 @@
-﻿order,employeeId,employeeName,employeePositionLevel,checkerEMPID,checkerName,checkerPositionLevel,approverEMPID,approverName,approverPositionLevel
+﻿order,employeeId,employeeName,employeePositionLevel,checker,checkerName,checkerPositionLevel,approver,approverName,approverPositionLevel
 1,8736,วัชรธร กิตะพาณิชย์,กรรมการผู้อำนวยการ,,,,,,
 2,4326,วารสา สวนดี,รองกรรมการผู้อำนวยการ,,,,8736,วัชรธร กิตะพาณิชย์,กรรมการผู้อำนวยการ
 3,6222,โสภณ ฉัตรวัฒนานนท์,รองกรรมการผู้อำนวยการ,,,,8736,วัชรธร กิตะพาณิชย์,กรรมการผู้อำนวยการ

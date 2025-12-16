@@ -41,7 +41,7 @@ export default function RootLayout({
           storageKey="e-pms-theme"
         >
           {children}
-          <Toaster />
+          <Toaster richColors position="bottom-center" />
         </Providers>
       </body>
     </html>
