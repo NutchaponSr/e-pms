@@ -30,6 +30,7 @@
   --color-destructive: var(--destructive);
   --color-description: var(--description);
   --color-accent: var(--accent);
+  --color-marine: var(--marine);
   --color-muted: var(--muted);
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
@@ -65,6 +66,7 @@
   --sidebar: oklch(0.985 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --marine: oklch(0.57 0.18 255.56);
 }
 
 .dark {
@@ -90,6 +92,7 @@
   --sidebar: oklch(0.24 0 0);
   --sidebar-border: oklch(0.29 0 0);
   --sidebar-ring: oklch(0.31 0 0);
+  --marine: oklch(0.57 0.18 255.56);
 }
 
 @layer base {

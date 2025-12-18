@@ -7,6 +7,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { FormType, Period, Status } from "@/generated/prisma/enums";
 
 import { generateTaskId } from "@/modules/tasks/utils";
+import { TRPCError } from "@trpc/server";
 
 interface ApprovalCVSProps {
   employeeId: string;
@@ -62,6 +63,13 @@ export const taskProcedure = createTRPCRouter({
         (r) => r.employeeId === ctx.user.username,
       );
 
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Record not found",
+        });
+      }
+
       const existingForm = await db.form.findFirst({
         where: {
           type: input.type,
@@ -75,7 +83,7 @@ export const taskProcedure = createTRPCRouter({
             id: generateTaskId(),
             ownerId: ctx.user.username,
             checkerId: record?.checker,
-            approverId: record?.approver,
+            approverId: record.approver,
             formId: existingForm.id,
             status: Status.IN_DRAFT,
             context: {
@@ -96,7 +104,7 @@ export const taskProcedure = createTRPCRouter({
               id: generateTaskId(),
               ownerId: ctx.user.username,
               checkerId: record?.checker,
-              approverId: record?.approver,
+              approverId: record.approver,
               status: Status.IN_DRAFT,
               context: {
                 period: input.period,
