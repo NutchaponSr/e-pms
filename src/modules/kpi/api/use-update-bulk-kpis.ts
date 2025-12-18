@@ -1,0 +1,30 @@
+import { toast } from "sonner";
+import { inferProcedureInput } from "@trpc/server";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { useTRPC } from "@/trpc/client";
+import { appRouter } from "@/trpc/routers/_app";
+
+type RequestType = inferProcedureInput<typeof appRouter["kpi"]["updateBulk"]>;
+
+export const useUpdateBulkKpis = () => {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  const updateBulkKpis = useMutation(trpc.kpi.updateBulk.mutationOptions());
+
+  const mutation = (input: RequestType) => {
+    toast.loading("Updating KPIs...", { id: "update-bulk-kpis" });
+
+    updateBulkKpis.mutate(input, {
+      onSuccess: () => {
+        toast.success("KPIs Updated!", { id: "update-bulk-kpis" });
+      },
+      onError: (ctx) => {
+        toast.error(ctx.message || "Something went wrong", { id: "update-bulk-kpis" });
+      },
+    });
+  };
+
+  return mutation;
+};

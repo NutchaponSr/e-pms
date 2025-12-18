@@ -95,7 +95,8 @@ model Employee {
   owner Task[] @relation("Owner")
   checker Task[] @relation("Checker")
   approver Task[] @relation("Approver")
-
+  comments Comment[]
+  
   @@map("employee")
 }
 
@@ -123,9 +124,9 @@ model Task {
   checkedAt DateTime?
   checker Employee? @relation("Checker", fields: [checkerId], references: [id], onDelete: SetNull)
 
-  approverId String?
+  approverId String
   approvedAt DateTime?
-  approver Employee? @relation("Approver", fields: [approverId], references: [id], onDelete: SetNull)
+  approver Employee @relation("Approver", fields: [approverId], references: [id], onDelete: Cascade)
 
   formId String
   form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
@@ -160,6 +161,22 @@ model Form {
   // competencyRecords CompetencyRecord[] @relation("CompetencyForm")
 }
 
+model Comment {
+  id String @id @default(uuid())
+  connectId String
+  content String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy String
+  employee Employee @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@map("comment")
+}
+
+
 enum KpiCategory {
   FP
   CP
@@ -171,7 +188,7 @@ model KpiEvaluation {
   id String @id @unique @default(uuid())
   name String?
   category KpiCategory?
-  weight Int @default(0)
+  weight Decimal @db.Decimal(10, 2) @default(0)
   objective String? @db.Text
   strategy String?
   method String?
