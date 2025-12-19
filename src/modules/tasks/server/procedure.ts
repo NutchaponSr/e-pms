@@ -41,11 +41,25 @@ export const taskProcedure = createTRPCRouter({
 
       return {
         task: {
-          draft: form?.tasks.find((t) => (t.context as { period: Period })?.period === Period.IN_DRAFT),
-          evaluation: form?.tasks.find((t) => (t.context as { period: Period })?.period === Period.EVALUATION),
-          evaluation1st: form?.tasks.find((t) => (t.context as { period: Period })?.period === Period.EVALUATION_1ST),
-          evaluation2nd: form?.tasks.find((t) => (t.context as { period: Period })?.period === Period.EVALUATION_2ND),
-        } 
+          draft: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period === Period.IN_DRAFT,
+          ),
+          evaluation: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period === Period.EVALUATION,
+          ),
+          evaluation1st: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period ===
+              Period.EVALUATION_1ST,
+          ),
+          evaluation2nd: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period ===
+              Period.EVALUATION_2ND,
+          ),
+        },
       };
     }),
   create: protectedProcedure
@@ -74,6 +88,11 @@ export const taskProcedure = createTRPCRouter({
         where: {
           type: input.type,
           year: input.year,
+          tasks: {
+            some: {
+              ownerId: ctx.user.username,
+            },
+          },
         },
       });
 
@@ -115,5 +134,40 @@ export const taskProcedure = createTRPCRouter({
       });
 
       return { id: form.id };
+    }),
+  startWorkflow: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const task = await db.task.findUnique({
+        where: {
+          id: input.id,
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Record not found",
+        });
+      }
+
+      const hasChecker = task.checkerId !== null;
+
+      await db.task.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          status: hasChecker ? Status.PENDING_CHECKER : Status.PENDING_APPROVER,
+        },
+      });
+
+      // TODO: Send email to checker and approver
+
+      return { success: true };
     }),
 });

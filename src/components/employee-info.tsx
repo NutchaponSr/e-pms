@@ -14,17 +14,19 @@ import { NumberTicker } from "@/components/number-ticker";
 import { UserAvatar } from "@/modules/auth/ui/components/user-avatar";
 import { UserProfile } from "@/modules/auth/ui/components/user-profile";
 
-const fullWeight = 50;
-
 interface Props {
   owner?: Employee;
   checker?: Employee | null;
   approver?: Employee;
+  weight: {
+    actual: number;
+    full: number;
+  }
 }
 
-export const EmployeeInfo = ({ owner, checker, approver }: Props) => {
+export const EmployeeInfo = ({ owner, checker, approver, weight }: Props) => {
   const { data: session } = authClient.useSession();
-
+  
   return (
     <section className="grid xl:grid-cols-6 grid-cols-4 z-2 relative bg-background border-y border-border">
       <div className="col-span-5 relative py-2 flex flex-col">
@@ -131,14 +133,14 @@ export const EmployeeInfo = ({ owner, checker, approver }: Props) => {
             <div>
               <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Actual</p>
               <span className="text-base font-bold tabular-nums">
-                <NumberTicker value={50} decimalPlaces={1} delay={0.2} />
+                <NumberTicker value={weight.actual} decimalPlaces={1} delay={0.2} />
               </span>
             </div>
 
             <div>
               <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Full</p>
               <span className="text-base font-bold tabular-nums from-foreground to-foreground/70 font-mono">
-                {fullWeight.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                {weight.full.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
               </span>
             </div>
 
@@ -148,7 +150,7 @@ export const EmployeeInfo = ({ owner, checker, approver }: Props) => {
             <span className="text-muted-foreground text-xs">Progress</span>
             <Progress
               className="h-1 w-full"
-              value={Math.min((fullWeight / 50) * 100, 100)}
+                value={Math.min((weight.actual / weight.full) * 100, 100)}
             />
           </div>
         </div>

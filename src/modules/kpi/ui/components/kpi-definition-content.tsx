@@ -8,20 +8,33 @@ import {
 } from "@/components/ui/form";
 import { KpiDefinition, KpiDefinitions } from "../../schema/definition";
 import { UseFormReturn } from "react-hook-form";
-import { InputField } from "@/components/input-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { kpiCategoies } from "../../constants";
-import { TargetIcon } from "lucide-react";
+import { MoreHorizontalIcon, TargetIcon } from "lucide-react";
 import { CommentSection } from "@/components/comment-section";
 import { Separator } from "@/components/ui/separator";
+import { useCreateComment } from "@/modules/comments/api/use-create-comment";
+import { Period } from "@/generated/prisma/enums";
+import { Comment, Employee } from "@/generated/prisma/client";
+import { CommentWithEmployee } from "@/modules/comments/types";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BsTrash3 } from "react-icons/bs";
+import { useDeleteKpi } from "../../api/use-delete-kpi";
 
 interface Props {
   kpi: KpiDefinition;
   index: number;
+  period: Period;
+  formId: string;
   form: UseFormReturn<KpiDefinitions>;
+  comments: CommentWithEmployee[];
 }
 
-export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
+export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
+  const createComment = useCreateComment();
+  const deleteKpi = useDeleteKpi(props.formId, props.period);
+
   const objectiveRef = React.useRef<HTMLTextAreaElement | null>(null);
   const definitionRef = React.useRef<HTMLTextAreaElement | null>(null);
   const methodRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -83,7 +96,6 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
   };
 
   React.useEffect(() => {
-    // Initial sync (covers initial values + first render)
     syncTextareaHeights();
     syncTargetTextareaHeights();
 
@@ -296,8 +308,8 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
             control={form.control}
             name={`kpis.${index}.target70`}
             render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-                  <FormLabel className="whitespace-nowrap text-sm text-marine">Need Improve ({"<"}80%)</FormLabel>
+              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
+                  <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Need Improve ({"<"}80%)</FormLabel>
                 <FormControl>
                   <textarea 
                     {...field}
@@ -309,7 +321,7 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
                       syncTargetTextareaHeights();
                     }}
                     onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
+                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
                   />
                 </FormControl>
               </FormItem>
@@ -319,8 +331,8 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
             control={form.control}
             name={`kpis.${index}.target80`}
             render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-marine">Level 2 (90%)</FormLabel>
+              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
+                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Level 2 (90%)</FormLabel>
                 <FormControl>
                   <textarea 
                     {...field}
@@ -332,7 +344,7 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
                       syncTargetTextareaHeights();
                     }}
                     onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
+                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
                   />
                 </FormControl>
               </FormItem>
@@ -342,8 +354,8 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
             control={form.control}
             name={`kpis.${index}.target90`}
             render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-marine">Meet expert (100%)</FormLabel>
+              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
+                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Meet expert (100%)</FormLabel>
                 <FormControl>
                   <textarea 
                     {...field}
@@ -355,7 +367,7 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
                       syncTargetTextareaHeights();
                     }}
                     onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
+                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
                   />
                 </FormControl>
               </FormItem>
@@ -365,8 +377,8 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
             control={form.control}
             name={`kpis.${index}.target100`}
             render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-marine">Level 4 (110%)</FormLabel>
+              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
+                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Level 4 (110%)</FormLabel>
                 <FormControl>
                   <textarea 
                     {...field}
@@ -378,7 +390,7 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
                       syncTargetTextareaHeights();
                     }}
                     onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
+                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
                   />
                 </FormControl>
               </FormItem>
@@ -388,8 +400,8 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
             control={form.control}
             name={`kpis.${index}.target120`}
             render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-marine">Outstand (120%)</FormLabel>
+              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
+                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Outstand (120%)</FormLabel>
                 <FormControl>
                   <textarea 
                     {...field}
@@ -401,7 +413,7 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
                       syncTargetTextareaHeights();
                     }}
                     onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
+                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
                   />
                 </FormControl>
               </FormItem>
@@ -409,9 +421,36 @@ export const KpiDefinitionContent = ({ kpi, index, form }: Props) => {
           />
         </div>
       </div>
-
       <Separator />
-      <CommentSection />
+      <CommentSection 
+        comments={props.comments}
+        onCreate={(content) => {
+          createComment({ 
+            connectId: props.kpi.id, 
+            content, 
+            period: props.period, 
+            formId: props.formId 
+          })
+        }} 
+      />
+
+      <div className="absolute end-4 mt-0 transition group-hover/card:opacity-100 opacity-0 z-999">
+        <div className="flex items-center gap-0.5 bg-[#202020] dark:shadow-[0_0_0_1.25px_#383836,0px_4px_12px_-2px_#00000029] rounded-sm w-fit p-0.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="xsIcon" variant="ghost" type="button" className="text-tertiary hover:text-tertiary">
+                <MoreHorizontalIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem variant="destructive" onClick={() => deleteKpi({ id: props.kpi.id })}>
+                <BsTrash3 />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
     </div>
   );
 };
