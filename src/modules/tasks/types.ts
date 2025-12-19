@@ -1,1 +1,1 @@
-export type StatusVariant = "purple" | "orange";
+export type StatusVariant = "purple" | "orange" | "default" | "green" | "red";

@@ -23,9 +23,9 @@ export const STATUS_VARIANTS: Record<Status, {
 }> = {
   [Status.NOT_STARTED]: { label: "Not Started", variant: "purple" },
   [Status.IN_DRAFT]: { label: "In Draft", variant: "orange" },
-  [Status.PENDING_CHECKER]: { label: "Pending Checker", variant: "orange" },
-  [Status.REJECTED_BY_CHECKER]: { label: "Rejected by Checker", variant: "orange" },
-  [Status.PENDING_APPROVER]: { label: "Pending Approver", variant: "purple" },
-  [Status.REJECTED_BY_APPROVER]: { label: "Rejected by Approver", variant: "orange" },
-  [Status.DONE]: { label: "Done", variant: "purple" },
+  [Status.PENDING_CHECKER]: { label: "Pending Checker", variant: "default" },
+  [Status.REJECTED_BY_CHECKER]: { label: "Rejected by Checker", variant: "red" },
+  [Status.PENDING_APPROVER]: { label: "Pending Approver", variant: "default" },
+  [Status.REJECTED_BY_APPROVER]: { label: "Rejected by Approver", variant: "red" },
+  [Status.DONE]: { label: "Done", variant: "green" },
 };

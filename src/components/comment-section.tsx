@@ -1,69 +1,95 @@
 import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { BsArrowUpCircleFill } from "react-icons/bs";
 
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from "@/components/ui/popover";
+
+import { Message } from "@/components/messages";
+
 import { UserAvatar } from "@/modules/auth/ui/components/user-avatar";
 
-export const CommentSection = () => {
+import { CommentWithEmployee } from "@/modules/comments/types";
+import { CommentInput } from "./comment-input";
+
+
+interface Props {
+  comments: CommentWithEmployee[];
+  onCreate: (content: string) => void;
+}
+
+export const CommentSection = ({ comments, onCreate }: Props) => {
   const { data: session } = authClient.useSession();
 
-  const [message, setMessage] = useState("");
+  const sortedComments = [...comments].sort((a, b) => {
+    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+    return dateA.getTime() - dateB.getTime();
+  });
+  const latestComment = sortedComments[sortedComments.length - 1];
 
-    const handleSubmit = () => {
-      if (!message.trim()) return;
-      
-      setMessage("");
-    }
+  if (comments.length > 0) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="select-none flex items-center gap-2 p-1 rounded-sm hover:bg-accent"
+          >
+            <div className="flex items-center gap-2">
+              <UserAvatar
+                name={session?.user?.name || ""}
+                className={{
+                  container:
+                    "shrink-0 grow-0 rounded-full size-6 flex items-center justify-center",
+                  fallback: "bg-marine! rounded text-white text-sm",
+                }}
+              />
+              <div className="flex items-baseline gap-2">
+                <span className="text-sm">
+                  {comments.length}
+                  {comments.length > 1 ? " replies" : " reply"}
+                </span>
+                <span className="text-xs text-tertiary">
+                  {formatDistanceToNow(
+                    latestComment.createdAt instanceof Date 
+                      ? latestComment.createdAt 
+                      : new Date(latestComment.createdAt)
+                  )}
+                </span>
+              </div>
+            </div>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="flex flex-col w-[420px] min-w-[180px] max-w-full max-h-[50vh] min-h-[100px]">
+          <div className="grow min-h-0 overflow-x-hidden overflow-y-auto">
+            <div className="relative">
+              {sortedComments.map((comment, index) => {
+                const isLast = index === comments.length - 1;
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    }
-   
-  return (
-    <div className="flex items-center grow">
-      <div className="shrink-0 grow-0 me-2 self-start mt-0.5">
-        <UserAvatar
-          name={session?.user?.name || ""}
-          className={{
-            container:
-              "shrink-0 grow-0 rounded-full size-7 flex items-center justify-center",
-            fallback: "bg-marine! rounded text-white text-lg",
-          }}
-        />
-      </div>
-      <div className="flex flex-wrap self-center relative justify-end text-sm cursor-text bg-transparent items-center gap-y-1 gap-x-1.5 p-1 w-full">
-        <div className="grow flex min-h-6 pt-0.5">
-          <textarea 
-            rows={1}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Add a comment..."
-            className="max-w-full w-full whitespace-pre-wrap wrap-break-word text-sm p-0.5 -m-0.5 leading-5 overflow-hidden focus-visible:outline-none resize-none h-full field-sizing-content break-all"
-          />
-        </div>
-        <div className="flex flex-col-reverse items-end w-min">
-          <div className="flex flex-row items-center gap-1.5">
-            <button 
-              type="button"
-              onClick={handleSubmit}
-              disabled={true}
-              className={cn(
-                "select-none transition-all inline-flex opacity-40 items-center justify-center shrink-0 rounded size-6 p-0",
-                message && "opacity-100 hover:bg-[#298bfd10]",
-                false && "opacity-40"
-              )}
-            >
-              <BsArrowUpCircleFill className={cn("size-5", message ? "text-marine" : "text-muted")} />
-            </button>
+                return (
+                  <Message 
+                    key={index}
+                    comment={comment}
+                    isLast={isLast}
+                  />
+                );
+              })}
+            </div>
+            <div className="relative p-0">
+              <CommentInput onCreate={onCreate} />
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  return <CommentInput onCreate={onCreate} />;
+};

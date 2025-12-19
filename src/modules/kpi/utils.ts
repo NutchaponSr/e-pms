@@ -1,4 +1,5 @@
 import { KpiCategory } from "@/generated/prisma/enums";
+import { chiefDown, managerUp, Rank } from "@/types/employees";
 
 type RawKpiForMapping = {
   id: string;
@@ -25,7 +26,6 @@ export function bonusEvaluationMapValue(kpi: RawKpiForMapping) {
     id: kpi.id,
     year: kpi.year,
     name: kpi.name ?? "",
-    // แปลง weight ให้เป็น number เสมอ รองรับ number / Decimal / string
     weight: Number.isNaN(Number(weightStr)) ? 0 : Number(weightStr),
     category: kpi.category ?? KpiCategory.FP,
     objective: kpi.objective ?? "",
@@ -39,4 +39,16 @@ export function bonusEvaluationMapValue(kpi: RawKpiForMapping) {
     target90: kpi.target90,
     target100: kpi.target100,
   };
+}
+
+export function validateWeight(rank: Rank) {
+  if (managerUp.includes(rank)) {
+    return 50;
+  }
+
+  if (chiefDown.includes(rank)) {
+    return 30;
+  }
+
+  return 40;
 }

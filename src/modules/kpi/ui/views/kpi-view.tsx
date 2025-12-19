@@ -20,8 +20,6 @@ export const KpiView = ({
 
   const { data: form } = useSuspenseQuery(trpc.kpi.getOne.queryOptions({ id, period }));
 
-  console.log(period);
-
   if (period === Period.IN_DRAFT) {
     return <KpiDefinitionScreen id={id} form={form} period={period} year={2025} />;
   }
