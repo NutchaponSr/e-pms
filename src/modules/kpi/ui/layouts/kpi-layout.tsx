@@ -18,7 +18,7 @@ interface Props {
 export const KpiLayout = ({ id, period }: Props) => {
   const trpc = useTRPC();
 
-  const { data: form } = useSuspenseQuery(trpc.kpi.getOne.queryOptions({ id, period }));
+  const { data } = useSuspenseQuery(trpc.kpi.getOne.queryOptions({ id, period }));
 
   const { weight } = useWeight();
 
@@ -32,12 +32,12 @@ export const KpiLayout = ({ id, period }: Props) => {
       </div> */}
 
       <EmployeeInfo 
-        owner={form?.tasks!.owner} 
-        checker={form?.tasks?.checker} 
-        approver={form?.tasks?.approver} 
+        owner={data.form?.tasks!.owner} 
+        checker={data.form?.tasks?.checker} 
+        approver={data.form?.tasks?.approver} 
         weight={{
           actual: weight,
-          full: validateWeight(form.tasks?.owner.rank as Rank),
+          full: validateWeight(data.form?.tasks?.owner.rank as Rank),
         }}
       />
     </>

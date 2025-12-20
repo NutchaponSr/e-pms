@@ -27,15 +27,17 @@ import { useUpdateBulkKpis } from "../../api/use-update-bulk-kpis";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { useWeight } from "@/modules/kpi/stores/use-weight";
+import { Action } from "@/modules/tasks/permissions";
 
 interface Props {
   id: string;
   period: Period;
   year: number;
-  form: inferProcedureOutput<(typeof appRouter)["kpi"]["getOne"]>;
+  form: inferProcedureOutput<(typeof appRouter)["kpi"]["getOne"]>["form"];
+  permissions: Record<Action, boolean>;
 }
 
-export const KpiDefinitionScreen = ({ form, period, id, year }: Props) => {
+export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Props) => {
   const createKpi = useCreateKpi();
   const updateBulkKpis = useUpdateBulkKpis();
   const startWorkflow = useStartWorkflow(form.id, period);
@@ -89,6 +91,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year }: Props) => {
     <Form {...f}>
       <form onSubmit={f.handleSubmit(onSubmit)}>
         <Toolbar 
+          permissions={permissions}
           status={STATUS_VARIANTS[form.tasks?.status!]}
           onCreate={() => createKpi({ formId: id, period })} 
           onWorkflow={() => startWorkflow({ id: form.tasks!.id })}
@@ -107,6 +110,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year }: Props) => {
               <Button
                 variant="outline"
                 size="lg"
+                disabled={!permissions.write}
                 onClick={() => createKpi({ formId: id, period })}
               >
                 <BsPlusLg />
@@ -127,6 +131,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year }: Props) => {
                   form={f} 
                   formId={id} 
                   period={period} 
+                  permissions={permissions}
                   comments={form?.kpis.find((kpi) => kpi.id === field.id)?.comments || []}
                 />
               </Card>

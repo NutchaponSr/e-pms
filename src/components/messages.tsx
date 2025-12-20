@@ -1,25 +1,33 @@
-import { MoreHorizontalIcon, TrashIcon } from "lucide-react";
+import { BsTrash3 } from "react-icons/bs";
+import { useParams } from "next/navigation";
+import { MoreHorizontalIcon } from "lucide-react";
 import { format, formatDistanceToNowStrict } from "date-fns";
 
-import { CommentWithEmployee } from "@/modules/comments/types";
+import { Period } from "@/generated/prisma/enums";
 
 import { 
   HoverCard, 
   HoverCardContent, 
   HoverCardTrigger 
 } from "@/components/ui/hover-card";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
 import { UserAvatar } from "@/modules/auth/ui/components/user-avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
-import { useParams } from "next/navigation";
-import { Period } from "@/generated/prisma/enums";
 import { useDeleteComment } from "@/modules/comments/api/use-delete-comment";
-import { BsTrash3 } from "react-icons/bs";
+
+import { Action } from "@/modules/tasks/permissions";
+import { CommentWithEmployee } from "@/modules/comments/types";
 
 interface Props {
   isLast?: boolean;
   comment: CommentWithEmployee;
+  permissions: Record<Action, boolean>;
 }
 
 const PERIODS: Record<string, Period> = {
@@ -27,7 +35,7 @@ const PERIODS: Record<string, Period> = {
   evaluation: Period.EVALUATION,
 };
 
-export const Message = ({ isLast, comment }: Props) => {
+export const Message = ({ isLast, comment, permissions }: Props) => {
   const params = useParams<{ period: Period, id: string }>();
 
   const deleteComment = useDeleteComment(params.id, PERIODS[params.period]);
@@ -100,7 +108,7 @@ export const Message = ({ isLast, comment }: Props) => {
           </div>
         </div>
 
-        <div className="absolute end-0.5 -top-1 mt-0 transition group-hover/message:opacity-100 opacity-0">
+        <div data-show={permissions.write} className="absolute end-0.5 -top-1 mt-0 transition group-hover/message:opacity-100 opacity-0 data-[show=false]:group-hover/message:opacity-0">
           <div className="flex items-center gap-0.5 bg-[#202020] dark:shadow-[0_0_0_1.25px_#383836,0px_4px_12px_-2px_#00000029] rounded-sm w-fit p-0.5">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
