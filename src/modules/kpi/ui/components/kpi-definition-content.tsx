@@ -67,7 +67,7 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
         <FormGenerator 
           name={`kpis.${index}.name`}
           form={form}
-          variant="text"
+          variant="bigText"
           disabled={!props.permissions.write}
           placeholder="KPI's Name"
           className={{

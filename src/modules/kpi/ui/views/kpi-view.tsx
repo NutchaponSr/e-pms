@@ -2,9 +2,10 @@
 
 import { Period } from "@/generated/prisma/enums";
 import { KpiDefinitionScreen } from "@/modules/kpi/ui/screens/kpi-definition-screen";
-import { Approval, canPerforms, getUserRole } from "@/modules/tasks/permissions";
+import { Approval, canPerforms } from "@/modules/tasks/permissions";
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { KpiEvaluationScreen } from "../screens/kpi-evaluation-screen";
 
 interface Props {
   id: string;
@@ -34,4 +35,12 @@ export const KpiView = ({
       />
     );
   }
+
+  if (period === Period.EVALUATION) {
+    return (
+      <KpiEvaluationScreen />
+    );
+  }
+
+  return null;
 };

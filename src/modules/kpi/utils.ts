@@ -1,5 +1,10 @@
+import { z } from "zod";
+
 import { KpiCategory } from "@/generated/prisma/enums";
 import { chiefDown, managerUp, Rank } from "@/types/employees";
+
+import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
+import { requiredFields } from "./constants";
 
 type RawKpiForMapping = {
   id: string;
@@ -51,4 +56,54 @@ export function validateWeight(rank: Rank) {
   }
 
   return 40;
+}
+
+export function isBlankRow(row: Record<string, any>): boolean {
+  const requiredFields = ["name", "category", "definition", "method"]
+
+  return requiredFields.every((field) => {
+    const value = String(row[field] || "").trim()
+    return !value
+  });
+}
+
+export function validateKpiUpload(sheet: Array<Record<string, any>>) {
+  const errors: Array<{ row: number; errors: z.ZodError }> = []
+  const validKpis: Array<z.infer<typeof kpiUploadSchema>> = []
+
+  sheet.forEach((row, index) => {
+    const rowNumber = (row._rowIndex as number) || index + 2
+
+    // Skip blank rows
+    if (isBlankRow(row)) {
+      return;
+    }
+
+    try {
+      const validatedData = kpiUploadSchema.parse(row)
+      validKpis.push(validatedData)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        errors.push({ row: rowNumber, errors: error })
+      }
+    }
+  })
+
+  return { errors, validKpis }
+}
+
+export function formatValidationErrors(errors: Array<{ row: number; errors: z.ZodError }>) {
+  return errors.map(({ row, errors: zodErrors }) => {
+    const fieldErrors = zodErrors.issues
+      .map((err) => {
+        const field = err.path.join(".")
+        return `${field}: ${err.message}`
+      })
+      .join(", ")
+
+    return {
+      row,
+      message: fieldErrors,
+    }
+  })
 }
