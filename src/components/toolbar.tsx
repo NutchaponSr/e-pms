@@ -25,6 +25,7 @@ interface Props {
   onCreate: () => void;
   onWorkflow: () => void;
   onSaveDraft: () => void;
+  onUpload: () => void;
   permissions: Record<Action, boolean>;
 }
 
@@ -33,8 +34,9 @@ export const Toolbar = ({
   confirmTitle, 
   onCreate, 
   onWorkflow,
-  permissions,
   onSaveDraft,
+  onUpload,
+  permissions,
 }: Props) => {
   const [ConfirmationDialog, confirm] = useConfirm({
     title: confirmTitle,
@@ -112,7 +114,7 @@ export const Toolbar = ({
                     type="button"
                     variant="ghost" 
                     className="h-auto px-2 w-full" 
-                    onClick={() => {}}
+                    onClick={onUpload}
                   >
                     <div className="flex items-center justify-center min-w-5 min-h-5 self-start">
                       <BsFiletypeCsv className="stroke-[0.15]! size-5 mt-0.5" />

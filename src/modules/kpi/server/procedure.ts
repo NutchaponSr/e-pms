@@ -2,11 +2,12 @@ import db from "@/lib/db";
 
 import { z } from "zod";
 
-import { Period } from "@/generated/prisma/enums";
+import { KpiCategory, Period } from "@/generated/prisma/enums";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { kpiDefinitionSchema } from "../schema/definition";
 import { TRPCError } from "@trpc/server";
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
+import { kpiUploadSchema } from "../schema/upload";
 
 export const kpiProcedure = createTRPCRouter({
   getOne: protectedProcedure
@@ -117,6 +118,35 @@ export const kpiProcedure = createTRPCRouter({
       });
 
       return { id: kpi.id };
+    }),
+  createBulk: protectedProcedure
+    .input(
+      z.object({
+        formId: z.string(),
+        kpis: z.array(kpiUploadSchema),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      await db.$transaction(async (tx) => {
+        await tx.kpiEvaluation.createMany({
+          data: input.kpis.map((kpi) => ({
+            ...kpi,
+            formId: input.formId,
+            category: kpi.category as KpiCategory,
+          })),
+        });
+
+        await tx.form.update({
+          where: {
+            id: input.formId,
+          },
+          data: {
+            updatedAt: new Date(),
+          }
+        })
+      });
+
+      return { success: true };
     }),
   updateBulk: protectedProcedure
     .input(

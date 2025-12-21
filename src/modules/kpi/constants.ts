@@ -6,3 +6,5 @@ export const kpiCategoies: Record<KpiCategory, string> = {
   [KpiCategory.IP]: "Internal Perspective",
   [KpiCategory.L_G]: "Learning & Growth",
 }
+
+export const requiredFields = ["name", "category", "definition", "method"]

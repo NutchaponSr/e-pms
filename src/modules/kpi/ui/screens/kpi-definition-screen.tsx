@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { BsFileEarmarkText, BsPlusLg } from "react-icons/bs";
 import { Resolver, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "@/hooks/use-search-params";
 import { Rank } from "@/types/employees";
 import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
+import { KpiUpload } from "../components/kpi-upload";
 
 interface Props {
   id: string;
@@ -49,6 +50,8 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
   const startWorkflow = useStartWorkflow(form.id, period);
   const { setWeight } = useWeight();
   const { save } = useSaveForm();
+
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const kpisPopulated =
     form?.kpis?.map((kpi) => ({
@@ -91,7 +94,13 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
   return (
     <Form {...f}>
       <form onSubmit={f.handleSubmit(onSubmit)}>
+        <KpiUpload 
+          id={id} 
+          period={period} 
+          fileRef={fileRef as React.RefObject<HTMLInputElement>} 
+        />
         <Toolbar 
+          onUpload={() => fileRef.current?.click()}
           permissions={permissions}
           status={STATUS_VARIANTS[form.tasks?.status!]}
           onCreate={() => createKpi({ formId: id, period })} 

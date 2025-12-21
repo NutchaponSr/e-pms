@@ -49,6 +49,8 @@ export const KpiInfo = ({ year }: Props) => {
   const createTask = useCreateTask();
   const { data: form } = useGetTask(2025, FormType.KPI);
 
+  console.log(form.task.evaluation);
+
   return (
     <section>
       <div className="shrink-0 flex justify-between items-center h-8 pb-3.5 mx-2">
