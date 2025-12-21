@@ -3,7 +3,6 @@
 import { BsPersonFill } from "react-icons/bs";
 import { FaWeightHanging } from "react-icons/fa";
 
-import { authClient } from "@/lib/auth-client";
 import { Employee } from "@/generated/prisma/client";
 
 import { Progress } from "@/components/ui/progress";
@@ -25,15 +24,14 @@ interface Props {
 }
 
 export const EmployeeInfo = ({ owner, checker, approver, weight }: Props) => {
-  const { data: session } = authClient.useSession();
-  
+
   return (
     <section className="grid xl:grid-cols-6 grid-cols-4 z-2 relative bg-background border-y border-border">
       <div className="col-span-5 relative py-2 flex flex-col">
         <div className="h-full flex justify-stretch gap-3 px-3">
           <div className="flex flex-row gap-2.5 items-center">
             <UserAvatar
-              name={session?.user?.name || ""}
+              name={owner?.name || ""}
               className={{
                 container:
                   "shrink-0 grow-0 rounded size-7 flex items-center justify-center dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f]",
@@ -42,10 +40,10 @@ export const EmployeeInfo = ({ owner, checker, approver, weight }: Props) => {
             />
             <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis">
               <div className="text-sm leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-                {session?.user?.name}
+                {owner?.name}
               </div>
               <div className="text-xs leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
-                {session?.user.email || "-"}
+                {owner?.email || "-"}
               </div>
             </div>
           </div>

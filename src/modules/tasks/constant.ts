@@ -1,4 +1,4 @@
-import { FormType, Status } from "@/generated/prisma/enums";
+import { FormType, Period, Status } from "@/generated/prisma/enums";
 
 import { StatusVariant } from "@/modules/tasks/types";
 
@@ -28,4 +28,11 @@ export const STATUS_VARIANTS: Record<Status, {
   [Status.PENDING_APPROVER]: { label: "Pending Approver", variant: "default" },
   [Status.REJECTED_BY_APPROVER]: { label: "Rejected by Approver", variant: "red" },
   [Status.DONE]: { label: "Done", variant: "green" },
+};
+
+export const periodRoutes: Record<Period, string> = {
+  [Period.IN_DRAFT]: "definition",
+  [Period.EVALUATION]: "evaluation",
+  [Period.EVALUATION_1ST]: "evaluation-1st",
+  [Period.EVALUATION_2ND]: "evaluation-2nd",
 };

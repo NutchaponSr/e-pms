@@ -24,6 +24,7 @@ interface Props {
   };
   onCreate: () => void;
   onWorkflow: () => void;
+  onSaveDraft: () => void;
   permissions: Record<Action, boolean>;
 }
 
@@ -32,7 +33,8 @@ export const Toolbar = ({
   confirmTitle, 
   onCreate, 
   onWorkflow,
-  permissions
+  permissions,
+  onSaveDraft,
 }: Props) => {
   const [ConfirmationDialog, confirm] = useConfirm({
     title: confirmTitle,
@@ -52,7 +54,7 @@ export const Toolbar = ({
       <div className="grow h-full">
         <div className="flex flex-row justify-between items-center h-full gap-0.5">
           <div className="inline-flex items-center gap-1 relative shrink-0 h-7">
-            {permissions.write && (
+            {permissions["start-workflow"] && (
               <>
                 <Button
                   size="sm"
@@ -74,7 +76,7 @@ export const Toolbar = ({
           >
             <Button 
               size="sm"
-              type="button" 
+              type="submit" 
               className="rounded gap-1.5"
               variant="primaryGhost"
             >
@@ -83,6 +85,7 @@ export const Toolbar = ({
             </Button>
             <button 
               type="button" 
+              onClick={onSaveDraft}
               className="transition flex items-center justify-center whitespace-nowrap rounded px-2 font-medium bg-marine text-white text-sm hover:bg-marine/80 gap-1.5"
             >
               <BsFloppy2Fill className="stroke-[0.25] size-4" />

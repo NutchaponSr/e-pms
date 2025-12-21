@@ -8,6 +8,7 @@ import { FormType, Period, Status } from "@/generated/prisma/enums";
 
 import { generateTaskId } from "@/modules/tasks/utils";
 import { TRPCError } from "@trpc/server";
+import { buildPermissionContext, getUserRole } from "../permissions";
 
 interface ApprovalCVSProps {
   employeeId: string;
@@ -62,6 +63,49 @@ export const taskProcedure = createTRPCRouter({
         },
       };
     }),
+  todo: protectedProcedure
+    .query(async ({ input, ctx }) => {
+      const tasks = await db.task.findMany({
+        where: {
+          OR: [
+            {
+              status: Status.PENDING_CHECKER,
+              checkerId: ctx.user.username,
+            },
+            {
+              status: Status.PENDING_APPROVER,
+              approverId: ctx.user.username,
+            },
+            {
+              status: Status.REJECTED_BY_CHECKER,
+              ownerId: ctx.user.username,
+            },
+            {
+              status: Status.REJECTED_BY_APPROVER,
+              ownerId: ctx.user.username,
+            },
+          ],
+        },
+        include: {
+          form: true,
+          owner: true,
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+
+      return tasks.map((task) => ({
+        taskId: task.id,
+        formType: task.form.type,
+        status: task.status,
+        formId: task.form.id,
+        year: task.form.year,
+        owner: task.owner.name,
+        updatedAt: task.updatedAt,
+        period: task.form.period,
+      }));
+    }),
   create: protectedProcedure
     .input(
       z.object({
@@ -92,16 +136,20 @@ export const taskProcedure = createTRPCRouter({
             some: {
               ownerId: ctx.user.username,
             },
-          },
+          }, 
         },
       });
+
+      const checkerId = record?.checker && record.checker.trim() !== "" 
+        ? record.checker 
+        : null;
 
       if (existingForm) {
         await db.task.create({
           data: {
             id: generateTaskId(),
             ownerId: ctx.user.username,
-            checkerId: record?.checker,
+            checkerId,
             approverId: record.approver,
             formId: existingForm.id,
             status: Status.IN_DRAFT,
@@ -122,7 +170,7 @@ export const taskProcedure = createTRPCRouter({
             create: {
               id: generateTaskId(),
               ownerId: ctx.user.username,
-              checkerId: record?.checker,
+              checkerId,
               approverId: record.approver,
               status: Status.IN_DRAFT,
               context: {
@@ -170,4 +218,102 @@ export const taskProcedure = createTRPCRouter({
 
       return { success: true };
     }),
+  confirmation: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        approved: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const task = await db.task.findUnique({
+        where: { 
+          id: input.id 
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Record not found",
+        });
+      }
+
+      const permissionContext = buildPermissionContext(ctx.user.username, task);
+      const role = getUserRole(permissionContext);
+
+      let res = null;
+
+      if (role === "checker") {
+        if (input.approved) {
+          res = await db.task.update({
+            where: {
+              id: input.id,
+            },
+            data: {
+              status: Status.PENDING_APPROVER,
+              checkedAt: new Date(),
+            },
+            include: {
+              checker: true,
+              approver: true,
+              owner: true,
+            },
+          });
+        } else {
+          res = await db.task.update({
+            where: {
+              id: input.id,
+            },
+            data: {
+              status: Status.REJECTED_BY_CHECKER,
+            },
+          });
+        }
+      } else if (role === "approver") {
+        if (input.approved) {
+          res = await db.task.update({
+            where: {
+              id: input.id,
+            },
+            data: {
+              status: Status.DONE,
+              approvedAt: new Date(),
+            },
+            include: {
+              checker: true,
+              approver: true,
+              owner: true,
+            },
+          });
+        } else {
+          res = await db.task.update({
+            where: {
+              id: input.id,
+            },
+            data: {
+              status: Status.REJECTED_BY_APPROVER,
+            },
+            include: {
+              owner: true,
+              checker: true,
+              approver: true,
+            },
+          });
+        }
+      }
+
+      if (!res) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update task",
+        });
+      }
+
+      // TODO: Send email to owner, checker, and approver
+
+      return { 
+        id: res.formId,
+      }
+    })
 });

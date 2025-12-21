@@ -24,13 +24,6 @@ export const KpiLayout = ({ id, period }: Props) => {
 
   return (
     <>
-      {/* <div className="sticky top-0 col-span-full z-100 bg-background after:absolute after:-bottom-px after:left-0 after:z-50 after:w-full after:h-[1.25px] after:bg-border after:block">
-        <div className="flex items-center flex-wrap gap-1 px-3 py-2.5 select-none">
-          <SquareLibraryIcon className="size-4.5 shrink-0 block" />
-          <p className="text-sm font-medium">KPI Bonus</p>
-        </div>
-      </div> */}
-
       <EmployeeInfo 
         owner={data.form?.tasks!.owner} 
         checker={data.form?.tasks?.checker} 

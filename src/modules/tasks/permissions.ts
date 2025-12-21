@@ -11,7 +11,7 @@ export interface PermissionContext {
 
 
 export type Approval = "owner" | "checker" | "approver";
-export type Action = "write" | "read";
+export type Action = "write" | "read" | "start-workflow" | "approve";
 
 const permissions: Record<Status, Record<Approval, Action[]>> = {
   [Status.NOT_STARTED]: {
@@ -20,13 +20,13 @@ const permissions: Record<Status, Record<Approval, Action[]>> = {
     approver: ["read"],
   },
   [Status.IN_DRAFT]: {
-    owner: ["write", "read"],
+    owner: ["write", "read", "start-workflow"],
     checker: ["read"],
     approver: ["read"],
   },
   [Status.PENDING_CHECKER]: {
     owner: ["read"],
-    checker: ["write", "read"],
+    checker: ["write", "read", "approve"],
     approver: ["read"],
   },
   [Status.REJECTED_BY_CHECKER]: {
@@ -37,7 +37,7 @@ const permissions: Record<Status, Record<Approval, Action[]>> = {
   [Status.PENDING_APPROVER]: {
     owner: ["read"],
     checker: ["read"],
-    approver: ["write", "read"],
+    approver: ["write", "read", "approve"],
   },
   [Status.REJECTED_BY_APPROVER]: {
     owner: ["write", "read"],
