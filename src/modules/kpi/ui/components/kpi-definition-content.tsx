@@ -1,26 +1,21 @@
 import * as React from "react";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { KpiDefinition, KpiDefinitions } from "../../schema/definition";
 import { UseFormReturn } from "react-hook-form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { kpiCategoies } from "../../constants";
 import { MoreHorizontalIcon, TargetIcon } from "lucide-react";
 import { CommentSection } from "@/components/comment-section";
 import { Separator } from "@/components/ui/separator";
 import { useCreateComment } from "@/modules/comments/api/use-create-comment";
 import { Period } from "@/generated/prisma/enums";
-import { Comment, Employee } from "@/generated/prisma/client";
 import { CommentWithEmployee } from "@/modules/comments/types";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { BsTrash3 } from "react-icons/bs";
 import { useDeleteKpi } from "../../api/use-delete-kpi";
+import { FormGenerator } from "@/components/form-generator";
+import { formRecord } from "@/types/form";
+import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
+import { Action } from "@/modules/tasks/permissions";
 
 interface Props {
   kpi: KpiDefinition;
@@ -29,12 +24,14 @@ interface Props {
   formId: string;
   form: UseFormReturn<KpiDefinitions>;
   comments: CommentWithEmployee[];
+  permissions: Record<Action, boolean>;
 }
 
 export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
   const createComment = useCreateComment();
   const deleteKpi = useDeleteKpi(props.formId, props.period);
 
+  // Refs for textarea elements
   const objectiveRef = React.useRef<HTMLTextAreaElement | null>(null);
   const definitionRef = React.useRef<HTMLTextAreaElement | null>(null);
   const methodRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -44,80 +41,20 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
   const target100Ref = React.useRef<HTMLTextAreaElement | null>(null);
   const target120Ref = React.useRef<HTMLTextAreaElement | null>(null);
 
-  const autoResizeTextarea = (el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    el.style.height = "0px";
-    el.style.height = `${el.scrollHeight}px`;
-  };
+  // Use hook to sync textarea heights
+  const { groupSyncFunctions } = useSyncTextareaHeights([
+    {
+      refs: [objectiveRef, definitionRef, methodRef],
+      breakpoint: "(min-width: 1024px)",
+    },
+    {
+      refs: [target70Ref, target80Ref, target90Ref, target100Ref, target120Ref],
+      breakpoint: "(min-width: 768px)",
+    },
+  ]);
 
-  const isLg = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(min-width: 1024px)").matches;
-
-  const isMd = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(min-width: 768px)").matches;
-
-  const syncTextareaHeights = () => {
-    const els = [objectiveRef.current, definitionRef.current, methodRef.current].filter(
-      Boolean
-    ) as HTMLTextAreaElement[];
-    if (els.length === 0) return;
-
-    if (!isLg()) {
-      for (const el of els) autoResizeTextarea(el);
-      return;
-    }
-
-    // Reset height first so scrollHeight is accurate, then set all to max.
-    for (const el of els) el.style.height = "0px";
-    const max = Math.max(...els.map((el) => el.scrollHeight));
-    for (const el of els) el.style.height = `${max}px`;
-  };
-
-  const syncTargetTextareaHeights = () => {
-    const els = [
-      target70Ref.current,
-      target80Ref.current,
-      target90Ref.current,
-      target100Ref.current,
-      target120Ref.current,
-    ].filter(Boolean) as HTMLTextAreaElement[];
-    if (els.length === 0) return;
-
-    if (!isMd()) {
-      for (const el of els) autoResizeTextarea(el);
-      return;
-    }
-
-    for (const el of els) el.style.height = "0px";
-    const max = Math.max(...els.map((el) => el.scrollHeight));
-    for (const el of els) el.style.height = `${max}px`;
-  };
-
-  React.useEffect(() => {
-    syncTextareaHeights();
-    syncTargetTextareaHeights();
-
-    const mq = window.matchMedia?.("(min-width: 1024px)");
-    const mqMd = window.matchMedia?.("(min-width: 768px)");
-    const onChange = () => syncTextareaHeights();
-    const onChangeMd = () => syncTargetTextareaHeights();
-    const onResize = () => syncTextareaHeights();
-    const onResizeMd = () => syncTargetTextareaHeights();
-
-    mq?.addEventListener?.("change", onChange);
-    mqMd?.addEventListener?.("change", onChangeMd);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("resize", onResizeMd);
-
-    return () => {
-      mq?.removeEventListener?.("change", onChange);
-      mqMd?.removeEventListener?.("change", onChangeMd);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("resize", onResizeMd);
-    };
-  }, []);
+  const syncTextareaHeights = groupSyncFunctions[0];
+  const syncTargetTextareaHeights = groupSyncFunctions[1];
 
   return (
     <div className="flex flex-col gap-4">
@@ -127,174 +64,106 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
             {index + 1}
           </div>
         </div>
-        <FormField
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.name`}
-          render={({ field }) => (
-            <FormItem className="grow">
-              <FormControl>
-                <textarea 
-                  rows={1}
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value)}
-                  placeholder="KPI's Name"
-                  className="max-w-full w-full whitespace-pre-wrap wrap-break-word p-0.5 -m-0.5 leading-9 overflow-hidden focus-visible:outline-none resize-none h-full field-sizing-content break-all text-2xl font-bold cursor-text"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          form={form}
+          variant="text"
+          disabled={!props.permissions.write}
+          placeholder="KPI's Name"
+          className={{
+            form: "grow",
+            input: "max-w-full w-full whitespace-pre-wrap wrap-break-word p-0.5 -m-0.5 leading-9 overflow-hidden focus-visible:outline-none resize-none h-full field-sizing-content break-all text-2xl font-bold cursor-text",
+          }}
         />
       </div>
 
       <div className="grid lg:grid-cols-4 grid-cols-2 gap-2 overflow-hidden">
-        <FormField 
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.category`}
-          render={({ field }) => (
-            <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-              <FormLabel className="whitespace-nowrap text-sm text-marine">Category</FormLabel>
-              <FormControl>
-                <Select onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] min-h-10 bg-[#202020] hover:bg-[#213041] transition text-primary data-placeholder:text-marine border-none">
-                    <SelectValue placeholder="Select a Category" />
-                  </SelectTrigger>
-                  <SelectContent align="center" side="bottom">
-                    {Object.entries(kpiCategoies).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>{value}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-            </FormItem>
-          )}
+          form={form}
+          variant="selection"
+          disabled={!props.permissions.write}
+          label="Category"
+          placeholder="Select a Category"
+          className={formRecord.blue}
+          selectOptions={Object.entries(kpiCategoies).map(([key, value]) => ({
+            key,
+            label: value,
+          }))}
         />
-        <FormField 
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.weight`}
-          render={({ field }) => (
-            <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-              <FormLabel className="whitespace-nowrap text-sm text-marine">Weight</FormLabel>
-              <FormControl>
-                <input 
-                  type="number"
-                  className="inline-flex items-center gap-2 rounded-sm px-2.5 whitespace-nowrap text-sm leading-tight w-full dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] min-h-10 bg-[#202020] hover:bg-[#253649] transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-0"
-                  {...field}
-                />
-              </FormControl>
-            </FormItem>
-          )}
+          form={form}
+          variant="numeric"
+          disabled={!props.permissions.write}
+          label="Weight"
+          className={formRecord.blue}
         />
-        <FormField 
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.strategy`}
-          render={({ field }) => (
-            <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-              <FormLabel className="whitespace-nowrap text-sm text-marine">Strategy</FormLabel>
-              <FormControl>
-                <input 
-                  type="text"
-                  className="inline-flex items-center gap-2 rounded-sm px-2.5 whitespace-nowrap text-sm leading-tight w-full dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] min-h-10 bg-[#202020] hover:bg-[#253649] transition text-primary focus:outline-none focus:ring-0 data-[type=false]:text-primary"
-                  {...field}
-                />
-              </FormControl>
-            </FormItem>
-          )}
+          form={form}
+          variant="text"
+          disabled={!props.permissions.write}
+          label="Strategy"
+          className={formRecord.blue}
         />
-        <FormField 
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.type`}
-          render={({ field }) => (
-            <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-              <FormLabel className="whitespace-nowrap text-sm text-marine">KPI's Type</FormLabel>
-              <FormControl>
-                <Select onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] min-h-10 bg-[#202020] hover:bg-[#213041] transition text-primary data-placeholder:text-marine border-none">
-                    <SelectValue placeholder="Select a KPI's Type" />
-                  </SelectTrigger>
-                  <SelectContent align="center" side="bottom">
-                      <SelectItem value="improvement">Improvement</SelectItem>
-                      <SelectItem value="project">Project</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormControl>
-            </FormItem>
-          )}
+          form={form}
+          variant="selection"
+          disabled={!props.permissions.write}
+          label="Type"
+          className={formRecord.blue}
+          selectOptions={[{
+            key: "improvement",
+            label: "Improvement",
+          }, {
+            key: "project",
+            label: "Project",
+          }]}
+          placeholder="Select a Type"
         />
       </div>
 
       <div className="grid lg:grid-cols-3 grid-cols-1 gap-2 overflow-hidden">
-        <FormField 
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.objective`}
-          render={({ field }) => (
-            <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-fit dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-              <FormLabel className="whitespace-nowrap text-sm text-marine">Objective</FormLabel>
-              <FormControl>
-                <textarea 
-                  {...field}
-                  value={field.value ?? ""}
-                  rows={1}
-                  ref={(el) => {
-                    objectiveRef.current = el;
-                    field.ref(el);
-                    syncTextareaHeights();
-                  }}
-                  onInput={() => syncTextareaHeights()}
-                  className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          form={form}
+          variant="bigText"
+          disabled={!props.permissions.write}
+          label="Objective"
+          className={formRecord.blue}
+          textareaRef={(el) => {
+            objectiveRef.current = el;
+            syncTextareaHeights();
+          }}
+          onInput={() => syncTextareaHeights()}
         />
-        <FormField 
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.definition`}
-          render={({ field }) => (
-            <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-              <FormLabel className="whitespace-nowrap text-sm text-marine">Definition</FormLabel>
-              <FormControl>
-                <textarea 
-                  {...field}
-                  value={field.value ?? ""}
-                  rows={1}
-                  ref={(el) => {
-                    definitionRef.current = el;
-                    field.ref(el);
-                    syncTextareaHeights();
-                  }}
-                  onInput={() => syncTextareaHeights()}
-                  className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          form={form}
+          variant="bigText"
+          disabled={!props.permissions.write}
+          label="Definition"
+          className={formRecord.blue}
+          textareaRef={(el) => {
+            definitionRef.current = el;
+            syncTextareaHeights();
+          }}
+          onInput={() => syncTextareaHeights()}
         />
-        <FormField 
-          control={form.control}
+        <FormGenerator 
           name={`kpis.${index}.method`}
-          render={({ field }) => (
-            <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2">
-              <FormLabel className="whitespace-nowrap text-sm text-marine">Method</FormLabel>
-              <FormControl>
-                <textarea 
-                  {...field}
-                  value={field.value ?? ""}
-                  rows={1}
-                  ref={(el) => {
-                    methodRef.current = el;
-                    field.ref(el);
-                    syncTextareaHeights();
-                  }}
-                  onInput={() => syncTextareaHeights()}
-                  className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] bg-[#202020] hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          form={form}
+          variant="bigText"
+          disabled={!props.permissions.write}
+          label="Method"
+          className={formRecord.blue}
+          textareaRef={(el) => {
+            methodRef.current = el;
+            syncTextareaHeights();
+          }}
+          onInput={() => syncTextareaHeights()}
         />
       </div>
 
@@ -304,125 +173,76 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
           Target
         </div>
         <div className="grid md:grid-cols-5 grid-cols-1 gap-2 overflow-hidden">
-          <FormField 
-            control={form.control}
+          <FormGenerator 
             name={`kpis.${index}.target70`}
-            render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
-                  <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Need Improve ({"<"}80%)</FormLabel>
-                <FormControl>
-                  <textarea 
-                    {...field}
-                    value={field.value ?? ""}
-                    rows={1}
-                    ref={(el) => {
-                      target70Ref.current = el;
-                      field.ref(el);
-                      syncTargetTextareaHeights();
-                    }}
-                    onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+            form={form}
+            variant="bigText"
+            disabled={!props.permissions.write}
+            label="Need Improve (<80%)"
+            className={formRecord.default}
+            textareaRef={(el) => {
+              target70Ref.current = el;
+              syncTargetTextareaHeights();
+            }}
+            onInput={() => syncTargetTextareaHeights()}
           />
-          <FormField 
-            control={form.control}
+          <FormGenerator 
             name={`kpis.${index}.target80`}
-            render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Level 2 (90%)</FormLabel>
-                <FormControl>
-                  <textarea 
-                    {...field}
-                    value={field.value ?? ""}
-                    rows={1}
-                    ref={(el) => {
-                      target80Ref.current = el;
-                      field.ref(el);
-                      syncTargetTextareaHeights();
-                    }}
-                    onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+            form={form}
+            variant="bigText"
+            disabled={!props.permissions.write}
+            label="Level 2 (90%)"
+            className={formRecord.default}
+            textareaRef={(el) => {
+              target80Ref.current = el;
+              syncTargetTextareaHeights();
+            }}
+            onInput={() => syncTargetTextareaHeights()}
           />
-          <FormField 
-            control={form.control}
+          <FormGenerator 
             name={`kpis.${index}.target90`}
-            render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Meet expert (100%)</FormLabel>
-                <FormControl>
-                  <textarea 
-                    {...field}
-                    value={field.value ?? ""}
-                    rows={1}
-                    ref={(el) => {
-                      target90Ref.current = el;
-                      field.ref(el);
-                      syncTargetTextareaHeights();
-                    }}
-                    onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+            form={form}
+            variant="bigText"
+            disabled={!props.permissions.write}
+            label="Meet expert (100%)"
+            className={formRecord.default}
+            textareaRef={(el) => {
+              target90Ref.current = el;
+              syncTargetTextareaHeights();
+            }}
+            onInput={() => syncTargetTextareaHeights()}
           />
-          <FormField 
-            control={form.control}
+          <FormGenerator 
             name={`kpis.${index}.target100`}
-            render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Level 4 (110%)</FormLabel>
-                <FormControl>
-                  <textarea 
-                    {...field}
-                    value={field.value ?? ""}
-                    rows={1}
-                    ref={(el) => {
-                      target100Ref.current = el;
-                      field.ref(el);
-                      syncTargetTextareaHeights();
-                    }}
-                    onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+            form={form}
+            variant="bigText"
+            disabled={!props.permissions.write}
+            label="Level 4 (110%)"
+            className={formRecord.default}
+            textareaRef={(el) => {
+              target100Ref.current = el;
+              syncTargetTextareaHeights();
+            }}
+            onInput={() => syncTargetTextareaHeights()}
           />
-          <FormField 
-            control={form.control}
+          <FormGenerator 
             name={`kpis.${index}.target120`}
-            render={({ field }) => (
-              <FormItem className="grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2">
-                <FormLabel className="whitespace-nowrap text-sm text-[#bcbab6]">Outstand (120%)</FormLabel>
-                <FormControl>
-                  <textarea 
-                    {...field}
-                    value={field.value ?? ""}
-                    rows={1}
-                    ref={(el) => {
-                      target120Ref.current = el;
-                      field.ref(el);
-                      syncTargetTextareaHeights();
-                    }}
-                    onInput={() => syncTargetTextareaHeights()}
-                    className="w-full rounded-sm p-2.5 text-sm leading-tight dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] bg-[#202020] hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 resize-none overflow-hidden whitespace-pre-wrap wrap-break-word"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+            form={form}
+            variant="bigText"
+            disabled={!props.permissions.write}
+            label="Outstand (120%)"
+            className={formRecord.default}
+            textareaRef={(el) => {
+              target120Ref.current = el;
+              syncTargetTextareaHeights();
+            }}
+            onInput={() => syncTargetTextareaHeights()}
           />
         </div>
       </div>
       <Separator />
       <CommentSection 
+        permissions={props.permissions}
         comments={props.comments}
         onCreate={(content) => {
           createComment({ 
@@ -434,7 +254,7 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
         }} 
       />
 
-      <div className="absolute end-4 mt-0 transition group-hover/card:opacity-100 opacity-0 z-999">
+      <div data-show={props.permissions.write} className="absolute end-4 mt-0 transition group-hover/card:opacity-100 opacity-0 z-999 data-[show=false]:group-hover/card:opacity-0">
         <div className="flex items-center gap-0.5 bg-[#202020] dark:shadow-[0_0_0_1.25px_#383836,0px_4px_12px_-2px_#00000029] rounded-sm w-fit p-0.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

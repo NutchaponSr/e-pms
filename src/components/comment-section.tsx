@@ -12,19 +12,21 @@ import {
 } from "@/components/ui/popover";
 
 import { Message } from "@/components/messages";
+import { CommentInput } from "@/components/comment-input";
 
 import { UserAvatar } from "@/modules/auth/ui/components/user-avatar";
 
+import { Action } from "@/modules/tasks/permissions";
 import { CommentWithEmployee } from "@/modules/comments/types";
-import { CommentInput } from "./comment-input";
 
 
 interface Props {
   comments: CommentWithEmployee[];
+  permissions: Record<Action, boolean>;
   onCreate: (content: string) => void;
 }
 
-export const CommentSection = ({ comments, onCreate }: Props) => {
+export const CommentSection = ({ comments, permissions, onCreate }: Props) => {
   const { data: session } = authClient.useSession();
 
   const sortedComments = [...comments].sort((a, b) => {
@@ -78,12 +80,13 @@ export const CommentSection = ({ comments, onCreate }: Props) => {
                     key={index}
                     comment={comment}
                     isLast={isLast}
+                    permissions={permissions}
                   />
                 );
               })}
             </div>
             <div className="relative p-0">
-              <CommentInput onCreate={onCreate} />
+              <CommentInput onCreate={onCreate} permissions={permissions} />
             </div>
           </div>
         </PopoverContent>
@@ -91,5 +94,5 @@ export const CommentSection = ({ comments, onCreate }: Props) => {
     );
   }
 
-  return <CommentInput onCreate={onCreate} />;
+  return <CommentInput onCreate={onCreate} permissions={permissions} />;
 };

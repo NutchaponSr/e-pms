@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/status-badge";
 
 import { StatusVariant } from "@/modules/tasks/types";
+import { Action } from "@/modules/tasks/permissions";
 
 interface Props {
   confirmTitle: string;
@@ -23,13 +24,17 @@ interface Props {
   };
   onCreate: () => void;
   onWorkflow: () => void;
+  onSaveDraft: () => void;
+  permissions: Record<Action, boolean>;
 }
 
 export const Toolbar = ({ 
   status,
   confirmTitle, 
   onCreate, 
-  onWorkflow 
+  onWorkflow,
+  permissions,
+  onSaveDraft,
 }: Props) => {
   const [ConfirmationDialog, confirm] = useConfirm({
     title: confirmTitle,
@@ -49,25 +54,29 @@ export const Toolbar = ({
       <div className="grow h-full">
         <div className="flex flex-row justify-between items-center h-full gap-0.5">
           <div className="inline-flex items-center gap-1 relative shrink-0 h-7">
-            <Button
-              size="sm"
-              type="button"
-              className="rounded"
-              onClick={onStartWorkflow}
-            >
-              Start workflow
-            </Button>
+            {permissions["start-workflow"] && (
+              <>
+                <Button
+                  size="sm"
+                  type="button"
+                  className="rounded"
+                  onClick={onStartWorkflow}
+                >
+                  Start workflow
+                </Button>
+                <Separator orientation="vertical" className="mx-1" />
+              </>
+            )}
             <ConfirmationDialog />
-            <Separator orientation="vertical" className="mx-1" />
             <StatusBadge {...status} />
           </div>
           <div 
-            data-show={true}
+            data-show={permissions.write}
             className="relative shrink-0 rounded overflow-hidden h-7 ml-1 data-[show=true]:inline-flex hidden gap-1"
           >
             <Button 
               size="sm"
-              type="button" 
+              type="submit" 
               className="rounded gap-1.5"
               variant="primaryGhost"
             >
@@ -76,6 +85,7 @@ export const Toolbar = ({
             </Button>
             <button 
               type="button" 
+              onClick={onSaveDraft}
               className="transition flex items-center justify-center whitespace-nowrap rounded px-2 font-medium bg-marine text-white text-sm hover:bg-marine/80 gap-1.5"
             >
               <BsFloppy2Fill className="stroke-[0.25] size-4" />

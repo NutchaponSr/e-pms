@@ -44,7 +44,7 @@ export const PerformanceView = ({ year }: Props) => {
           </div>
         </div>
         <div className="col-start-2 select-none">
-          <div className="grid grid-cols-2">
+          <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
             <KpiInfo year={year} />
           </div>
         </div>

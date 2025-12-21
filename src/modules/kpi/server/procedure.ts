@@ -6,6 +6,7 @@ import { Period } from "@/generated/prisma/enums";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { kpiDefinitionSchema } from "../schema/definition";
 import { TRPCError } from "@trpc/server";
+import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 
 export const kpiProcedure = createTRPCRouter({
   getOne: protectedProcedure
@@ -80,12 +81,26 @@ export const kpiProcedure = createTRPCRouter({
         comments: commentsByKpiId[kpi.id] || [],
       }));
 
+      const task = plain.tasks.find(
+        (t) => (t.context as { period?: Period })?.period === input.period,
+      );
+
+      if (!task) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const permission = buildPermissionContext(ctx.user.username, task);
+
       return {
-        ...plain,
-        kpis: kpisWithComments,
-        tasks: plain.tasks.find(
-          (t) => (t.context as { period?: Period })?.period === input.period,
-        ),
+        form: {
+          ...plain,
+          kpis: kpisWithComments,
+          tasks: task,
+        },
+        permission: {
+          ...permission,
+          role: getUserRole(permission),
+        },
       };
     }),
   create: protectedProcedure

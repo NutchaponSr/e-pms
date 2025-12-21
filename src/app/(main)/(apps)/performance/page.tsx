@@ -12,6 +12,7 @@ const Page = async (props: PageProps<"/performance">) => {
 
   const queryClient = getQueryClient();
 
+  void queryClient.prefetchQuery(trpc.task.todo.queryOptions());
   void queryClient.prefetchQuery(trpc.task.getOne.queryOptions({ year, type: FormType.KPI }));
 
   return (

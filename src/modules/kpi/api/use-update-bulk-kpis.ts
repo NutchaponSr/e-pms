@@ -4,12 +4,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useTRPC } from "@/trpc/client";
 import { appRouter } from "@/trpc/routers/_app";
+import { Period } from "@/generated/prisma/enums";
 
-type RequestType = inferProcedureInput<typeof appRouter["kpi"]["updateBulk"]>;
+import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 
-export const useUpdateBulkKpis = () => {
+type RequestType = inferProcedureInput<typeof appRouter["kpi"]["updateBulk"]> & { saved: boolean };
+
+export const useUpdateBulkKpis = (id: string, period: Period) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+
+  const { setSave } = useSaveForm();
 
   const updateBulkKpis = useMutation(trpc.kpi.updateBulk.mutationOptions());
 
@@ -19,6 +24,12 @@ export const useUpdateBulkKpis = () => {
     updateBulkKpis.mutate(input, {
       onSuccess: () => {
         toast.success("KPIs Updated!", { id: "update-bulk-kpis" });
+
+        queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id, period }));
+
+        if (input.saved) {
+          setSave(true);
+        }
       },
       onError: (ctx) => {
         toast.error(ctx.message || "Something went wrong", { id: "update-bulk-kpis" });
