@@ -101,6 +101,7 @@ export const KpiInfo = ({ year }: Props) => {
             <Event
               dueDate="Jan - Dec"
               title="Evaluation"
+              status={STATUS_VARIANTS[form.task.evaluation?.status!]}
               description="Assessment of progress towards defined KPIs"
               buttonCtx={{
                 active: form.task.draft?.status === Status.DONE,

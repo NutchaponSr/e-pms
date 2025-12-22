@@ -4,27 +4,11 @@ import { KpiCategory } from "@/generated/prisma/enums";
 import { chiefDown, managerUp, Rank } from "@/types/employees";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
-import { requiredFields } from "./constants";
+import { KpiDefinitionsMapping } from "./schema/definition";
+import { KpiEvaluation } from "./schema/evaluation";
+import { Approval } from "../tasks/permissions";
 
-type RawKpiForMapping = {
-  id: string;
-  year: number;
-  name: string | null;
-  category: KpiCategory | null;
-  weight: unknown;
-  objective: string | null;
-  definition: string | null;
-  strategy: string | null;
-  method: string | null;
-  target100: string | null;
-  target120: string | null;
-  target80: string | null;
-  target90: string | null;
-  target70: string | null;
-  type: string | null;
-};
-
-export function bonusEvaluationMapValue(kpi: RawKpiForMapping) {
+export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
   const weightStr = kpi.weight == null ? "0" : String(kpi.weight);
 
   return {
@@ -43,6 +27,20 @@ export function bonusEvaluationMapValue(kpi: RawKpiForMapping) {
     target80: kpi.target80,
     target90: kpi.target90,
     target100: kpi.target100,
+  };
+}
+
+export function kpiEvaluationMap(kpi: KpiEvaluation) {
+  return {
+    id: kpi.id,
+    role: kpi.role,
+    actualOwner: kpi.actualOwner,
+    achievementOwner: kpi.achievementOwner,
+    actualChecker: kpi.actualChecker,
+    achievementChecker: kpi.achievementChecker,
+    actualApprover: kpi.actualApprover,
+    achievementApprover: kpi.achievementApprover,
+    fileUrl: kpi.fileUrl,
   };
 }
 

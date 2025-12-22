@@ -12,6 +12,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -42,6 +43,8 @@ interface Props<TFieldValues extends FieldValues> {
   selectOptions?: Array<{ key: string; label: string }>;
   textareaRef?: TextareaRefCallback;
   onInput?: () => void;
+  fileUpload?: React.ReactNode;
+  description?: string;
 }
 
 interface RenderProps<TFieldValues extends FieldValues> {
@@ -56,6 +59,7 @@ interface RenderProps<TFieldValues extends FieldValues> {
   style?: CSSProperties;
   textareaRef?: TextareaRefCallback;
   onInput?: () => void;
+  fileUpload?: React.ReactNode;
 }
 
 type InputRenderer<TFieldValues extends FieldValues> = (
@@ -74,6 +78,8 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
   style,
   textareaRef,
   onInput,
+  fileUpload,
+  description,
 }: Props<TFieldValues>) => {
   const INPUT_RENDERERS: Partial<
     Record<InputVariants, InputRenderer<TFieldValues>>
@@ -92,7 +98,10 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className?.form}>
-          {label ? <FormLabel className={className?.label}>{label}</FormLabel> : null}
+          <div className="flex flex-col">
+            {label ? <FormLabel className={className?.label}>{label}</FormLabel> : null}
+            {description ? <FormDescription className="text-xs text-secondary whitespace-nowrap text-ellipsis overflow-hidden">{description}</FormDescription> : null}
+          </div>
           <FormControl>
             {render({
               field,
@@ -105,6 +114,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
               onInput,
             })}
           </FormControl>
+          {fileUpload ? fileUpload : null}
           <FormMessage />
         </FormItem>
       )}
@@ -119,6 +129,7 @@ const BigText = <TFieldValues extends FieldValues>({
   disabled,
   textareaRef,
   onInput,
+  fileUpload,
 }: RenderProps<TFieldValues>) => {
   if (disabled) {
     return (

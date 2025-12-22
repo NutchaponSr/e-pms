@@ -32,3 +32,10 @@ export function getFirstNameFromFullName(fullName: string): string {
   const firstToken = cleaned.split(/\s+/)[0];
   return firstToken ? `คุณ${firstToken}` : "";
 }
+
+export function formatDecimal(value: number, decimalPlaces: number = 2): string {
+  return value.toLocaleString("en-US", {
+    maximumFractionDigits: decimalPlaces,
+    minimumFractionDigits: decimalPlaces,
+  });
+}

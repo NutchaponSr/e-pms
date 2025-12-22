@@ -64,7 +64,7 @@ export const taskProcedure = createTRPCRouter({
       };
     }),
   todo: protectedProcedure
-    .query(async ({ input, ctx }) => {
+    .query(async ({ ctx }) => {
       const tasks = await db.task.findMany({
         where: {
           OR: [
@@ -103,7 +103,9 @@ export const taskProcedure = createTRPCRouter({
         year: task.form.year,
         owner: task.owner.name,
         updatedAt: task.updatedAt,
-        period: task.form.period,
+        period: typeof task.context === 'object' && task.context !== null && 'period' in task.context
+          ? (task.context as { period?: Period }).period
+          : undefined,
       }));
     }),
   create: protectedProcedure

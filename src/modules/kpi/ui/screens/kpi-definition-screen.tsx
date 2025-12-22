@@ -23,7 +23,7 @@ import {
 import { Form } from "@/components/ui/form";
 import { KpiDefinitions, kpiDefinitionsSchema } from "../../schema/definition";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { bonusEvaluationMapValue, validateWeight } from "../../utils";
+import { kpiDefinitionMap, validateWeight } from "../../utils";
 import { useUpdateBulkKpis } from "../../api/use-update-bulk-kpis";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
@@ -59,7 +59,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
       year,
     })) ?? [];
 
-  const kpisMapped = kpisPopulated.map((kpi) => bonusEvaluationMapValue(kpi));
+  const kpisMapped = kpisPopulated.map((kpi) => kpiDefinitionMap(kpi));
 
   const f = useForm<KpiDefinitions>({
     resolver: zodResolver(kpiDefinitionsSchema) as Resolver<KpiDefinitions>,
@@ -117,7 +117,6 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
 
             startWorkflow({ id: form.tasks!.id })
           }}
-          confirmTitle="Start Workflow"
           onSaveDraft={() => updateBulkKpis({ ...f.getValues(), saved: false })}
         />
         <div className="px-3 mx-auto w-full flex flex-col justify-start grow pb-45">

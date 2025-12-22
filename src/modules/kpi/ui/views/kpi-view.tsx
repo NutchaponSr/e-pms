@@ -30,7 +30,7 @@ export const KpiView = ({
         id={id} 
         form={data.form} 
         period={period} 
-        year={2025} 
+        year={year} 
         permissions={permissions}
       />
     );
@@ -38,7 +38,13 @@ export const KpiView = ({
 
   if (period === Period.EVALUATION) {
     return (
-      <KpiEvaluationScreen />
+      <KpiEvaluationScreen
+        id={id}
+        period={period}
+        role={data.permission.role as Approval}
+        form={data.form} 
+        permissions={permissions}
+      />
     );
   }
 

@@ -28,6 +28,7 @@ export const KpiLayout = ({ id, period }: Props) => {
         owner={data.form?.tasks!.owner} 
         checker={data.form?.tasks?.checker} 
         approver={data.form?.tasks?.approver} 
+        showActualWeight={period === Period.IN_DRAFT}
         weight={{
           actual: weight,
           full: validateWeight(data.form?.tasks?.owner.rank as Rank),

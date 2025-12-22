@@ -12,18 +12,20 @@ import { NumberTicker } from "@/components/number-ticker";
 
 import { UserAvatar } from "@/modules/auth/ui/components/user-avatar";
 import { UserProfile } from "@/modules/auth/ui/components/user-profile";
+import { cn } from "@/lib/utils";
 
 interface Props {
   owner?: Employee;
   checker?: Employee | null;
   approver?: Employee;
+  showActualWeight?: boolean;
   weight: {
     actual: number;
     full: number;
   }
 }
 
-export const EmployeeInfo = ({ owner, checker, approver, weight }: Props) => {
+export const EmployeeInfo = ({ owner, checker, approver, weight, showActualWeight = true }: Props) => {
 
   return (
     <section className="grid xl:grid-cols-6 grid-cols-4 z-2 relative bg-background border-y border-border">
@@ -119,7 +121,7 @@ export const EmployeeInfo = ({ owner, checker, approver, weight }: Props) => {
         </div>
       </div>
       <div className="xl:col-span-1 col-span-4 xl:border-l-[1.5px] border-t border-border">
-        <div className="flex flex-col gap-1 p-3">
+        <div className={cn("flex flex-col p-3 h-full grow-0", !showActualWeight && "justify-between")}>
           <div className="flex items-center gap-1.5 mb-1">
             <div className="p-1 rounded-sm bg-blue-500">
               <FaWeightHanging className="size-3.5 text-white" />
@@ -127,30 +129,48 @@ export const EmployeeInfo = ({ owner, checker, approver, weight }: Props) => {
             <p className="text-sm font-medium max-w-full whitespace-nowrap overflow-hidden text-ellipsis">Weight</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Actual</p>
-              <span className="text-base font-bold tabular-nums">
-                <NumberTicker value={weight.actual} decimalPlaces={1} delay={0.2} />
-              </span>
+          {showActualWeight ? (
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Actual</p>
+                  <span className="text-base font-bold tabular-nums">
+                    <NumberTicker value={weight.actual} decimalPlaces={1} delay={0.2} />
+                  </span>
+                </div>
+              <div>
+                <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Full</p>
+                <span className="text-base font-bold tabular-nums from-foreground to-foreground/70 font-mono">
+                  {weight.full.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                </span>
+              </div>
             </div>
-
-            <div>
-              <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Full</p>
-              <span className="text-base font-bold tabular-nums from-foreground to-foreground/70 font-mono">
-                {weight.full.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-              </span>
+          ) : (
+            <div className="flex items-start justify-between">
+              <div className="flex items-start flex-col text-secondary">
+                <span className="text-xs font-medium uppercase tracking-wide">
+                  Full
+                </span>
+              </div>
+              <div className="flex flex-col items-start p-3">
+                <NumberTicker
+                  value={weight.full}
+                  decimalPlaces={2}
+                  className="text-3xl font-semibold tracking-tighter whitespace-pre-wrap text-primary"
+                />
+              </div>
             </div>
+          )}
 
-          </div>
 
-          <div className="space-y-0.5">
-            <span className="text-muted-foreground text-xs">Progress</span>
-            <Progress
-              className="h-1 w-full"
-                value={Math.min((weight.actual / weight.full) * 100, 100)}
-            />
-          </div>
+          {showActualWeight && (
+            <div className="space-y-0.5">
+              <span className="text-muted-foreground text-xs">Progress</span>
+              <Progress
+                className="h-1 w-full"
+                  value={Math.min((weight.actual / weight.full) * 100, 100)}
+              />
+            </div>
+          )}
         </div>
       </div>
     </section>
