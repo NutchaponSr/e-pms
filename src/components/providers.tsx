@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { TRPCReactProvider } from "@/trpc/client";
+import { EdgeStoreProvider } from "@/lib/edegstore";
 
 const ThemeProvider = dynamic(
   () => import("next-themes").then((mod) => mod.ThemeProvider),
@@ -21,7 +22,11 @@ export function Providers({
   return (
     <ThemeProvider {...props}>
       <NuqsAdapter>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <EdgeStoreProvider>
+            {children}
+          </EdgeStoreProvider>
+        </TRPCReactProvider>
       </NuqsAdapter>
     </ThemeProvider>
   );

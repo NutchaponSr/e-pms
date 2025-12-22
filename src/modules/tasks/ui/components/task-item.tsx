@@ -17,8 +17,8 @@ export const TaskItem = ({ task }: Props) => {
   const status = STATUS_VARIANTS[task.status];
 
   const href = task.formType === FormType.KPI
-    ? `/performance/kpi/${task.formId}/${periodRoutes[task.period]}`
-    : `/performance/merit/${task.formId}/${periodRoutes[task.period]}`
+    ? `/performance/kpi/${task.formId}/${periodRoutes[task.period!]}`
+    : `/performance/merit/${task.formId}/${periodRoutes[task.period!]}`
 
   return (
     <div className="flex relative">

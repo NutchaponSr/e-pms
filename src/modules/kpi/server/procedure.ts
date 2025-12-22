@@ -8,6 +8,8 @@ import { kpiDefinitionSchema } from "../schema/definition";
 import { TRPCError } from "@trpc/server";
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 import { kpiUploadSchema } from "../schema/upload";
+import { kpiEvaluationSchema } from "../schema/evaluation";
+import { KpiEvaluation } from "@/generated/prisma/client";
 
 export const kpiProcedure = createTRPCRouter({
   getOne: protectedProcedure
@@ -177,6 +179,27 @@ export const kpiProcedure = createTRPCRouter({
 
       return { success: true };
     }),
+  evaluate: protectedProcedure
+    .input(
+      z.object({
+        kpis: z.array(kpiEvaluationSchema.omit({ role: true }))
+      }),
+    )
+    .mutation(async ({ input }) => {
+      if (input.kpis.length === 0) return { success: true };
+
+      await db.$transaction(
+        input.kpis.map((kpi) => {
+          const { id, ...data } = kpi;
+          return db.kpiEvaluation.update({
+            where: { id },
+            data,
+          });
+        }),
+      );
+
+      return { success: true };
+    }),
   delete: protectedProcedure
     .input(
       z.object({
@@ -197,5 +220,23 @@ export const kpiProcedure = createTRPCRouter({
       });
 
       return { success: true };
+    }),
+  deleteKpiFile: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const kpi = await db.kpiEvaluation.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          fileUrl: null,
+        },
+      });
+
+      return kpi;
     }),
 });

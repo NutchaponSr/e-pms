@@ -17,21 +17,19 @@ import { StatusVariant } from "@/modules/tasks/types";
 import { Action } from "@/modules/tasks/permissions";
 
 interface Props {
-  confirmTitle: string;
   status: {
     label: string;
     variant: StatusVariant;
   };
-  onCreate: () => void;
+  onCreate?: () => void;
   onWorkflow: () => void;
   onSaveDraft: () => void;
-  onUpload: () => void;
+  onUpload?: () => void;
   permissions: Record<Action, boolean>;
 }
 
 export const Toolbar = ({ 
   status,
-  confirmTitle, 
   onCreate, 
   onWorkflow,
   onSaveDraft,
@@ -39,7 +37,7 @@ export const Toolbar = ({
   permissions,
 }: Props) => {
   const [ConfirmationDialog, confirm] = useConfirm({
-    title: confirmTitle,
+    title: "Start Workflow",
     confirmVariant: "primary"
   });
 
@@ -93,8 +91,8 @@ export const Toolbar = ({
               <BsFloppy2Fill className="stroke-[0.25] size-4" />
               Save Draft
             </button>
-            <Separator orientation="vertical" className="mx-1" />
-            <div className="flex flex-row">
+            <div data-show={!!onCreate} className="flex-row data-[show=true]:flex hidden">
+              <Separator orientation="vertical" className="mx-1" />
               <button 
                 type="button" 
                 onClick={onCreate} 
