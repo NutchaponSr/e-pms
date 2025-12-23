@@ -14,6 +14,7 @@ const Page = async (props: PageProps<"/performance">) => {
 
   void queryClient.prefetchQuery(trpc.task.todo.queryOptions());
   void queryClient.prefetchQuery(trpc.task.getOne.queryOptions({ year, type: FormType.KPI }));
+  void queryClient.prefetchQuery(trpc.task.getOne.queryOptions({ year, type: FormType.MERIT }));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

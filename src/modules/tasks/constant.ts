@@ -33,6 +33,6 @@ export const STATUS_VARIANTS: Record<Status, {
 export const periodRoutes: Record<Period, string> = {
   [Period.IN_DRAFT]: "definition",
   [Period.EVALUATION]: "evaluation",
-  [Period.EVALUATION_1ST]: "evaluation-1st",
-  [Period.EVALUATION_2ND]: "evaluation-2nd",
+  [Period.EVALUATION_1ST]: "evaluation1st",
+  [Period.EVALUATION_2ND]: "evaluation2nd",
 };

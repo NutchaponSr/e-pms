@@ -4,28 +4,19 @@ import { BsPersonFill } from "react-icons/bs";
 import { FaWeightHanging } from "react-icons/fa";
 
 import { Employee } from "@/generated/prisma/client";
-
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-
-import { NumberTicker } from "@/components/number-ticker";
 
 import { UserAvatar } from "@/modules/auth/ui/components/user-avatar";
 import { UserProfile } from "@/modules/auth/ui/components/user-profile";
-import { cn } from "@/lib/utils";
 
 interface Props {
   owner?: Employee;
   checker?: Employee | null;
   approver?: Employee;
-  showActualWeight?: boolean;
-  weight: {
-    actual: number;
-    full: number;
-  }
+  children: React.ReactNode;
 }
 
-export const EmployeeInfo = ({ owner, checker, approver, weight, showActualWeight = true }: Props) => {
+export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
 
   return (
     <section className="grid xl:grid-cols-6 grid-cols-4 z-2 relative bg-background border-y border-border">
@@ -121,7 +112,7 @@ export const EmployeeInfo = ({ owner, checker, approver, weight, showActualWeigh
         </div>
       </div>
       <div className="xl:col-span-1 col-span-4 xl:border-l-[1.5px] border-t border-border">
-        <div className={cn("flex flex-col p-3 h-full grow-0", !showActualWeight && "justify-between")}>
+        <div className="flex flex-col p-3 h-full grow-0 justify-between">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="p-1 rounded-sm bg-blue-500">
               <FaWeightHanging className="size-3.5 text-white" />
@@ -129,7 +120,7 @@ export const EmployeeInfo = ({ owner, checker, approver, weight, showActualWeigh
             <p className="text-sm font-medium max-w-full whitespace-nowrap overflow-hidden text-ellipsis">Weight</p>
           </div>
 
-          {showActualWeight ? (
+          {/* {showActualWeight ? (
             <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Actual</p>
@@ -170,7 +161,8 @@ export const EmployeeInfo = ({ owner, checker, approver, weight, showActualWeigh
                   value={Math.min((weight.actual / weight.full) * 100, 100)}
               />
             </div>
-          )}
+          )} */}
+          {children}
         </div>
       </div>
     </section>

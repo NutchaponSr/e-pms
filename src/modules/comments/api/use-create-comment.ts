@@ -18,6 +18,7 @@ export const useCreateComment = () => {
     createComment.mutate(input, {
       onSuccess: () => {
         queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id: input.formId, period: input.period }));
+        queryClient.invalidateQueries(trpc.merit.getOne.queryOptions({ id: input.formId, period: input.period }));
       },
       onError: (ctx) => {
         toast.error(ctx.message || "Something went wrong");

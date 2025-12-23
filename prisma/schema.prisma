@@ -157,8 +157,8 @@ model Form {
 
   tasks Task[]
   kpis KpiEvaluation[] @relation("KpiForm")
-  // cultureRecords CultureRecord[] @relation("CultureForm")
-  // competencyRecords CompetencyRecord[] @relation("CompetencyForm")
+  cultureRecords CultureRecord[] @relation("CultureForm")
+  competencyRecords CompetencyRecord[] @relation("CompetencyForm")
 }
 
 model Comment {
@@ -220,126 +220,126 @@ model KpiEvaluation {
   @@map("kpi")
 }
 
-// model CultureRecord {
-//   id String @id @default(uuid())
-//   cultureId Int
-//   meritFormId String
-//   evidence String? @db.Text
+model CultureRecord {
+  id String @id @default(uuid())
+  cultureId Int
+  meritFormId String
+  evidence String? @db.Text
 
-//   form Form @relation("CultureForm", fields: [meritFormId], references: [id], onDelete: Cascade)
-//   culture Culture @relation(fields: [cultureId], references: [id], onDelete: Cascade)
+  form Form @relation("CultureForm", fields: [meritFormId], references: [id], onDelete: Cascade)
+  culture Culture @relation(fields: [cultureId], references: [id], onDelete: Cascade)
 
-//   cultureEvaluations CultureEvaluation[]
+  cultureEvaluations CultureEvaluation[]
 
-//   @@index([meritFormId])
-//   @@index([cultureId])
-//   @@map("cultureRecord")
-// }
+  @@index([meritFormId])
+  @@index([cultureId])
+  @@map("cultureRecord")
+}
 
-// model CultureEvaluation {
-//   id  String  @id @default(uuid())
-//   cultureRecordId String
-//   period  Period
+model CultureEvaluation {
+  id String @id @default(uuid())
+  cultureRecordId String
+  period Period
 
-//   result String?
-//   levelBehaviorOwner Int?
-//   levelBehaviorChecker Int?
-//   levelBehaviorApprover Int?
+  result String?
+  levelBehaviorOwner Int?
+  levelBehaviorChecker Int?
+  levelBehaviorApprover Int?
 
-//   actualOwner String? @db.Text
-//   actualChecker String? @db.Text
-//   actualApprover String? @db.Text
-//   fileUrl String?
+  actualOwner String? @db.Text
+  actualChecker String? @db.Text
+  actualApprover String? @db.Text
+  fileUrl String?
 
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-//   cultureRecord CultureRecord @relation(fields: [cultureRecordId], references: [id], onDelete: Cascade)
+  cultureRecord CultureRecord @relation(fields: [cultureRecordId], references: [id], onDelete: Cascade)
 
-//   @@index([cultureRecordId])
-//   @@map("cultureEvaluation")
-// }
+  @@index([cultureRecordId])
+  @@map("cultureEvaluation")
+}
 
-// model Culture {
-//   id Int @id @default(autoincrement())
-//   name String @db.Text
-//   code String @db.VarChar(1)
-//   description String @db.Text
-//   belief Json?
+model Culture {
+  id Int @id @default(autoincrement())
+  name String @db.Text
+  code String @db.VarChar(1)
+  description String @db.Text
+  belief Json?
 
-//   createdAt DateTime @default(now())
-//   cultureRecords CultureRecord[]
+  createdAt DateTime @default(now())
+  cultureRecords CultureRecord[]
 
-//   @@map("culture")
-// }
+  @@map("culture")
+}
 
-// enum CompetencyType {
-//   CC
-//   FC
-//   MC
-//   TC
-// }
+enum CompetencyType {
+  CC
+  FC
+  MC
+  TC
+}
 
-// model Competency {
-//   id String @id @default(cuid())
-//   name String
-//   definition String?
-//   t5 String?
-//   t4 String?
-//   t3 String?
-//   t2 String?
-//   t1 String?
-//   type CompetencyType
-//   competencyRecords CompetencyRecord[]
+model Competency {
+  id String @id @default(cuid())
+  name String
+  definition String?
+  t5 String?
+  t4 String?
+  t3 String?
+  t2 String?
+  t1 String?
+  type CompetencyType
+  competencyRecords CompetencyRecord[]
 
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-//   @@map("competency")
-// }
+  @@map("competency")
+}
 
-// model CompetencyRecord {
-//   id String @id @default(uuid())
-//   competencyId String?
-//   meritFormId String
-//   weight Int @default(0)
-//   expectedLevel Int?
-//   input String? @db.Text
-//   output String? @db.Text
+model CompetencyRecord {
+  id String @id @default(uuid())
+  competencyId String?
+  meritFormId String
+  weight Decimal @db.Decimal(10, 2) @default(0)
+  expectedLevel Int?
+  input String? @db.Text
+  output String? @db.Text
 
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-//   competency Competency? @relation(fields: [competencyId], references: [id], onDelete: Cascade)
-//   meritForm Form @relation("CompetencyForm", fields: [meritFormId], references: [id], onDelete: Cascade)
+  competency Competency? @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  meritForm Form @relation("CompetencyForm", fields: [meritFormId], references: [id], onDelete: Cascade)
 
-//   competencyEvaluations CompetencyEvaluation[]
+  competencyEvaluations CompetencyEvaluation[]
 
-//   @@index([competencyId])
-//   @@index([meritFormId])
-//   @@map("competencyRecord")
-// }
+  @@index([competencyId])
+  @@index([meritFormId])
+  @@map("competencyRecord")
+}
 
-// model CompetencyEvaluation {
-//   id String @id @default(uuid())
-//   period Period
+model CompetencyEvaluation {
+  id String @id @default(uuid())
+  period Period
 
-//   result String?
-//   actualOwner String? @db.Text
-//   levelOwner Int?
+  result String?
+  actualOwner String? @db.Text
+  levelOwner Int?
 
-//   actualChecker String? @db.Text
-//   levelChecker Int?
+  actualChecker String? @db.Text
+  levelChecker Int?
 
-//   actualApprover String? @db.Text
-//   levelApprover Int?
+  actualApprover String? @db.Text
+  levelApprover Int?
 
-//   createdAt DateTime @default(now())
-//   fileUrl String?
+  createdAt DateTime @default(now())
+  fileUrl String?
 
-//   competencyRecordId String
-//   competencyRecord CompetencyRecord @relation(fields: [competencyRecordId], references: [id], onDelete: Cascade)
+  competencyRecordId String
+  competencyRecord CompetencyRecord @relation(fields: [competencyRecordId], references: [id], onDelete: Cascade)
 
-//   @@index([competencyRecordId])
-//   @@map("competencyEvaluation")
-// }
+  @@index([competencyRecordId])
+  @@map("competencyEvaluation")
+}
