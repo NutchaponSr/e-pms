@@ -2,14 +2,15 @@ import db from "@/lib/db";
 
 import { z } from "zod";
 
-import { KpiCategory, Period } from "@/generated/prisma/enums";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { kpiDefinitionSchema } from "../schema/definition";
 import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+
+import { KpiCategory, Period } from "@/generated/prisma/enums";
+
+import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
+import { kpiEvaluationSchema } from "@/modules/kpi/schema/evaluation";
+import { kpiDefinitionSchema } from "@/modules/kpi/schema/definition";
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
-import { kpiUploadSchema } from "../schema/upload";
-import { kpiEvaluationSchema } from "../schema/evaluation";
-import { KpiEvaluation } from "@/generated/prisma/client";
 
 export const kpiProcedure = createTRPCRouter({
   getOne: protectedProcedure

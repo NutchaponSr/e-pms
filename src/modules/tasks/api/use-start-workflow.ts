@@ -21,6 +21,7 @@ export const useStartWorkflow = (id: string, period: Period) => {
         toast.success("Workflow started!", { id: "start-workflow" });
 
         queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id, period }));
+        queryClient.invalidateQueries(trpc.merit.getOne.queryOptions({ id, period }));
       },
       onError: (ctx) => {
         toast.error(ctx.message || "Something went wrong", { id: "start-workflow" });

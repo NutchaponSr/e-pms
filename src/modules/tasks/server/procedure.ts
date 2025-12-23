@@ -130,21 +130,28 @@ export const taskProcedure = createTRPCRouter({
         });
       }
 
-      const existingForm = await db.form.findFirst({
-        where: {
-          type: input.type,
-          year: input.year,
-          tasks: {
-            some: {
-              ownerId: ctx.user.username,
+      const { existingForm, cultures } = await db.$transaction(async (tx) => {
+        const existingForm = await tx.form.findFirst({
+          where: {
+            type: input.type,
+            year: input.year,
+            tasks: {
+              some: {
+                ownerId: ctx.user.username,
+              },
             },
-          }, 
-        },
-      });
+          },
+        });
+        const cultures = await tx.culture.findMany();
+
+        return { existingForm, cultures };
+      }); 
 
       const checkerId = record?.checker && record.checker.trim() !== "" 
         ? record.checker 
         : null;
+
+      let form = null;
 
       if (existingForm) {
         await db.task.create({
@@ -164,24 +171,57 @@ export const taskProcedure = createTRPCRouter({
         return { id: existingForm.id };
       }
 
-      const form = await db.form.create({
-        data: {
-          type: input.type,
-          year: input.year,
-          tasks: {
-            create: {
-              id: generateTaskId(),
-              ownerId: ctx.user.username,
-              checkerId,
-              approverId: record.approver,
-              status: Status.IN_DRAFT,
-              context: {
-                period: input.period,
+      if (input.type === FormType.MERIT) {
+        form = await db.form.create({
+          data: {
+            type: input.type,
+            year: input.year,
+            tasks: {
+              create: {
+                id: generateTaskId(),
+                ownerId: ctx.user.username,
+                checkerId,
+                approverId: record.approver,
+                status: Status.IN_DRAFT,
+                context: {
+                  period: input.period,
+                },
+              },
+            },
+            competencyRecords: {
+              createMany: {
+                data: Array.from({ length: 4 }, (_, index) => ({}))
+              },
+            },
+            cultureRecords: {
+              createMany: {
+                data: cultures.map((culture) => ({
+                  cultureId: culture.id,
+                })),
               },
             },
           },
-        },
-      });
+        });
+      } else {
+        form = await db.form.create({
+          data: {
+            type: input.type,
+            year: input.year,
+            tasks: {
+              create: {
+                id: generateTaskId(),
+                ownerId: ctx.user.username,
+                checkerId,
+                approverId: record.approver,
+                status: Status.IN_DRAFT,
+                context: {
+                  period: input.period,
+                },
+              },
+            },
+          },
+        });
+      }
 
       return { id: form.id };
     }),

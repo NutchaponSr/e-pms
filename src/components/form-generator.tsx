@@ -153,7 +153,7 @@ const BigText = <TFieldValues extends FieldValues>({
       value={field.value ?? ""}
       onChange={(e) => field.onChange(e.target.value)}
       placeholder={placeholder}
-      className={cn(className, "resize-none overflow-hidden whitespace-pre-wrap wrap-break-word")}
+      className={cn(className, "resize-none overflow-hidden whitespace-pre-wrap wrap-break-word min-h-10")}
     />
   );
 };
@@ -179,7 +179,7 @@ const Numeric = <TFieldValues extends FieldValues>({
       value={field.value ?? ""}
       onChange={(e) => field.onChange(e.target.value)}
       placeholder={placeholder}
-      className={cn(className, "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-0")}
+      className={cn(className, "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-0 min-h-10")}
       disabled={disabled}
     />
   );
@@ -206,7 +206,7 @@ const Text = <TFieldValues extends FieldValues>({
       value={field.value ?? ""}
       onChange={(e) => field.onChange(e.target.value)}
       placeholder={placeholder}
-      className={className}
+      className={cn(className, "min-h-10")}
       disabled={disabled}
     />
   );

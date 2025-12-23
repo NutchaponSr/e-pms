@@ -23,10 +23,12 @@ const HIDDEN_PATHS: RegExp[] = [
   // ตัวอย่าง: ซ่อน path ที่เป็น KPI id รูปแบบ CUID ใต้ /performance/kpi/
   // CUID format: c + 24 ตัวอักษร base36 (รวมทั้งหมด 25 ตัวอักษร)
   /^\/performance\/kpi\/c[a-z0-9]{24}$/i,
+  /^\/performance\/merit\/c[a-z0-9]{24}$/i,
 ];
 
 const DISABLED_PATHS = new Set<string>([
   "/performance/kpi",
+  "/performance/merit",
 ]);
 
 type BreadcrumbItem = {

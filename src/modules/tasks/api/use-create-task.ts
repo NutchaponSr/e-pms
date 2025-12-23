@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { AppRouter } from "@/trpc/routers/_app";
 
-import { routes } from "@/modules/tasks/constant";
+import { periodRoutes, routes } from "@/modules/tasks/constant";
 
 type RequestType = inferProcedureInput<AppRouter["task"]["create"]>;
 
@@ -33,7 +33,7 @@ export const useCreateTask = () => {
 
           toast.success("Task Created!", { id: "create-task" });
 
-          router.push(`/performance/${routes[value.type]}/${id}/definition`);
+          router.push(`/performance/${routes[value.type]}/${id}/${periodRoutes[value.period!]}`);
         },
         onError: (ctx) => {
           toast.error(ctx.message || "Something went wrong", {

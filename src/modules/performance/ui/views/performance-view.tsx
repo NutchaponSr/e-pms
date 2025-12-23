@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { KpiInfo } from "@/modules/kpi/ui/components/kpi-info";
+import { MeritInfo } from "@/modules/merit/ui/components/merit-info";
 import { TaskSection } from "@/modules/tasks/ui/components/task-section";
 
 interface Props {
@@ -44,8 +45,13 @@ export const PerformanceView = ({ year }: Props) => {
           </div>
         </div>
         <div className="col-start-2 select-none">
-          <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
-            <KpiInfo year={year} />
+          <div className="grid lg:grid-cols-2 grid-cols-1 gap-4 items-stretch">
+            <div className="h-full">
+              <KpiInfo year={year} />
+            </div>
+            <div className="h-full">
+              <MeritInfo year={year} /> 
+            </div>
           </div>
         </div>
         <div className="col-start-2 select-none">

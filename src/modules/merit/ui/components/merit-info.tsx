@@ -43,13 +43,11 @@ interface Props {
   year: number;
 }
 
-export const KpiInfo = ({ year }: Props) => {
+export const MeritInfo = ({ year }: Props) => {
   const router = useRouter();
 
   const createTask = useCreateTask();
-  const { data: form } = useGetTask(2025, FormType.KPI);
-
-  console.log(form.task.evaluation);
+  const { data: form } = useGetTask(2025, FormType.MERIT);
 
   return (
     <section className="h-full flex flex-col">
@@ -60,7 +58,7 @@ export const KpiInfo = ({ year }: Props) => {
               <TargetIcon className="size-3.5 shrink-0 block text-secondary" />
             </div>
             <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-              KPI Bonus
+              Merit
             </span>
           </div>
         </div>
@@ -70,8 +68,8 @@ export const KpiInfo = ({ year }: Props) => {
           <div className="flex flex-col justify-start min-h-full text-tertiary overflow-hidden text-sm">
             <Event
               dueDate="Jan - Mar"
-              title="KPI Definition"
-              description="Define measurable goals aligned with team and company priorities"
+              title="Merit Definition"
+              description="Define measurable goals that will inform merit evaluation"
               status={STATUS_VARIANTS[form.task.draft?.status!]}
               buttonCtx={{
                 active: form.task.draft !== null,
@@ -79,19 +77,19 @@ export const KpiInfo = ({ year }: Props) => {
                 onClick: () => {
                   if (!isInRange(year, 1, 3, 2025)) {
                     toast.error(
-                      "You can only define KPIs from January to March",
+                      "You can only define Merit from January to March",
                     );
                     return;
                   }
 
                   if (!!form.task.draft) {
                     router.push(
-                      `/performance/kpi/${form.task.draft.formId}/definition`,
+                      `/performance/merit/${form.task.draft.formId}/definition`,
                     );
                   } else {
                     createTask({
                       year,
-                      type: FormType.KPI,
+                      type: FormType.MERIT,
                       period: Period.IN_DRAFT,
                     });
                   }
@@ -99,30 +97,60 @@ export const KpiInfo = ({ year }: Props) => {
               }}
             />
             <Event
-              dueDate="Jan - Dec"
-              title="Evaluation"
-              status={STATUS_VARIANTS[form.task.evaluation?.status!]}
-              description="Assessment of progress towards defined KPIs"
+              dueDate="Jan - Jun"
+              title="Evaluation 1st"
+              status={STATUS_VARIANTS[form.task.evaluation1st?.status!]}
+              description="Mid-year merit review to assess progress and performance"
               buttonCtx={{
                 active: form.task.draft?.status === Status.DONE,
-                label: !!form.task.evaluation ? "Evaluate" : "Create",
+                label: !!form.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 12, 2025)) {
                     toast.error(
-                      "You can only evaluate KPIs from January to December",
+                      "You can only evaluate Merit from January to June",
                     );
                     return;
                   }
 
-                  if (!!form.task.evaluation) {
+                  if (!!form.task.evaluation1st) {
                     router.push(
-                      `/performance/kpi/${form.task.evaluation.formId}/evaluation`,
+                      `/performance/merit/${form.task.evaluation1st.formId}/evaluation1st`,
                     );
                   } else {
                     createTask({
                       year,
-                      type: FormType.KPI,
-                      period: Period.EVALUATION,
+                      type: FormType.MERIT,
+                      period: Period.EVALUATION_1ST,
+                    });
+                  }
+                },
+              }}
+            />
+            <Event
+              dueDate="Jul - Dec"
+              title="Evaluation 2nd"
+              status={STATUS_VARIANTS[form.task.evaluation2nd?.status!]}
+              description="Year-end merit review for final performance assessment and bonus eligibility"
+              buttonCtx={{
+                active: form.task.evaluation1st?.status === Status.DONE,
+                label: !!form.task.evaluation2nd ? "Evaluate" : "Create",
+                onClick: () => {
+                  if (!isInRange(year, 1, 12, 2025)) {
+                    toast.error(
+                      "You can only evaluate Merit from January to June",
+                    );
+                    return;
+                  }
+
+                  if (!!form.task.evaluation2nd) {
+                    router.push(
+                      `/performance/merit/${form.task.evaluation2nd.formId}/evaluation2nd`,
+                    );
+                  } else {
+                    createTask({
+                      year,
+                      type: FormType.MERIT,
+                      period: Period.EVALUATION_1ST,
                     });
                   }
                 },

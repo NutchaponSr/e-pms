@@ -135,35 +135,35 @@ export const KpiEvaluationContent = ({
           </div>
         </div>
         <div className="grid grid-cols-5 gap-4">
-          <CardInfo label="Individual KPI" className="h-auto">
+          <CardInfo label="Individual KPI" variant="default" className="h-auto">
             <div className="relative w-auto flex items-center px-2.5 py-2">
               <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
                 {kpiCategoies[kpi.category!]}
               </p>
             </div>
           </CardInfo>
-          <CardInfo label="ตัวชี้วัดการดำเนินงานหลัก" className="h-auto">
+          <CardInfo label="ตัวชี้วัดการดำเนินงานหลัก" variant="default" className="h-auto">
             <div className="relative w-auto flex items-center px-2.5 py-2">
               <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
                 {kpi.name}
               </p>
             </div>
           </CardInfo>
-          <CardInfo label="ความหมายและสูตรคำนวณ" className="h-auto">
+          <CardInfo label="ความหมายและสูตรคำนวณ" variant="default" className="h-auto">
             <div className="relative w-auto flex items-center px-2.5 py-2">
               <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
                 {kpi.definition}
               </p>
             </div>
           </CardInfo>
-          <CardInfo label="แหล่งข้อมูลที่ใช้วัดผลลัพธ์" className="h-auto">
+          <CardInfo label="แหล่งข้อมูลที่ใช้วัดผลลัพธ์" variant="default" className="h-auto">
             <div className="relative w-auto flex items-center px-2.5 py-2">
               <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
                 {kpi.method}
               </p>
             </div>
           </CardInfo>
-          <CardInfo label="น้ำหนัก (%)" className="h-auto">
+          <CardInfo label="น้ำหนัก (%)" variant="default" className="h-auto">
             <div className="relative w-auto flex items-center px-2.5 py-2">
               <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
                 {kpi.weight.toString()}
