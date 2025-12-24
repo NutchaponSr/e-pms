@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { CompetencyType } from "@/generated/prisma/enums";
-
 export const competencyDefinitionSchema = z.object({
   id: z.string(),
   competencyId: z.string().min(1, "Competency is required"),

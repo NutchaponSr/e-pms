@@ -45,6 +45,7 @@ interface Props<TFieldValues extends FieldValues> {
   onInput?: () => void;
   fileUpload?: React.ReactNode;
   description?: string;
+  children?: React.ReactNode;
 }
 
 interface RenderProps<TFieldValues extends FieldValues> {
@@ -80,6 +81,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
   onInput,
   fileUpload,
   description,
+  children,
 }: Props<TFieldValues>) => {
   const INPUT_RENDERERS: Partial<
     Record<InputVariants, InputRenderer<TFieldValues>>
@@ -98,9 +100,13 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className?.form}>
-          <div className="flex flex-col">
-            {label ? <FormLabel className={className?.label}>{label}</FormLabel> : null}
-            {description ? <FormDescription className="text-xs text-secondary whitespace-nowrap text-ellipsis overflow-hidden">{description}</FormDescription> : null}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              {label ? <FormLabel className={className?.label}>{label}</FormLabel> : null}
+              {description ? <FormDescription className="text-xs text-secondary whitespace-nowrap text-ellipsis overflow-hidden">{description}</FormDescription> : null}
+            </div>
+
+            {children}
           </div>
           <FormControl>
             {render({
@@ -129,7 +135,6 @@ const BigText = <TFieldValues extends FieldValues>({
   disabled,
   textareaRef,
   onInput,
-  fileUpload,
 }: RenderProps<TFieldValues>) => {
   if (disabled) {
     return (
@@ -153,7 +158,7 @@ const BigText = <TFieldValues extends FieldValues>({
       value={field.value ?? ""}
       onChange={(e) => field.onChange(e.target.value)}
       placeholder={placeholder}
-      className={cn(className, "resize-none overflow-hidden whitespace-pre-wrap wrap-break-word min-h-10")}
+      className={cn(className, "resize-none overflow-hidden whitespace-pre-wrap wrap-break-word")}
     />
   );
 };
@@ -206,7 +211,7 @@ const Text = <TFieldValues extends FieldValues>({
       value={field.value ?? ""}
       onChange={(e) => field.onChange(e.target.value)}
       placeholder={placeholder}
-      className={cn(className, "min-h-10")}
+      className={cn(className)}
       disabled={disabled}
     />
   );

@@ -3,11 +3,14 @@ import db from "@/lib/db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { Period } from "@/generated/prisma/enums";
+import { FormType, Period } from "@/generated/prisma/enums";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/merit/schemas/definition";
+import { validateWeight } from "../utils";
+import { Rank } from "@/types/employees";
+import { comepetencyEvaluationSchema, cultureEvaluationSchema } from "../schemas/evaluation";
 
 export const meritProcedure = createTRPCRouter({
   getOne: protectedProcedure
@@ -64,6 +67,16 @@ export const meritProcedure = createTRPCRouter({
       if (!merit) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
+
+      const kpi = await db.form.findFirst({
+        where: {
+          year: merit.year,
+          type: FormType.KPI,
+        },
+        include: {
+          kpis: true,
+        },
+      });
 
       const competencyWithComments = await db.comment.findMany({
         where: {
@@ -138,6 +151,7 @@ export const meritProcedure = createTRPCRouter({
       }
 
       const permission = buildPermissionContext(ctx.user.username, task);
+      const portion = validateWeight(task.owner.rank as Rank);
 
       return { 
         form: {
@@ -145,6 +159,20 @@ export const meritProcedure = createTRPCRouter({
           competencyRecords: competencyRecordsWithComments,
           cultureRecords: cultureRecordsWithComments,
           tasks: task,
+          kpi: merit.period === Period.EVALUATION_2ND
+            ? (() => {
+              const sum = kpi?.kpis.reduce((acc, comp, idx) => {
+                const level = Number(comp.achievementApprover ?? 0);
+                const weight = Number(comp.weight ?? 0);
+
+                return acc + (level / 100) * weight;
+              }, 0) || 0;
+
+              const res = (sum * 40) / portion > 40 ? 40 : (sum * 40) / portion;
+
+              return res;
+            })()
+            : 0
         },
         permission: {
           ...permission,
@@ -191,5 +219,75 @@ export const meritProcedure = createTRPCRouter({
         }));
 
       return { success: true };
+    }),
+  evaluateBulk: protectedProcedure
+    .input(
+      z.object({
+        competencies: z.array(comepetencyEvaluationSchema.omit({ role: true })),
+        cultures: z.array(cultureEvaluationSchema.omit({ role: true })),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      if (input.competencies.length === 0 && input.cultures.length === 0) return { success: true };
+
+      await Promise.all(
+        input.competencies.map((competency) => {
+          const { id, achievementOwner, achievementChecker, achievementApprover, ...data } = competency;
+          return db.competencyEvaluation.update({
+            where: { id },
+            data: {
+              ...data,
+              levelOwner: achievementOwner,
+              levelChecker: achievementChecker,
+              levelApprover: achievementApprover,
+            },
+          });
+        }));
+
+      await Promise.all(input.cultures.map((culture) => {
+        const { id, ...data } = culture;
+        return db.cultureEvaluation.update({
+          where: { id },
+          data,
+        });
+      }));
+
+      return { success: true };
+    }),
+  deleteCompetencyFile: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const record = await db.competencyEvaluation.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          fileUrl: null,
+        },
+      });
+
+      return record;
+    }),
+  deleteCultureFile: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const record = await db.cultureEvaluation.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          fileUrl: null,
+        },
+      });
+
+      return record;
     }),
 });

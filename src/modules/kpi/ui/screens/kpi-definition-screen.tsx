@@ -35,6 +35,9 @@ import { useSearchParams } from "@/hooks/use-search-params";
 import { Rank } from "@/types/employees";
 import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { KpiUpload } from "../components/kpi-upload";
+import { EmployeeInfo } from "@/components/employee-info";
+import { Progress } from "@/components/ui/progress";
+import { NumberTicker } from "@/components/number-ticker";
 
 interface Props {
   id: string;
@@ -94,6 +97,34 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
   return (
     <Form {...f}>
       <form onSubmit={f.handleSubmit(onSubmit)}>
+        <EmployeeInfo 
+          owner={form.tasks?.owner} 
+          checker={form.tasks?.checker} 
+          approver={form.tasks?.approver} 
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Actual</p>
+              <span className="text-base font-bold tabular-nums">
+                <NumberTicker value={totalWeight} decimalPlaces={1} delay={0.2} />
+              </span>
+            </div>
+          <div>
+            <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Full</p>
+            <span className="text-base font-bold tabular-nums from-foreground to-foreground/70 font-mono">
+              {validateWeight(form.tasks?.owner.rank as Rank)}
+            </span>
+          </div>
+        </div>
+        <div className="space-y-0.5">
+            <span className="text-muted-foreground text-xs">Progress</span>
+            <Progress
+              className="h-1 w-full"
+              value={Math.min((totalWeight / validateWeight(form.tasks?.owner.rank as Rank)) * 100, 100)}
+            />
+          </div>
+        </EmployeeInfo>
+
         <KpiUpload 
           id={id} 
           period={period} 

@@ -23,6 +23,8 @@ import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { toast } from "sonner";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { useEvaluateKpis } from "../../api/use-evaluate-kpis";
+import { EmployeeInfo } from "@/components/employee-info";
+import { NumberTicker } from "@/components/number-ticker";
 
 interface Props {
   id: string;
@@ -114,6 +116,27 @@ export const KpiEvaluationScreen = ({
   return (
     <Form {...f}>
       <form onSubmit={f.handleSubmit(onSubmit)}>
+        <EmployeeInfo
+          owner={form.tasks?.owner}
+          checker={form.tasks?.checker}
+          approver={form.tasks?.approver}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-start flex-col text-secondary">
+              <span className="text-xs font-medium uppercase tracking-wide">
+                Full
+              </span>
+            </div>
+            <div className="flex flex-col items-start p-3">
+              <NumberTicker
+                value={validateWeight(form.tasks.owner.rank as Rank)}
+                decimalPlaces={2}
+                className="text-3xl font-semibold tracking-tighter whitespace-pre-wrap text-primary"
+              />
+            </div>
+          </div>
+        </EmployeeInfo>
+
         <div className="px-3 pt-3 w-full grid grid-cols-4 gap-2">
           <StateInfo value={validateWeight(form.tasks.owner.rank as Rank)} title="Full Score" />
           <StateInfo value={calculateAchievementSum.owner} title="Owner" decimalPlaces={2} />
