@@ -141,6 +141,10 @@ export const taskProcedure = createTRPCRouter({
               },
             },
           },
+          include: {
+            competencyRecords: true,
+            cultureRecords: true,
+          },
         });
         const cultures = await tx.culture.findMany();
 
@@ -167,6 +171,23 @@ export const taskProcedure = createTRPCRouter({
             },
           },
         });
+
+        if (input.type === FormType.MERIT) {
+          await db.$transaction(async (tx) => {
+            await tx.competencyEvaluation.createMany({
+              data: Array.from({ length: 4 }, (_, index) => ({
+                competencyRecordId: existingForm.competencyRecords[index].id,
+                period: input.period,
+              })),
+            })
+            await tx.cultureEvaluation.createMany({
+              data: existingForm.cultureRecords.map((record) => ({
+                cultureRecordId: record.id,
+                period: input.period,
+              })),
+            })
+          });
+        }
 
         return { id: existingForm.id };
       }

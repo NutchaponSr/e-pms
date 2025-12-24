@@ -8,6 +8,7 @@ import { Period } from "@/generated/prisma/enums";
 import { MeritDefinitionScreen } from "@/modules/merit/ui/screens/merit-definition";
 
 import { Approval, canPerforms } from "@/modules/tasks/permissions";
+import { MeritEvaluationScreen } from "../screens/merit-evaluation";
 
 interface Props {
   id: string;
@@ -27,6 +28,19 @@ export const MeritView = ({ id, period }: Props) => {
 
   if (period === Period.IN_DRAFT) {
     return <MeritDefinitionScreen id={id} period={period} data={data.form} permissions={permissions} />;
+  }
+
+  if (period === Period.EVALUATION_1ST || period === Period.EVALUATION_2ND) {
+    return (
+      <MeritEvaluationScreen 
+        id={id} 
+        period={period} 
+        data={data.form} 
+        permissions={permissions} 
+        role={data.permission.role as Approval} 
+        hasChecker={!!data.permission.checkerId}
+      />
+    );
   }
 
   return null;

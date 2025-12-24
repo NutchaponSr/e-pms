@@ -91,10 +91,10 @@ export const Toolbar = ({
               <BsFloppy2Fill className="stroke-[0.25] size-4" />
               Save Draft
             </button>
-            <Separator orientation="vertical" className="mx-1" />
             <div data-show={!!onCreate || !!onUpload} className="flex-row data-[show=true]:flex hidden">
               {!!onCreate && !!onUpload ? (
                 <>
+                  <Separator orientation="vertical" className="mx-1" />
                   <button 
                     type="button" 
                     onClick={onCreate} 
