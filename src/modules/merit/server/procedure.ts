@@ -11,6 +11,7 @@ import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/m
 import { validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
 import { comepetencyEvaluationSchema, cultureEvaluationSchema } from "../schemas/evaluation";
+import { competencyUploadSchema, cultureUploadSchema } from "../schemas/upload";
 
 export const meritProcedure = createTRPCRouter({
   getOne: protectedProcedure
@@ -290,4 +291,39 @@ export const meritProcedure = createTRPCRouter({
 
       return record;
     }),
+  // upload: protectedProcedure
+  //   .input(
+  //     z.object({
+  //       competencies: z.array(competencyUploadSchema),
+  //       cultures: z.array(cultureUploadSchema),
+  //     }),
+  //   )
+  //   .mutation(async ({ input }) => {
+  //     if (input.competencies.length === 0 && input.cultures.length === 0) return { success: true };
+
+  //     await Promise.all(input.competencies.map((competency) => {
+  //       return db.competencyRecord.update({
+  //         data: {
+  //           competencyId: competency.competencyId,
+  //           expectedLevel: competency.expectedLevel,
+  //           input: competency.input,
+  //           output: competency.output,
+  //           weight: competency.weight,
+  //           meritFormId: input.meritFormId,
+  //         },
+  //       });
+  //     }));
+      
+  //     await Promise.all(input.cultures.map((culture) => {
+  //       return db.cultureRecord.create({
+  //         data: {
+  //           cultureId: cultureIds.find((c) => c.code === culture.code)!.id,
+  //           evidence: culture.evidence,
+  //           meritFormId: input.meritFormId,
+  //         },
+  //       });
+  //     }));
+
+  //     return { success: true };
+  //     }),
 });

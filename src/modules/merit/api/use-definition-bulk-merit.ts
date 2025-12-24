@@ -23,6 +23,11 @@ export const useDefinitionBulkMerit = (formId: string, period: Period) => {
 
     definitionBulkMerit.mutate(input, {
       onSuccess: () => {
+        console.log("Merit upload successful", { 
+          competencies: input.competencies, 
+          cultures: input.cultures 
+        });
+        
         toast.success("Merit Updated!", { id: "update-bulk-merit" });
 
         queryClient.invalidateQueries(trpc.merit.getOne.queryOptions({ id: formId, period }));

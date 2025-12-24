@@ -4,6 +4,7 @@ import { kpiProcedure } from "@/modules/kpi/server/procedure";
 import { taskProcedure } from "@/modules/tasks/server/procedure";
 import { meritProcedure } from "@/modules/merit/server/procedure";
 import { commentProcedure } from "@/modules/comments/server/procedure";
+import { cultureProcedure } from "@/modules/cultures/server/procedure";
 import { competencyProcedure } from "@/modules/competencies/server/procedure";
 
 export const appRouter = createTRPCRouter({
@@ -11,6 +12,7 @@ export const appRouter = createTRPCRouter({
   task: taskProcedure,
   merit: meritProcedure,
   comment: commentProcedure,
+  culture: cultureProcedure,
   competency: competencyProcedure,
 });
 

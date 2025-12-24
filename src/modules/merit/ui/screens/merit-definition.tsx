@@ -2,6 +2,7 @@ import { BsTriangleFill } from "react-icons/bs";
 import { Resolver, useForm } from "react-hook-form";
 import { inferProcedureOutput } from "@trpc/server";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRef } from "react";
 
 import { AppRouter } from "@/trpc/routers/_app";
 
@@ -33,6 +34,7 @@ import { toast } from "sonner";
 import { EmployeeInfo } from "@/components/employee-info";
 import { NumberTicker } from "@/components/number-ticker";
 import { useEffect, useMemo } from "react";
+import { MeritUpload } from "../components/merit-upload";
 
 interface Props {
   id: string;
@@ -53,6 +55,7 @@ export const MeritDefinitionScreen = ({
 
   const startWorkflow = useStartWorkflow(id, period);
   const { mutation: definitionBulkMerit } = useDefinitionBulkMerit(id, period);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<MeritDefinition>({
     resolver: zodResolver(meritDefinitionSchema) as Resolver<MeritDefinition>,
@@ -113,6 +116,13 @@ export const MeritDefinitionScreen = ({
             </div>
           </div>
         </EmployeeInfo>
+        <MeritUpload 
+          id={id}
+          period={period}
+          fileRef={fileRef as React.RefObject<HTMLInputElement>} 
+          competencyRecords={data.competencyRecords}
+          cultureRecords={data.cultureRecords}
+        />
         <Toolbar 
           onWorkflow={() => {
             if (!save) {
@@ -128,7 +138,7 @@ export const MeritDefinitionScreen = ({
             startWorkflow({ id: data.tasks.id });
           }}
           onSaveDraft={() => definitionBulkMerit({ ...form.getValues(), saved: false })}
-          onUpload={() => console.log("upload")}
+          onUpload={() => fileRef.current?.click()}
           permissions={permissions}
           status={STATUS_VARIANTS[data.tasks?.status!]}
         />

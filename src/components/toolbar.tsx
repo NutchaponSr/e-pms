@@ -133,6 +133,7 @@ export const Toolbar = ({
                   type="button" 
                   className="rounded gap-1.5"
                   variant="primary"
+                  onClick={onUpload}
                 >
                   <BsUpload className="stroke-[0.25] size-4" />
                   Import
