@@ -123,7 +123,7 @@ export const CompetencyEvaluationContent = ({
         <CardInfo label="ระดับพฤติกรรมของ Competency" variant="default" className="col-span-2">
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-              {competencyRecord.expectedLevel}
+            {competencyRecord.competency?.[`t${competencyRecord.expectedLevel}` as 't1' | 't2' | 't3' | 't4' | 't5'] as string | null}
             </p>
           </div>
         </CardInfo>

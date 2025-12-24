@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { CompetencyType, Period } from "@/generated/prisma/enums";
 import { MeritDefinition } from "./schemas/definition";
 import { inferProcedureOutput } from "@trpc/server";
@@ -5,6 +6,7 @@ import { AppRouter } from "@/trpc/routers/_app";
 import { Rank, managerUp, chiefDown } from "@/types/employees";
 import { Approval } from "../tasks/permissions";
 import { MeritEvaluation } from "./schemas/evaluation";
+import { competencyUploadSchema, cultureUploadSchema } from "./schemas/upload";
 
 type MeritFormData = inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"];
 
@@ -131,4 +133,107 @@ export function validateWeight(position: Rank) {
     default:
       return 30;
   }
+}
+
+export function isBlankCompetencyRow(row: Record<string, any>): boolean {
+  const requiredFields = ["competencyId", "name", "expectedLevel", "input", "output", "weight"];
+  return requiredFields.every((field) => {
+    const value = String(row[field] || "").trim();
+    return !value;
+  });
+}
+
+export function isBlankCultureRow(row: Record<string, any>): boolean {
+  const requiredFields = ["code", "evidence"];
+  return requiredFields.every((field) => {
+    const value = String(row[field] || "").trim();
+    return !value;
+  });
+}
+
+export function validateMeritUpload(
+  competencySheet: Array<Record<string, any>>,
+  cultureSheet: Array<Record<string, any>>
+) {
+  const competencyErrors: Array<{ row: number; errors: z.ZodError }> = [];
+  const validCompetencies: Array<z.infer<typeof competencyUploadSchema>> = [];
+  const cultureErrors: Array<{ row: number; errors: z.ZodError }> = [];
+  const validCultures: Array<z.infer<typeof cultureUploadSchema>> = [];
+
+  competencySheet.forEach((row, index) => {
+    const rowNumber = (row._rowIndex as number) || index + 2;
+
+    if (isBlankCompetencyRow(row)) {
+      return;
+    }
+
+    try {
+      const validatedData = competencyUploadSchema.parse(row);
+      validCompetencies.push(validatedData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        competencyErrors.push({ row: rowNumber, errors: error });
+      }
+    }
+  });
+
+  cultureSheet.forEach((row, index) => {
+    const rowNumber = (row._rowIndex as number) || index + 2;
+
+    if (isBlankCultureRow(row)) {
+      return;
+    }
+
+    try {
+      const validatedData = cultureUploadSchema.parse(row);
+      validCultures.push(validatedData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        cultureErrors.push({ row: rowNumber, errors: error });
+      }
+    }
+  });
+
+  return {
+    competencyErrors,
+    validCompetencies,
+    cultureErrors,
+    validCultures,
+  };
+}
+
+export function formatMeritValidationErrors(
+  competencyErrors: Array<{ row: number; errors: z.ZodError }>,
+  cultureErrors: Array<{ row: number; errors: z.ZodError }>
+) {
+  const allErrors = [
+    ...competencyErrors.map(({ row, errors: zodErrors }) => {
+      const fieldErrors = zodErrors.issues
+        .map((err) => {
+          const field = err.path.join(".");
+          return `${field}: ${err.message}`;
+        })
+        .join(", ");
+
+      return {
+        row,
+        message: `[Competency Sheet] ${fieldErrors}`,
+      };
+    }),
+    ...cultureErrors.map(({ row, errors: zodErrors }) => {
+      const fieldErrors = zodErrors.issues
+        .map((err) => {
+          const field = err.path.join(".");
+          return `${field}: ${err.message}`;
+        })
+        .join(", ");
+
+      return {
+        row,
+        message: `[Culture Sheet] ${fieldErrors}`,
+      };
+    }),
+  ];
+
+  return allErrors;
 }
