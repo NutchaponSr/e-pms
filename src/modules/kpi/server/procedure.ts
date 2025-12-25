@@ -1,3 +1,4 @@
+import path from "path";
 import db from "@/lib/db";
 
 import { z } from "zod";
@@ -5,7 +6,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-import { FormType, KpiCategory, Period } from "@/generated/prisma/enums";
+import { FormType, KpiCategory, Period, Status } from "@/generated/prisma/enums";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
 import { kpiEvaluationSchema } from "@/modules/kpi/schema/evaluation";
@@ -14,6 +15,14 @@ import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions
 import { calculateSumAchievement, formatKpiExport } from "../utils";
 import { exportExcel, formatDecimal } from "@/lib/utils";
 import { columns } from "../constants";
+import { readCSV } from "@/seeds/lib/utils";
+import { generateTaskId } from "@/modules/tasks/utils";
+
+interface ApprovalCSVProps {
+  employeeId: string;
+  checker?: string;
+  approver: string;
+}
 
 export const kpiProcedure = createTRPCRouter({
   getInfo: protectedProcedure
@@ -182,6 +191,93 @@ export const kpiProcedure = createTRPCRouter({
       });
 
       return { id: kpi.id };
+    }),
+  createTask: protectedProcedure
+    .input(
+      z.object({
+        year: z.number(),
+        period: z.enum(Period),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const file = path.join(process.cwd(), "src/data", "approval.csv");
+
+      const record = readCSV<ApprovalCSVProps>(file).find(
+        (r) => r.employeeId === ctx.user.username,
+      );
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Record not found",
+        });
+      }
+
+      const { existingForm, cultures } = await db.$transaction(async (tx) => {
+        const existingForm = await tx.form.findFirst({
+          where: {
+            type: FormType.KPI,
+            year: input.year,
+            tasks: {
+              some: {
+                ownerId: ctx.user.username,
+              },
+            },
+          },
+          include: {
+            competencyRecords: true,
+            cultureRecords: true,
+          },
+        });
+        const cultures = await tx.culture.findMany();
+
+        return { existingForm, cultures };
+      }); 
+
+      const checkerId = record?.checker && record.checker.trim() !== "" 
+        ? record.checker 
+        : null;
+
+      let form = null;
+
+      if (existingForm) {
+        await db.task.create({
+          data: {
+            id: generateTaskId(),
+            ownerId: ctx.user.username,
+            checkerId,
+            approverId: record.approver,
+            formId: existingForm.id,
+            status: Status.IN_DRAFT,
+            context: {
+              period: input.period,
+            },
+          },
+        });
+
+        return { id: existingForm.id };
+      }
+
+      form = await db.form.create({
+        data: {
+          type: FormType.KPI,
+          year: input.year,
+          tasks: {
+            create: {
+              id: generateTaskId(),
+              ownerId: ctx.user.username,
+              checkerId,
+              approverId: record.approver,
+              status: Status.IN_DRAFT,
+              context: {
+                period: input.period,
+              },
+            },
+          },
+        },
+      });
+
+      return { id: form.id };
     }),
   createBulk: protectedProcedure
     .input(

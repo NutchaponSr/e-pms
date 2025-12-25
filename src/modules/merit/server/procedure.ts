@@ -1,9 +1,10 @@
+import path from "path";
 import db from "@/lib/db";
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { FormType, Period } from "@/generated/prisma/enums";
+import { FormType, Period, Status } from "@/generated/prisma/enums";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
@@ -15,6 +16,14 @@ import { competencyUploadSchema, cultureUploadSchema } from "../schemas/upload";
 import { PERIOD_LABELS } from "@/modules/tasks/constant";
 import { exportExcel } from "@/lib/utils";
 import { columns } from "../constant";
+import { readCSV } from "@/seeds/lib/utils";
+import { generateTaskId } from "@/modules/tasks/utils";
+
+interface ApprovalCSVProps {
+  employeeId: string;
+  checker?: string;
+  approver: string;
+}
 
 export const meritProcedure = createTRPCRouter({
   getInfo: protectedProcedure
@@ -262,6 +271,143 @@ export const meritProcedure = createTRPCRouter({
           role: getUserRole(permission),
         },
       };
+    }),
+  createTask: protectedProcedure
+    .input(
+      z.object({
+        year: z.number(),
+        period: z.enum(Period),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const file = path.join(process.cwd(), "src/data", "approval.csv");
+
+      const record = readCSV<ApprovalCSVProps>(file).find(
+        (r) => r.employeeId === ctx.user.username,
+      );
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Record not found",
+        });
+      }
+
+      const { existingForm, existingMeritTask, cultures, approvedKpiTask } = await db.$transaction(async (tx) => {
+        const existingForm = await tx.form.findFirst({
+          where: {
+            type: FormType.MERIT,
+            year: input.year,
+            tasks: {
+              some: {
+                ownerId: ctx.user.username,
+              },
+            },
+          },
+          include: {
+            competencyRecords: true,
+            cultureRecords: true,
+            tasks: true,
+          },
+        });
+
+        // find existing merit task with the same period
+        const existingMeritTask = existingForm?.tasks.find(
+          (task) => (task.context as { period: Period })?.period === input.period,
+        );
+
+        const cultures = await tx.culture.findMany();
+        const approvedKpiTask = await db.form.findFirst({
+          where: {
+            year: input.year,
+            type: FormType.KPI,
+            tasks: {
+              some: {
+                ownerId: ctx.user.username,
+                status: Status.DONE,
+              },
+            },
+          },
+          include: {
+            tasks: true,
+          },
+        });
+
+        return { existingForm, existingMeritTask, cultures, approvedKpiTask };
+      }); 
+      
+
+      // find merit task with period EVALUATION_1ST
+      const evaluationKpiTask = approvedKpiTask?.tasks.find((f) => (f.context as { period: Period }).period === Period.EVALUATION);
+
+      //  && meritTask.context.period === EVALUATION_1ST
+      if ((!evaluationKpiTask || evaluationKpiTask.status !== Status.DONE) && (existingMeritTask?.context as { period: Period })?.period === Period.EVALUATION_1ST) {
+        
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You must finish KPI evaluation and get done first!",
+        });
+      }
+
+      const checkerId = record?.checker && record.checker.trim() !== "" 
+        ? record.checker 
+        : null;
+
+      let form = null;
+
+      if (existingForm) {
+        await db.task.create({
+          data: {
+            id: generateTaskId(),
+            ownerId: ctx.user.username,
+            checkerId,
+            approverId: record.approver,
+            formId: existingForm.id,
+            status: Status.IN_DRAFT,
+            context: {
+              period: input.period,
+            },
+          },
+        });
+
+        await db.$transaction(async (tx) => {
+          await tx.competencyEvaluation.createMany({
+            data: Array.from({ length: 4 }, (_, index) => ({
+              competencyRecordId: existingForm.competencyRecords[index].id,
+              period: input.period,
+            })),
+          })
+          await tx.cultureEvaluation.createMany({
+            data: existingForm.cultureRecords.map((record) => ({
+              cultureRecordId: record.id,
+              period: input.period,
+            })),
+          })
+        });
+
+        return { id: existingForm.id };
+      } else {
+        form = await db.form.create({
+          data: {
+            type: FormType.MERIT,
+            year: input.year,
+            tasks: {
+              create: {
+                id: generateTaskId(),
+                ownerId: ctx.user.username,
+                checkerId,
+                approverId: record.approver,
+                status: Status.IN_DRAFT,
+                context: {
+                  period: input.period,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      return { id: form.id };
     }),
   definitionBulk: protectedProcedure
     .input(
