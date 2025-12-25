@@ -5,14 +5,75 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-import { KpiCategory, Period } from "@/generated/prisma/enums";
+import { FormType, KpiCategory, Period } from "@/generated/prisma/enums";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
 import { kpiEvaluationSchema } from "@/modules/kpi/schema/evaluation";
 import { kpiDefinitionSchema } from "@/modules/kpi/schema/definition";
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
+import { calculateSumAchievement } from "../utils";
+import { formatDecimal } from "@/lib/utils";
 
 export const kpiProcedure = createTRPCRouter({
+  getInfo: protectedProcedure
+    .input(
+      z.object({
+        year: z.number(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const form = await db.form.findFirst({
+        where: {
+          type: FormType.KPI,
+          year: input.year,
+          tasks: {
+            some: {
+              ownerId: ctx.user.username,
+            },
+          },
+        },
+        include: {
+          tasks: true,
+          kpis: true,
+        },
+      });
+
+      return {
+        task: {
+          draft: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period === Period.IN_DRAFT,
+          ),
+          evaluation: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period === Period.EVALUATION,
+          ),
+        },
+        chart: [
+          {
+            label: "Owner",
+            score: formatDecimal(calculateSumAchievement(
+              form?.kpis.map((kpi) => kpi.achievementOwner ?? 0) ?? [], 
+              form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
+            )),
+          },
+          {
+            label: "Checker",
+            score: formatDecimal(calculateSumAchievement(
+              form?.kpis.map((kpi) => kpi.achievementChecker ?? 0) ?? [], 
+              form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
+            )),
+          },
+          {
+            label: "Approver",
+            score: formatDecimal(calculateSumAchievement(
+              form?.kpis.map((kpi) => kpi.achievementApprover ?? 0) ?? [], 
+              form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
+            )),
+          },
+        ]
+      };
+    }),
   getOne: protectedProcedure
     .input(
       z.object({
@@ -63,7 +124,6 @@ export const kpiProcedure = createTRPCRouter({
         },
       });
 
-      // Ensure we only return "plain" JSON-serializable objects (Next.js can't pass Prisma Decimal to client components)
       const plain = JSON.parse(JSON.stringify(kpi)) as typeof kpi;
       const plainComments = JSON.parse(
         JSON.stringify(kpiWithComments),

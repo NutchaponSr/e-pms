@@ -7,6 +7,7 @@ import { Rank, managerUp, chiefDown } from "@/types/employees";
 import { Approval } from "../tasks/permissions";
 import { MeritEvaluation } from "./schemas/evaluation";
 import { competencyUploadSchema, cultureUploadSchema } from "./schemas/upload";
+import { CompetencyRecord, CompetencyEvaluation, CultureRecord, CultureEvaluation } from "@/generated/prisma/client";
 
 type MeritFormData = inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"];
 
@@ -236,4 +237,60 @@ export function formatMeritValidationErrors(
   ];
 
   return allErrors;
+}
+
+
+type CompetencyLevelKey =
+  | 'levelOwner'
+  | 'levelChecker'
+  | 'levelApprover';
+
+export function sumCompetencyByPeriod(
+  competencyRecords: (CompetencyRecord & { competencyEvaluations: CompetencyEvaluation[] })[],
+  period: Period,
+  levelKey: CompetencyLevelKey,
+  maxLevel = 5,
+): number {
+  return competencyRecords.reduce((acc, record) => {
+    const evaluation = record.competencyEvaluations?.find(
+      e => e.period === period,
+    );
+
+    if (!evaluation) return acc;
+
+    const level = Number(evaluation[levelKey] ?? 0);
+    const weight = Number(record.weight ?? 0);
+
+    return acc + (level / maxLevel) * weight;
+  }, 0);
+}
+
+type CultureLevelKey =
+  | 'levelBehaviorOwner'
+  | 'levelBehaviorChecker'
+  | 'levelBehaviorApprover';
+
+export function sumCultureByPeriod(
+  cultureRecords: (CultureRecord & { cultureEvaluations: CultureEvaluation[] })[],
+  period: Period,
+  levelKey: CultureLevelKey,
+  totalWeight = 30,
+  maxLevel = 5,
+): number {
+  const count = cultureRecords.length;
+  if (count === 0) return 0;
+
+  const weightPerItem = totalWeight / count;
+
+  return cultureRecords.reduce((acc, record) => {
+    const evaluation = record.cultureEvaluations?.find(
+      e => e.period === period,
+    );
+
+    if (!evaluation) return acc;
+
+    const level = Number(evaluation[levelKey] ?? 0);
+
+    return acc + (level / maxLevel) * weightPerItem;
+  }, 0);
 }

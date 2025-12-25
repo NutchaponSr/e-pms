@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { TargetIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -10,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { useTRPC } from "@/trpc/client";
 import { FormType, Period, Status } from "@/generated/prisma/enums";
 
 import {
@@ -21,17 +23,11 @@ import {
 
 import { Event } from "@/components/event";
 
-import { useGetTask } from "@/modules/tasks/api/use-get-task";
 import { useCreateTask } from "@/modules/tasks/api/use-create-task";
 
 import { isInRange } from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 
-const chartData = [
-  { approval: "Owner", score: 186 },
-  { approval: "Checker", score: 305 },
-  { approval: "Approver", score: 237 },
-];
 const chartConfig = {
   approval: {
     label: "Approval",
@@ -44,12 +40,12 @@ interface Props {
 }
 
 export const KpiInfo = ({ year }: Props) => {
+  const trpc = useTRPC();
   const router = useRouter();
 
   const createTask = useCreateTask();
-  const { data: form } = useGetTask(2025, FormType.KPI);
 
-  console.log(form.task.evaluation);
+  const { data } = useSuspenseQuery(trpc.kpi.getInfo.queryOptions({ year }));
 
   return (
     <section className="h-full flex flex-col">
@@ -72,10 +68,10 @@ export const KpiInfo = ({ year }: Props) => {
               dueDate="Jan - Mar"
               title="KPI Definition"
               description="Define measurable goals aligned with team and company priorities"
-              status={STATUS_VARIANTS[form.task.draft?.status!]}
+              status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{
-                active: form.task.draft !== null,
-                label: !!form.task.draft ? "View" : "Create",
+                active: data.task.draft !== null,
+                label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 3, 2025)) {
                     toast.error(
@@ -84,9 +80,9 @@ export const KpiInfo = ({ year }: Props) => {
                     return;
                   }
 
-                  if (!!form.task.draft) {
+                  if (!!data.task.draft) {
                     router.push(
-                      `/performance/kpi/${form.task.draft.formId}/definition`,
+                      `/performance/kpi/${data.task.draft.formId}/definition`,
                     );
                   } else {
                     createTask({
@@ -101,11 +97,11 @@ export const KpiInfo = ({ year }: Props) => {
             <Event
               dueDate="Jan - Dec"
               title="Evaluation"
-              status={STATUS_VARIANTS[form.task.evaluation?.status!]}
+              status={STATUS_VARIANTS[data.task.evaluation?.status!]}
               description="Assessment of progress towards defined KPIs"
               buttonCtx={{
-                active: form.task.draft?.status === Status.DONE,
-                label: !!form.task.evaluation ? "Evaluate" : "Create",
+                active: data.task.draft?.status === Status.DONE,
+                label: !!data.task.evaluation ? "Evaluate" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 12, 2025)) {
                     toast.error(
@@ -114,9 +110,9 @@ export const KpiInfo = ({ year }: Props) => {
                     return;
                   }
 
-                  if (!!form.task.evaluation) {
+                  if (!!data.task.evaluation) {
                     router.push(
-                      `/performance/kpi/${form.task.evaluation.formId}/evaluation`,
+                      `/performance/kpi/${data.task.evaluation.formId}/evaluation`,
                     );
                   } else {
                     createTask({
@@ -133,14 +129,18 @@ export const KpiInfo = ({ year }: Props) => {
         <div className="basis-0 grow px-9 pb-8 pt-6">
           <div className="flex w-full h-full flex-col justify-center">
             <ChartContainer config={chartConfig}>
-              <BarChart accessibilityLayer data={chartData}>
+              <BarChart 
+                accessibilityLayer 
+                data={data.chart}
+                margin={{ top: 20, right: 0, left: 0, bottom: 0 }}
+              >
                 <CartesianGrid
                   strokeDasharray="1.25 4"
                   vertical={false}
                   stroke="var(--color-description)"
                 />
                 <XAxis
-                  dataKey="approval"
+                  dataKey="label"
                   tickLine={false}
                   tickMargin={8}
                   tick={{ fill: "var(--color-primary)" }}
@@ -156,11 +156,17 @@ export const KpiInfo = ({ year }: Props) => {
                     opacity: 0.6,
                   }}
                 />
-                <Bar dataKey="score" radius={4} fill="#5e9fe8" barSize={80}>
+                <Bar 
+                  dataKey="score" 
+                  radius={4} 
+                  fill="#5e9fe8" 
+                  barSize={64}
+                >
                   <LabelList
                     dataKey="score"
                     position="top"
                     fill="var(--color-primary)"
+                    fontSize={12}
                   />
                 </Bar>
               </BarChart>

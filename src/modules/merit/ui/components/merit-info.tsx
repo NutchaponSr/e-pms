@@ -21,17 +21,16 @@ import {
 
 import { Event } from "@/components/event";
 
-import { useGetTask } from "@/modules/tasks/api/use-get-task";
 import { useCreateTask } from "@/modules/tasks/api/use-create-task";
 
 import { isInRange } from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
+import { useTRPC } from "@/trpc/client";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Select, SelectValue, SelectTrigger, SelectItem, SelectContent } from "@/components/ui/select";
 
-const chartData = [
-  { approval: "Owner", score: 186 },
-  { approval: "Checker", score: 305 },
-  { approval: "Approver", score: 237 },
-];
+
 const chartConfig = {
   approval: {
     label: "Approval",
@@ -44,10 +43,20 @@ interface Props {
 }
 
 export const MeritInfo = ({ year }: Props) => {
+  const trpc = useTRPC();
   const router = useRouter();
 
+  const [selectedCategory, setSelectedCategory] = useState<"competency" | "culture">("competency");
+
   const createTask = useCreateTask();
-  const { data: form } = useGetTask(2025, FormType.MERIT);
+  const { data } = useSuspenseQuery(trpc.merit.getInfo.queryOptions({ year }));
+
+  const chartData = data.chart.map((item) => ({
+    period: item.period,
+    owner: item[selectedCategory].owner,
+    checker: item[selectedCategory].checker,
+    approver: item[selectedCategory].approver,
+  }));
 
   return (
     <section className="h-full flex flex-col">
@@ -70,10 +79,10 @@ export const MeritInfo = ({ year }: Props) => {
               dueDate="Jan - Mar"
               title="Merit Definition"
               description="Define measurable goals that will inform merit evaluation"
-              status={STATUS_VARIANTS[form.task.draft?.status!]}
+              status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{
-                active: form.task.draft !== null,
-                label: !!form.task.draft ? "View" : "Create",
+                active: data.task.draft !== null,
+                label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 3, 2025)) {
                     toast.error(
@@ -82,9 +91,9 @@ export const MeritInfo = ({ year }: Props) => {
                     return;
                   }
 
-                  if (!!form.task.draft) {
+                  if (!!data.task.draft) {
                     router.push(
-                      `/performance/merit/${form.task.draft.formId}/definition`,
+                      `/performance/merit/${data.task.draft.formId}/definition`,
                     );
                   } else {
                     createTask({
@@ -99,11 +108,11 @@ export const MeritInfo = ({ year }: Props) => {
             <Event
               dueDate="Jan - Jun"
               title="Evaluation 1st"
-              status={STATUS_VARIANTS[form.task.evaluation1st?.status!]}
+              status={STATUS_VARIANTS[data.task.evaluation1st?.status!]}
               description="Mid-year merit review to assess progress and performance"
               buttonCtx={{
-                active: form.task.draft?.status === Status.DONE,
-                label: !!form.task.evaluation1st ? "Evaluate" : "Create",
+                active: data.task.draft?.status === Status.DONE,
+                label: !!data.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 12, 2025)) {
                     toast.error(
@@ -112,9 +121,9 @@ export const MeritInfo = ({ year }: Props) => {
                     return;
                   }
 
-                  if (!!form.task.evaluation1st) {
+                  if (!!data.task.evaluation1st) {
                     router.push(
-                      `/performance/merit/${form.task.evaluation1st.formId}/evaluation1st`,
+                      `/performance/merit/${data.task.evaluation1st.formId}/evaluation1st`,
                     );
                   } else {
                     createTask({
@@ -129,11 +138,11 @@ export const MeritInfo = ({ year }: Props) => {
             <Event
               dueDate="Jul - Dec"
               title="Evaluation 2nd"
-              status={STATUS_VARIANTS[form.task.evaluation2nd?.status!]}
+              status={STATUS_VARIANTS[data.task.evaluation2nd?.status!]}
               description="Year-end merit review for final performance assessment and bonus eligibility"
               buttonCtx={{
-                active: form.task.evaluation1st?.status === Status.DONE,
-                label: !!form.task.evaluation2nd ? "Evaluate" : "Create",
+                active: data.task.evaluation1st?.status === Status.DONE,
+                label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 12, 2025)) {
                     toast.error(
@@ -142,9 +151,9 @@ export const MeritInfo = ({ year }: Props) => {
                     return;
                   }
 
-                  if (!!form.task.evaluation2nd) {
+                  if (!!data.task.evaluation2nd) {
                     router.push(
-                      `/performance/merit/${form.task.evaluation2nd.formId}/evaluation2nd`,
+                      `/performance/merit/${data.task.evaluation2nd.formId}/evaluation2nd`,
                     );
                   } else {
                     createTask({
@@ -159,6 +168,23 @@ export const MeritInfo = ({ year }: Props) => {
           </div>
         </div>
         <div className="basis-0 grow px-9 pb-8 pt-6">
+          <div className="flex justify-end">
+            <Select
+              value={selectedCategory}
+              onValueChange={(value: "competency" | "culture") =>
+                setSelectedCategory(value)
+              }
+            >
+              <SelectTrigger size="sm">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="competency">Competency</SelectItem>
+                <SelectItem value="culture">Culture</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex w-full h-full flex-col justify-center">
             <ChartContainer config={chartConfig}>
               <BarChart accessibilityLayer data={chartData}>
@@ -168,7 +194,7 @@ export const MeritInfo = ({ year }: Props) => {
                   stroke="var(--color-description)"
                 />
                 <XAxis
-                  dataKey="approval"
+                  dataKey="period"
                   tickLine={false}
                   tickMargin={8}
                   tick={{ fill: "var(--color-primary)" }}
@@ -184,13 +210,14 @@ export const MeritInfo = ({ year }: Props) => {
                     opacity: 0.6,
                   }}
                 />
-                <Bar dataKey="score" radius={4} fill="#5e9fe8" barSize={80}>
-                  <LabelList
-                    dataKey="score"
-                    position="top"
-                    fill="var(--color-primary)"
+                {Object.keys(chartData[0]).slice(1).map((key, index) => (
+                  <Bar
+                    key={index}
+                    dataKey={key as string}
+                    fill="#5e9fe8"
+                    radius={4}
                   />
-                </Bar>
+                ))}
               </BarChart>
             </ChartContainer>
           </div>
