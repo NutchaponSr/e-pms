@@ -31,6 +31,7 @@ import { useState } from "react";
 import { Select, SelectValue, SelectTrigger, SelectItem, SelectContent } from "@/components/ui/select";
 import { useExportMerit } from "../../api/use-export-merit";
 import { Button } from "@/components/ui/button";
+import { useCreateMeritTask } from "../../api/use-create-merit-task";
 
 
 const chartConfig = {
@@ -50,7 +51,7 @@ export const MeritInfo = ({ year }: Props) => {
 
   const [selectedCategory, setSelectedCategory] = useState<"competency" | "culture">("competency");
 
-  const createTask = useCreateTask();
+  const { mutation: createTask, ctx: createMeritTaskCtx } = useCreateMeritTask();
   const { data } = useSuspenseQuery(trpc.merit.getInfo.queryOptions({ year }));
   const { mutation: exportMerit, ctx: exportMeritCtx } = useExportMerit();
 
@@ -76,7 +77,7 @@ export const MeritInfo = ({ year }: Props) => {
         </div>
 
         {!!data.task.draft && (
-          <Button variant="secondary" size="xs" onClick={() => exportMerit({ id: data.task.draft!.formId })} disabled={exportMeritCtx.isPending}>
+          <Button variant="secondary" size="sm" onClick={() => exportMerit({ id: data.task.draft!.formId })} disabled={exportMeritCtx.isPending}>
             Export
           </Button>
         )}
@@ -89,7 +90,8 @@ export const MeritInfo = ({ year }: Props) => {
               title="Merit Definition"
               description="Define measurable goals that will inform merit evaluation"
               status={STATUS_VARIANTS[data.task.draft?.status!]}
-              buttonCtx={{
+              buttonCtx={{  
+                disabled: createMeritTaskCtx.isPending,
                 active: data.task.draft !== null,
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
@@ -107,7 +109,6 @@ export const MeritInfo = ({ year }: Props) => {
                   } else {
                     createTask({
                       year,
-                      type: FormType.MERIT,
                       period: Period.IN_DRAFT,
                     });
                   }
@@ -120,6 +121,7 @@ export const MeritInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.evaluation1st?.status!]}
               description="Mid-year merit review to assess progress and performance"
               buttonCtx={{
+                disabled: createMeritTaskCtx.isPending,
                 active: data.task.draft?.status === Status.DONE,
                 label: !!data.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
@@ -137,7 +139,6 @@ export const MeritInfo = ({ year }: Props) => {
                   } else {
                     createTask({
                       year,
-                      type: FormType.MERIT,
                       period: Period.EVALUATION_1ST,
                     });
                   }
@@ -167,11 +168,11 @@ export const MeritInfo = ({ year }: Props) => {
                   } else {
                     createTask({
                       year,
-                      type: FormType.MERIT,
                       period: Period.EVALUATION_1ST,
                     });
                   }
                 },
+                disabled: createMeritTaskCtx.isPending,
               }}
             />
           </div>

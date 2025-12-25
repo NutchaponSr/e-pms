@@ -26,6 +26,7 @@ import { useEvaluateBulkMerit } from "../../api/use-evaluation-bulk-merit";
 import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { toast } from "sonner";
+import { competencyLevels, cultureLevels } from "../../constant";
 
 interface Props {
   id: string;
@@ -200,6 +201,49 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                 </div>
               </div>
               <AccordionContent>
+                <div className="grid grid-cols-3 gap-4 pb-4">
+                  <Card className="p-0">
+                    <div className="flex flex-col min-w-0 w-full min-h-8 space-y-1">
+                      <h2 className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-sm font-semibold leading-[1.3] text-primary">
+                        หลักเกณฑ์การประเมิน (Evaluation Score System)
+                      </h2>
+                      <div className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-primary text-xs leading-4.5">
+                        วิเคราะห์ผลการปฏิบัติงาน เปรียบเทียบกับผลงานที่คาดหวัง (Expected Key Result) และการแสดงออกของ Competency
+                      </div>
+                    </div>
+                  </Card>
+                  <div className="flex items-center gap-1 col-span-2">
+                    <div className="flex flex-col shadow-[inset_0_0_0_1px_rgba(0,0,0,0.086)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] rounded">
+                      <div className="flex items-center gap-2 bg-marine py-1 px-2 rounded-t">
+                        <h3 className="text-white text-lg font-semibold">
+                          เกณฑ์การประเมิน Competency
+                        </h3>
+                      </div>
+                      <div className="flex items-center p-2">
+                        {competencyLevels.map((item, index) => (
+                          <div key={index} className="flex flex-col p-1 space-y-2 rounded">
+                            <span className="font-medium leading-normal overflow-hidden pe-1.5">
+                              <div className="inline-flex items-center shrink min-w-0 max-w-full h-5 m-0 rounded-full px-2 text-xs dark:text-blue-neutral text-blue-muted bg-[#0063ae2c] dark:bg-[#3b98ff62]">
+                                <div className="whitespace-nowrap overflow-hidden text-ellipsis inline-flex items-center h-5 leading-5">
+                                  <div className="flex items-center">
+                                    <div className="me-1 rounded-full size-2 bg-marine inline-flex shrink-0" />
+                                  </div>
+                                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {item.label}
+                                  </span>
+                                </div>
+                              </div>
+                            </span>
+
+                            <div className="min-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow px-px text-xs text-primary">
+                              {item.content}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-y-6">
                   {data.competencyRecords
                     .sort((a, b) => a.order - b.order)
@@ -242,6 +286,49 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                 </div>
               </div>
               <AccordionContent>
+                <div className="grid grid-cols-3 gap-4 pb-4">
+                  <Card className="p-0">
+                    <div className="flex flex-col min-w-0 w-full min-h-8 space-y-1">
+                      <h2 className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-sm font-semibold leading-[1.3] text-primary">
+                        หลักเกณฑ์การประเมิน (Evaluation Score System)
+                      </h2>
+                      <div className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-primary text-xs leading-4.5">
+                        วิเคราะห์ผลการปฏิบัติงาน เปรียบเทียบกับผลงานที่คาดหวัง (Expected Key Result) และการแสดงออกของ Competency
+                      </div>
+                    </div>
+                  </Card>
+                  <div className="flex items-center gap-1 col-span-2">
+                    <div className="flex flex-col shadow-[inset_0_0_0_1px_rgba(0,0,0,0.086)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] rounded">
+                      <div className="flex items-center gap-2 bg-marine py-1 px-2 rounded-t">
+                        <h3 className="text-white text-lg font-semibold">
+                          เกณฑ์การประเมิน Culture
+                        </h3>
+                      </div>
+                      <div className="flex items-center p-2">
+                        {cultureLevels.map((item, index) => (
+                          <div key={index} className="flex flex-col p-1 space-y-2 rounded">
+                            <span className="font-medium leading-normal overflow-hidden pe-1.5">
+                              <div className="inline-flex items-center shrink min-w-0 max-w-full h-5 m-0 rounded-full px-2 text-xs dark:text-blue-neutral text-blue-muted bg-[#0063ae2c] dark:bg-[#3b98ff62]">
+                                <div className="whitespace-nowrap overflow-hidden text-ellipsis inline-flex items-center h-5 leading-5">
+                                  <div className="flex items-center">
+                                    <div className="me-1 rounded-full size-2 bg-blue inline-flex shrink-0" />
+                                  </div>
+                                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {item.label}
+                                  </span>
+                                </div>
+                              </div>
+                            </span>
+
+                            <div className="min-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow px-px text-xs text-primary">
+                              {item.content}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-y-6">
                   {data.cultureRecords
                   .sort((a, b) => a.order - b.order)

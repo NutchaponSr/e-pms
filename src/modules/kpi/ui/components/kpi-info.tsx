@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 import { useTRPC } from "@/trpc/client";
-import { FormType, Period, Status } from "@/generated/prisma/enums";
+import { Period, Status } from "@/generated/prisma/enums";
 
 import {
   ChartContainer,
@@ -23,12 +23,11 @@ import {
 
 import { Event } from "@/components/event";
 
-import { useCreateTask } from "@/modules/tasks/api/use-create-task";
-
 import { isInRange } from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { Button } from "@/components/ui/button";
 import { useExportKpi } from "../../api/use-export-kpi";
+import { useCreateKpiTask } from "../../api/use-create-kpi-task";
 
 const chartConfig = {
   approval: {
@@ -45,8 +44,8 @@ export const KpiInfo = ({ year }: Props) => {
   const trpc = useTRPC();
   const router = useRouter();
 
-  const createTask = useCreateTask();
   const { mutation: exportKpi, ctx: exportKpiCtx } = useExportKpi();
+  const { mutation: createKpiTask, ctx: createKpiTaskCtx } = useCreateKpiTask();
 
   const { data } = useSuspenseQuery(trpc.kpi.getInfo.queryOptions({ year }));
 
@@ -65,7 +64,7 @@ export const KpiInfo = ({ year }: Props) => {
         </div>
 
         {!!data.task.draft && (
-          <Button variant="secondary" size="xs" onClick={() => exportKpi({ id: data.task.draft!.formId })} disabled={exportKpiCtx.isPending}>
+          <Button variant="secondary" size="sm" onClick={() => exportKpi({ id: data.task.draft!.formId })} disabled={exportKpiCtx.isPending}>
             Export
           </Button>
         )}
@@ -79,6 +78,7 @@ export const KpiInfo = ({ year }: Props) => {
               description="Define measurable goals aligned with team and company priorities"
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{
+                disabled: createKpiTaskCtx.isPending,
                 active: data.task.draft !== null,
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
@@ -94,9 +94,8 @@ export const KpiInfo = ({ year }: Props) => {
                       `/performance/kpi/${data.task.draft.formId}/definition`,
                     );
                   } else {
-                    createTask({
+                    createKpiTask({
                       year,
-                      type: FormType.KPI,
                       period: Period.IN_DRAFT,
                     });
                   }
@@ -109,6 +108,7 @@ export const KpiInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.evaluation?.status!]}
               description="Assessment of progress towards defined KPIs"
               buttonCtx={{
+                disabled: createKpiTaskCtx.isPending,
                 active: data.task.draft?.status === Status.DONE,
                 label: !!data.task.evaluation ? "Evaluate" : "Create",
                 onClick: () => {
@@ -124,9 +124,8 @@ export const KpiInfo = ({ year }: Props) => {
                       `/performance/kpi/${data.task.evaluation.formId}/evaluation`,
                     );
                   } else {
-                    createTask({
+                    createKpiTask({
                       year,
-                      type: FormType.KPI,
                       period: Period.EVALUATION,
                     });
                   }

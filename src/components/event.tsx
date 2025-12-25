@@ -18,6 +18,7 @@ interface Props {
     label: string;
     onClick: () => void;
     active: boolean;
+    disabled: boolean;
   };
 }
 
@@ -52,6 +53,7 @@ export const Event = ({
                 <button 
                   onClick={buttonCtx.onClick}
                   data-active={buttonCtx.active} 
+                  disabled={buttonCtx.disabled}
                   className="w-fit pt-0.5 px-2 flex-row bg-[#252525] rounded items-center min-h-6 hover:bg-[#2f2f2f] data-[active=true]:flex hidden"
                 >
                   {buttonCtx.label}
