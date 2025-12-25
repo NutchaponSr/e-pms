@@ -91,7 +91,7 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
             label: value,
           }))}
         />
-        <FormGenerator 
+        <FormGenerator  
           name={`kpis.${index}.weight`}
           form={form}
           variant="numeric"

@@ -9,6 +9,7 @@ import { FormType, Period, Status } from "@/generated/prisma/enums";
 import { generateTaskId } from "@/modules/tasks/utils";
 import { TRPCError } from "@trpc/server";
 import { buildPermissionContext, getUserRole } from "../permissions";
+import { formType, STATUSES } from "../constant";
 
 interface ApprovalCSVProps {
   employeeId: string;
@@ -269,18 +270,31 @@ export const taskProcedure = createTRPCRouter({
 
       const hasChecker = task.checkerId !== null;
 
-      await db.task.update({
+      const res = await db.task.update({
         where: {
           id: input.id,
         },
         data: {
           status: hasChecker ? Status.PENDING_CHECKER : Status.PENDING_APPROVER,
         },
+        include: {
+          form: true,
+          checker: true,
+          approver: true,
+          owner: true,
+        },
       });
 
-      // TODO: Send email to checker and approver
-
-      return { success: true };
+      return {
+        id: res.id,
+        toEmail: res.checker?.email || res.approver?.email,
+        fromEmail: res.owner?.email,
+        checkerName: res.checker?.name || res.approver?.name,
+        ownerName: res.owner?.name,
+        status: STATUSES[res.status],
+        app: formType[res.form.type],
+        period: (res.context as { period: Period })?.period,
+      };
     }),
   confirmation: protectedProcedure
     .input(
@@ -322,6 +336,7 @@ export const taskProcedure = createTRPCRouter({
               checker: true,
               approver: true,
               owner: true,
+              form: true,
             },
           });
         } else {
@@ -331,6 +346,12 @@ export const taskProcedure = createTRPCRouter({
             },
             data: {
               status: Status.REJECTED_BY_CHECKER,
+            },
+            include: {
+              owner: true,
+              checker: true,
+              approver: true,
+              form: true,
             },
           });
         }
@@ -347,7 +368,8 @@ export const taskProcedure = createTRPCRouter({
             include: {
               checker: true,
               approver: true,
-              owner: true,
+              owner: true,  
+              form: true,
             },
           });
         } else {
@@ -362,6 +384,7 @@ export const taskProcedure = createTRPCRouter({
               owner: true,
               checker: true,
               approver: true,
+              form: true,
             },
           });
         }
@@ -374,11 +397,28 @@ export const taskProcedure = createTRPCRouter({
         });
       }
 
-      // TODO: Send email to owner, checker, and approver
-
-      return { 
+      return {
         id: res.formId,
-      }
+        owner: {
+          email: res.owner?.email,
+          name: res.owner?.name,
+        },
+        checker: {
+          email: res.checker?.email,
+          name: res.checker?.name,
+        },
+        approver: {
+          email: res.approver?.email,
+          name: res.approver?.name,
+        },
+        status: STATUSES[res.status],
+        app: formType[res.form.type],
+        approvedAt: res.approvedAt,
+        checkedAt: res.checkedAt,
+        isApproved: res.status === Status.DONE,
+        checkedBy: res.status === Status.REJECTED_BY_CHECKER ? res.checker?.name : res.status === Status.REJECTED_BY_APPROVER ? res.approver?.name : undefined,
+        period: (res.context as { period: Period })?.period,
+      };
     }),
   getManyByYear: protectedProcedure
     .input(
