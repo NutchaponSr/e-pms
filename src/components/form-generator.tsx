@@ -233,7 +233,7 @@ const Selection = <TFieldValues extends FieldValues>({
   }
 
   return (
-    <Select onValueChange={field.onChange}>
+    <Select value={field.value ?? ""} onValueChange={field.onChange}>
       <SelectTrigger className="w-full dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] min-h-10 bg-[#202020] hover:bg-[#213041] transition text-primary data-placeholder:text-marine border-none">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

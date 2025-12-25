@@ -43,3 +43,8 @@ export const PERIOD_LABELS: Record<Period, string> = {
   [Period.EVALUATION_1ST]: "Evaluation 1st",
   [Period.EVALUATION_2ND]: "Evaluation 2nd",
 };
+
+export const formType: Record<FormType, string> = {
+  [FormType.MERIT]: "Merit",
+  [FormType.KPI]: "KPI",
+};
