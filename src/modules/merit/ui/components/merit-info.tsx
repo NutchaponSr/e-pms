@@ -29,6 +29,8 @@ import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Select, SelectValue, SelectTrigger, SelectItem, SelectContent } from "@/components/ui/select";
+import { useExportMerit } from "../../api/use-export-merit";
+import { Button } from "@/components/ui/button";
 
 
 const chartConfig = {
@@ -50,6 +52,7 @@ export const MeritInfo = ({ year }: Props) => {
 
   const createTask = useCreateTask();
   const { data } = useSuspenseQuery(trpc.merit.getInfo.queryOptions({ year }));
+  const { mutation: exportMerit, ctx: exportMeritCtx } = useExportMerit();
 
   const chartData = data.chart.map((item) => ({
     period: item.period,
@@ -71,6 +74,12 @@ export const MeritInfo = ({ year }: Props) => {
             </span>
           </div>
         </div>
+
+        {!!data.task.draft && (
+          <Button variant="secondary" size="xs" onClick={() => exportMerit({ id: data.task.draft!.formId })} disabled={exportMeritCtx.isPending}>
+            Export
+          </Button>
+        )}
       </div>
       <div className="px-0 z-1 relative flex flex-col rounded-lg bg-[#202020e6] shadow-[unset] backdrop-blur-[48px] min-h-0 max-h-full py-0 flex-1">
         <div className="basis-0 grow px-9 pt-8 pb-6 border-b border-border">

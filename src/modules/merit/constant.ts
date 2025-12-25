@@ -1,16 +1,5 @@
 import { ExportColumn } from "@/lib/utils";
 
-import { KpiCategory } from "@/generated/prisma/enums";
-
-export const kpiCategoies: Record<KpiCategory, string> = {
-  [KpiCategory.CP]: "Customer Perspective",
-  [KpiCategory.FP]: "Financial Perspective",
-  [KpiCategory.IP]: "Internal Perspective",
-  [KpiCategory.L_G]: "Learning & Growth",
-}
-
-export const requiredFields = ["name", "category", "definition", "method"]
-
 export const columns: ExportColumn[] = [
   {
     key: "employeeId",
@@ -29,12 +18,20 @@ export const columns: ExportColumn[] = [
     header: "Period",
   },
   {
+    key: "type",
+    header: "Type",
+  },
+  {
     key: "performer",
     header: "Performer",
   },
   {
     key: "name",
-    header: "ชื่อ KPI",
+    header: "ชื่อ",
+  },
+  {
+    key: "detail",
+    header: "Detail",
   },
   {
     key: "owner",

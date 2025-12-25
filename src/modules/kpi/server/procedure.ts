@@ -11,8 +11,9 @@ import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
 import { kpiEvaluationSchema } from "@/modules/kpi/schema/evaluation";
 import { kpiDefinitionSchema } from "@/modules/kpi/schema/definition";
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
-import { calculateSumAchievement } from "../utils";
-import { formatDecimal } from "@/lib/utils";
+import { calculateSumAchievement, formatKpiExport } from "../utils";
+import { exportExcel, formatDecimal } from "@/lib/utils";
+import { columns } from "../constants";
 
 export const kpiProcedure = createTRPCRouter({
   getInfo: protectedProcedure
@@ -299,5 +300,49 @@ export const kpiProcedure = createTRPCRouter({
       });
 
       return kpi;
+    }),
+  export: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const kpiForm = await db.form.findUnique({
+        where: {
+          id: input.id,
+        },
+        include: {
+          kpis: true,
+          tasks: {
+            include: {
+              owner: true,
+            },
+          },
+        },
+      });
+
+      if (!kpiForm) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const data = formatKpiExport({
+        ...kpiForm,
+        kpis: kpiForm.kpis,
+        employee: kpiForm.tasks[0].owner,
+      });
+
+      const file = exportExcel([
+        {
+          name: "Score Summary",
+          data,
+          columns,
+        },
+      ]);
+
+      return {
+        file,
+        id: kpiForm.id,
+      };
     }),
 });

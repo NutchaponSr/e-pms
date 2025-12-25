@@ -1,12 +1,14 @@
 import { z } from "zod";
 
-import { KpiCategory } from "@/generated/prisma/enums";
+import { KpiCategory, Period } from "@/generated/prisma/enums";
 import { chiefDown, managerUp, Rank } from "@/types/employees";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
 import { KpiDefinitionsMapping } from "./schema/definition";
-import { KpiEvaluation } from "./schema/evaluation";
-import { Approval } from "../tasks/permissions";
+import { kpiEvaluationSchema } from "./schema/evaluation";
+import { PERIOD_LABELS } from "../tasks/constant";
+import { Employee, Form, KpiEvaluation } from "@/generated/prisma/client";
+import { formatDecimal } from "@/lib/utils";
 
 export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
   const weightStr = kpi.weight == null ? "0" : String(kpi.weight);
@@ -30,7 +32,7 @@ export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
   };
 }
 
-export function kpiEvaluationMap(kpi: KpiEvaluation) {
+export function kpiEvaluationMap(kpi: z.infer<typeof kpiEvaluationSchema>) {
   return {
     id: kpi.id,
     role: kpi.role,
@@ -107,4 +109,51 @@ export function formatValidationErrors(errors: Array<{ row: number; errors: z.Zo
 
 export function calculateSumAchievement(achievements: number[], weights: number[]) {
   return achievements.reduce((acc, achievement, index) => acc + (achievement / 100) * weights[index], 0);
+}
+
+export function formatKpiExport(kpiForm: Form & { kpis: KpiEvaluation[]; employee: Employee }) {
+  const inDraft = kpiForm.kpis.map((kpi) => ({
+    employeeId: kpiForm.employee.id,
+    employeeName: kpiForm.employee.name,
+    year: kpiForm.year,
+    period: PERIOD_LABELS[Period.IN_DRAFT],
+    performer: "Approver",
+    name: kpi.name,
+    percentage: formatDecimal(Number(kpi.weight)),
+  }));
+
+  const createEvaluationData = () =>
+    kpiForm.kpis.flatMap((kpi) => {
+      const base = {
+        employeeId: kpiForm.employee.id,
+        employeeName: kpiForm.employee.name,
+        period: "Evaluation",
+        year: kpiForm.year,
+        owner: kpi.actualOwner,
+        checker: kpi.actualChecker,
+        approver: kpi.actualApprover,
+        name: kpi.name,
+      };
+
+      const performers = [
+        { performer: "Owner", score: kpi.achievementOwner },
+        { performer: "Checker", score: kpi.achievementChecker },
+        { performer: "Approver", score: kpi.achievementApprover },
+      ];
+
+      return performers.map((p) => ({
+        ...base,
+        performer: p.performer,
+        percentage: formatDecimal(Number(kpi.weight) * (p.score || 0) / 100),
+      }));
+    });
+
+  const performerOrder = ["Owner", "Checker", "Approver"];
+
+  const sortByPerformer = (data: Array<{ performer: string }>) =>
+    performerOrder.flatMap((role) => data.filter((d) => d.performer === role));
+
+  const sortedEvaluate = sortByPerformer(createEvaluationData());
+
+  return [...inDraft, ...sortedEvaluate];
 }
