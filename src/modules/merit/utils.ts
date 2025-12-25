@@ -8,6 +8,9 @@ import { Approval } from "../tasks/permissions";
 import { MeritEvaluation } from "./schemas/evaluation";
 import { competencyUploadSchema, cultureUploadSchema } from "./schemas/upload";
 import { CompetencyRecord, CompetencyEvaluation, CultureRecord, CultureEvaluation } from "@/generated/prisma/client";
+import { MeritFormWithInfo } from "./types";
+import { PERIOD_LABELS } from "../tasks/constant";
+import { formatDecimal } from "@/lib/utils";
 
 type MeritFormData = inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"];
 
@@ -293,4 +296,135 @@ export function sumCultureByPeriod(
 
     return acc + (level / maxLevel) * weightPerItem;
   }, 0);
+}
+
+export function formatMeritExport(meritForm: MeritFormWithInfo) {
+  const calcPercentage = (weight: number, decimal: number, achievement?: number) =>
+    formatDecimal(weight * ((achievement ?? 0) / 5));
+
+  const nameOrder = ["S", "M", "A", "R", "T"];
+  const getSortIndex = (name: string | undefined) => {
+    if (!name) return nameOrder.length;
+    const index = nameOrder.indexOf(name);
+    return index === -1 ? nameOrder.length : index;
+  };
+
+  // 🟢 IN_DRAFT
+  const inDraft = [
+    // Competency
+    ...meritForm.competencyRecords.map((c) => ({
+      employeeId: meritForm.employee.id,
+      employeeName: meritForm.employee.name,
+      year: meritForm.year,
+      period: PERIOD_LABELS[Period.IN_DRAFT],
+      performer: "Approver",
+      type: "Competency",
+      name: c.competency?.name,
+      percentage: formatDecimal(Number(c.weight)),
+    })),
+
+    // Culture
+    ...meritForm.cultureRecords
+      .sort((a, b) => {
+        const indexA = getSortIndex(a.culture.code);
+        const indexB = getSortIndex(b.culture.code);
+        return indexA - indexB;
+      })
+      .map((c) => ({
+        employeeId: meritForm.employee.id,
+        employeeName: meritForm.employee.name,
+        year: meritForm.year,
+        period: PERIOD_LABELS[Period.IN_DRAFT],
+        performer: "Approver",
+        type: "Culture",
+        name: c.culture.code,
+        percentage: formatDecimal(30 / meritForm.cultureRecords.length),
+      })),
+  ];
+
+  // 🟡 Helper function สำหรับ Evaluation (1st / 2nd)
+  const createEvaluationData = (periodType: Period) => {
+    const competency = meritForm.competencyRecords.flatMap((c) => {
+      const evaluation = c.competencyEvaluations.find((e) => e.period === periodType);
+
+      const base = {
+        employeeId: meritForm.employee.id,
+        employeeName: meritForm.employee.name,
+        year: meritForm.year,
+        period: PERIOD_LABELS[periodType],
+        type: "Competency" as const,
+        detail: evaluation?.result,
+        owner: evaluation?.actualOwner,
+        checker: evaluation?.actualChecker,
+        approver: evaluation?.actualApprover,
+        name: c.competency?.name,
+      };
+
+      const performers = [
+        { performer: "Owner", score: evaluation?.levelOwner },
+        { performer: "Checker", score: evaluation?.levelChecker },
+        { performer: "Approver", score: evaluation?.levelApprover },
+      ];
+
+      return performers.map((p) => ({
+        ...base,
+        performer: p.performer,
+        percentage: calcPercentage(Number(c.weight), 0, p.score || 0),
+      }));
+    });
+
+    const culture = meritForm.cultureRecords
+      .sort((a, b) => {
+        const indexA = getSortIndex(a.culture.code);
+        const indexB = getSortIndex(b.culture.code);
+        return indexA - indexB;
+      })
+      .flatMap((c) => {
+        const evaluation = c.cultureEvaluations.find((e) => e.period === periodType);
+
+        const base = {
+          employeeId: meritForm.employee.id,
+          employeeName: meritForm.employee.name,
+          year: meritForm.year,
+          period: PERIOD_LABELS[periodType],
+          type: "Culture" as const,
+          name: c.culture.code,
+          detail: evaluation?.result,
+          owner: evaluation?.actualOwner,
+          checker: evaluation?.actualChecker,
+          approver: evaluation?.actualApprover,
+        };
+
+        const weight = 30 / meritForm.cultureRecords.length;
+
+        const performers = [
+          { performer: "Owner", score: evaluation?.levelBehaviorOwner },
+          { performer: "Checker", score: evaluation?.levelBehaviorChecker },
+          { performer: "Approver", score: evaluation?.levelBehaviorApprover },
+        ];
+
+        return performers.map((p) => ({
+          ...base,
+          performer: p.performer,
+          percentage: calcPercentage(weight, 0, p.score || 0),
+        }));
+      });
+
+    return [...competency, ...culture];
+  };
+
+  // 🔵 EVALUATION_1ST + EVALUATION_2ND
+  const evaluation1st = createEvaluationData(Period.EVALUATION_1ST);
+  const evaluation2nd = createEvaluationData(Period.EVALUATION_2ND);
+
+  // 🔴 เรียง performer
+  const performerOrder = ["Owner", "Checker", "Approver"];
+  const sortByPerformer = (data: Array<{ performer: string }>) =>
+    performerOrder.flatMap((role) => data.filter((d) => d.performer === role));
+
+  const sortedEval1st = sortByPerformer(evaluation1st);
+  const sortedEval2nd = sortByPerformer(evaluation2nd);
+
+  // 🟣 รวมทั้งหมด
+  return [...inDraft, ...sortedEval1st, ...sortedEval2nd];
 }

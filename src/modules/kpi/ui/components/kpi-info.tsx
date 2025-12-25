@@ -27,6 +27,8 @@ import { useCreateTask } from "@/modules/tasks/api/use-create-task";
 
 import { isInRange } from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
+import { Button } from "@/components/ui/button";
+import { useExportKpi } from "../../api/use-export-kpi";
 
 const chartConfig = {
   approval: {
@@ -44,6 +46,7 @@ export const KpiInfo = ({ year }: Props) => {
   const router = useRouter();
 
   const createTask = useCreateTask();
+  const { mutation: exportKpi, ctx: exportKpiCtx } = useExportKpi();
 
   const { data } = useSuspenseQuery(trpc.kpi.getInfo.queryOptions({ year }));
 
@@ -60,6 +63,12 @@ export const KpiInfo = ({ year }: Props) => {
             </span>
           </div>
         </div>
+
+        {!!data.task.draft && (
+          <Button variant="secondary" size="xs" onClick={() => exportKpi({ id: data.task.draft!.formId })} disabled={exportKpiCtx.isPending}>
+            Export
+          </Button>
+        )}
       </div>
       <div className="px-0 z-1 relative flex flex-col rounded-lg bg-[#202020e6] shadow-[unset] backdrop-blur-[48px] min-h-0 max-h-full py-0 flex-1">
         <div className="basis-0 grow px-9 pt-8 pb-6 border-b border-border">

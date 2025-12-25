@@ -8,11 +8,13 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/merit/schemas/definition";
-import { sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
+import { formatMeritExport, sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
 import { comepetencyEvaluationSchema, cultureEvaluationSchema } from "../schemas/evaluation";
 import { competencyUploadSchema, cultureUploadSchema } from "../schemas/upload";
 import { PERIOD_LABELS } from "@/modules/tasks/constant";
+import { exportExcel } from "@/lib/utils";
+import { columns } from "../constant";
 
 export const meritProcedure = createTRPCRouter({
   getInfo: protectedProcedure
@@ -370,5 +372,60 @@ export const meritProcedure = createTRPCRouter({
       });
 
       return record;
+    }),
+  export: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const meritForm = await db.form.findUnique({
+        where: {
+          id: input.id,
+          type: FormType.MERIT,
+        },
+        include: {
+          competencyRecords: {
+            include: {
+              competency: true,
+              competencyEvaluations: true,
+            },
+          },
+          cultureRecords: {
+            include: {
+              culture: true,
+              cultureEvaluations: true,
+            },
+          },
+          tasks: {
+            include: {
+              owner: true,
+            },
+          },
+        },
+      });
+
+      if (!meritForm) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const data = formatMeritExport({
+        ...meritForm,
+        employee: meritForm.tasks[0].owner,
+      });
+
+      const file = exportExcel([
+        {
+          name: "Merit Summary",
+          data,
+          columns,
+        },
+      ]);
+
+      return {
+        file,
+        id: meritForm.id,
+      };
     }),
 });
