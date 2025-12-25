@@ -21,8 +21,6 @@ import {
 
 import { Event } from "@/components/event";
 
-import { useCreateTask } from "@/modules/tasks/api/use-create-task";
-
 import { isInRange } from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { useTRPC } from "@/trpc/client";

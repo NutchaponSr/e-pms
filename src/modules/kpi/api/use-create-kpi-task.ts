@@ -20,10 +20,6 @@ export const useCreateKpiTask = () => {
 
     createKpiTask.mutate(input, {
       onSuccess: ({ id }) => {
-        console.log("KPI task created successfully", { 
-          year: input.year,
-          period: input.period,
-        });
         
         toast.success("KPI Task Created!", { id: "create-kpi-task" });
 

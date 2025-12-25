@@ -112,7 +112,11 @@ export const kpiProcedure = createTRPCRouter({
               approver: true,
             },
           },
-          kpis: true,
+          kpis: {
+            orderBy: {
+              order: "asc",
+            },
+          },
         },
       });
 
@@ -184,9 +188,21 @@ export const kpiProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      const lastKpi = await db.kpiEvaluation.findFirst({
+        where: {
+          formId: input.formId,
+        },
+        orderBy: {
+          order: "desc",
+        },
+      });
+
+      const nextOrder = lastKpi ? lastKpi.order + 100 : 100;
+
       const kpi = await db.kpiEvaluation.create({
         data: {
           formId: input.formId,
+          order: nextOrder,
         },
       });
 
@@ -213,26 +229,21 @@ export const kpiProcedure = createTRPCRouter({
         });
       }
 
-      const { existingForm, cultures } = await db.$transaction(async (tx) => {
-        const existingForm = await tx.form.findFirst({
-          where: {
-            type: FormType.KPI,
-            year: input.year,
-            tasks: {
-              some: {
-                ownerId: ctx.user.username,
-              },
+      const existingForm = await db.form.findFirst({
+        where: {
+          type: FormType.KPI,
+          year: input.year,
+          tasks: {
+            some: {
+              ownerId: ctx.user.username,
             },
           },
-          include: {
-            competencyRecords: true,
-            cultureRecords: true,
-          },
-        });
-        const cultures = await tx.culture.findMany();
-
-        return { existingForm, cultures };
-      }); 
+        },
+        include: {
+          competencyRecords: true,
+          cultureRecords: true,
+        },
+      });
 
       const checkerId = record?.checker && record.checker.trim() !== "" 
         ? record.checker 
@@ -260,6 +271,7 @@ export const kpiProcedure = createTRPCRouter({
 
       form = await db.form.create({
         data: {
+          employeeId: ctx.user.username,
           type: FormType.KPI,
           year: input.year,
           tasks: {
@@ -287,12 +299,24 @@ export const kpiProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      const lastKpi = await db.kpiEvaluation.findFirst({
+        where: {
+          formId: input.formId,
+        },
+        orderBy: {
+          order: "desc",
+        },
+      });
+
+      const baseOrder = lastKpi ? lastKpi.order : 0;
+
       await db.$transaction(async (tx) => {
         await tx.kpiEvaluation.createMany({
-          data: input.kpis.map((kpi) => ({
+          data: input.kpis.map((kpi, index) => ({
             ...kpi,
             formId: input.formId,
             category: kpi.category as KpiCategory,
+            order: baseOrder + (index + 1) * 100,
           })),
         });
 

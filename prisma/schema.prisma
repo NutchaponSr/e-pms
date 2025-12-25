@@ -96,7 +96,8 @@ model Employee {
   checker Task[] @relation("Checker")
   approver Task[] @relation("Approver")
   comments Comment[]
-  
+  forms Form[]
+
   @@map("employee")
 }
 
@@ -148,6 +149,8 @@ enum Period {
 
 model Form {
   id String @id @default(cuid())
+  employeeId String
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   type FormType 
   year Int  
   period Period @default(IN_DRAFT)
@@ -212,6 +215,7 @@ model KpiEvaluation {
   actualApprover String?
   achievementApprover Int?
   fileUrl String?
+  order Int
 
   formId String
   form Form @relation("KpiForm", fields: [formId], references: [id], onDelete: Cascade)
@@ -225,6 +229,7 @@ model CultureRecord {
   cultureId Int
   meritFormId String
   evidence String? @db.Text
+  order Int
 
   form Form @relation("CultureForm", fields: [meritFormId], references: [id], onDelete: Cascade)
   culture Culture @relation(fields: [cultureId], references: [id], onDelete: Cascade)
@@ -306,6 +311,7 @@ model CompetencyRecord {
   expectedLevel Int?
   input String? @db.Text
   output String? @db.Text
+  order Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
