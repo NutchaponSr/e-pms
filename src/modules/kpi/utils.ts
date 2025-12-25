@@ -72,7 +72,6 @@ export function validateKpiUpload(sheet: Array<Record<string, any>>) {
   sheet.forEach((row, index) => {
     const rowNumber = (row._rowIndex as number) || index + 2
 
-    // Skip blank rows
     if (isBlankRow(row)) {
       return;
     }
@@ -104,4 +103,8 @@ export function formatValidationErrors(errors: Array<{ row: number; errors: z.Zo
       message: fieldErrors,
     }
   })
+}
+
+export function calculateSumAchievement(achievements: number[], weights: number[]) {
+  return achievements.reduce((acc, achievement, index) => acc + (achievement / 100) * weights[index], 0);
 }

@@ -36,3 +36,10 @@ export const periodRoutes: Record<Period, string> = {
   [Period.EVALUATION_1ST]: "evaluation1st",
   [Period.EVALUATION_2ND]: "evaluation2nd",
 };
+
+export const PERIOD_LABELS: Record<Period, string> = {
+  [Period.IN_DRAFT]: "In Draft",
+  [Period.EVALUATION]: "Evaluation",
+  [Period.EVALUATION_1ST]: "Evaluation 1st",
+  [Period.EVALUATION_2ND]: "Evaluation 2nd",
+};

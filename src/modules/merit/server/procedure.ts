@@ -8,12 +8,92 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/merit/schemas/definition";
-import { validateWeight } from "../utils";
+import { sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
 import { comepetencyEvaluationSchema, cultureEvaluationSchema } from "../schemas/evaluation";
 import { competencyUploadSchema, cultureUploadSchema } from "../schemas/upload";
+import { PERIOD_LABELS } from "@/modules/tasks/constant";
 
 export const meritProcedure = createTRPCRouter({
+  getInfo: protectedProcedure
+    .input(
+      z.object({
+        year: z.number(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const form = await db.form.findFirst({
+        where: {
+          type: FormType.MERIT,
+          year: input.year,
+          tasks: {
+            some: {
+              ownerId: ctx.user.username,
+            },
+          },
+        },
+        include: {
+          tasks: true,
+          competencyRecords: {
+            include: {
+              competencyEvaluations: true,
+            },
+          },
+          cultureRecords: {
+            include: {
+              cultureEvaluations: true,
+            },
+          },
+        },
+      });
+
+      return {
+        task: {
+          draft: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period === Period.IN_DRAFT,
+          ),
+          evaluation1st: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period ===
+              Period.EVALUATION_1ST,
+          ),
+          evaluation2nd: form?.tasks.find(
+            (t) =>
+              (t.context as { period: Period })?.period ===
+              Period.EVALUATION_2ND,
+          ),
+        },
+        chart: [
+          {
+            period: PERIOD_LABELS[Period.EVALUATION_1ST],
+            competency: {
+              owner: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelOwner"),
+              checker: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelChecker"),
+              approver: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelApprover"),
+            },
+            culture: {
+              owner: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorOwner"),
+              checker: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorChecker"),
+              approver: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorApprover"),
+            },
+          },
+          {
+            period: PERIOD_LABELS[Period.EVALUATION_2ND],
+            competency: {
+              owner: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelOwner"),
+              checker: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelChecker"),
+              approver: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelApprover"),
+            },
+            culture: {
+              owner: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorOwner"),
+              checker: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorChecker"),
+              approver: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorApprover"),
+            },
+          }
+        ]
+      };
+    }),
   getOne: protectedProcedure
     .input(
       z.object({
@@ -291,39 +371,4 @@ export const meritProcedure = createTRPCRouter({
 
       return record;
     }),
-  // upload: protectedProcedure
-  //   .input(
-  //     z.object({
-  //       competencies: z.array(competencyUploadSchema),
-  //       cultures: z.array(cultureUploadSchema),
-  //     }),
-  //   )
-  //   .mutation(async ({ input }) => {
-  //     if (input.competencies.length === 0 && input.cultures.length === 0) return { success: true };
-
-  //     await Promise.all(input.competencies.map((competency) => {
-  //       return db.competencyRecord.update({
-  //         data: {
-  //           competencyId: competency.competencyId,
-  //           expectedLevel: competency.expectedLevel,
-  //           input: competency.input,
-  //           output: competency.output,
-  //           weight: competency.weight,
-  //           meritFormId: input.meritFormId,
-  //         },
-  //       });
-  //     }));
-      
-  //     await Promise.all(input.cultures.map((culture) => {
-  //       return db.cultureRecord.create({
-  //         data: {
-  //           cultureId: cultureIds.find((c) => c.code === culture.code)!.id,
-  //           evidence: culture.evidence,
-  //           meritFormId: input.meritFormId,
-  //         },
-  //       });
-  //     }));
-
-  //     return { success: true };
-  //     }),
 });
