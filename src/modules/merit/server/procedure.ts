@@ -142,6 +142,9 @@ export const meritProcedure = createTRPCRouter({
               },
               competency: true,
             },
+            orderBy: {
+              order: "asc",
+            },
           },
           cultureRecords: {
             include: {
@@ -151,6 +154,9 @@ export const meritProcedure = createTRPCRouter({
                 },
               },
               culture: true,
+            },
+            orderBy: {
+              order: "asc",
             },
           },
         },
@@ -389,6 +395,7 @@ export const meritProcedure = createTRPCRouter({
       } else {
         form = await db.form.create({
           data: {
+            employeeId: ctx.user.username,
             type: FormType.MERIT,
             year: input.year,
             tasks: {
@@ -401,6 +408,21 @@ export const meritProcedure = createTRPCRouter({
                 context: {
                   period: input.period,
                 },
+              },
+            },
+            competencyRecords: {
+              createMany: {
+                data: Array.from({ length: 4 }, (_, index) => ({
+                  order: (index + 1) * 100,
+                }))
+              },
+            },
+            cultureRecords: {
+              createMany: {
+                data: cultures.map((culture, index) => ({
+                  cultureId: culture.id,
+                  order: (index + 1) * 100,
+                })),
               },
             },
           },
@@ -418,8 +440,6 @@ export const meritProcedure = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       if (input.competencies.length === 0 && input.cultures.length === 0) return { success: true };
-
-      console.log(input);
 
       const normalizeEmptyStringToNull = <T extends Record<string, unknown>>(
         obj: T,

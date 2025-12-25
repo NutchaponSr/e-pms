@@ -20,10 +20,6 @@ export const useCreateMeritTask = () => {
 
     createMeritTask.mutate(input, {
       onSuccess: ({ id }) => {
-        console.log("Merit task created successfully", { 
-          year: input.year,
-          period: input.period,
-        });
         
         toast.success("Merit Task Created!", { id: "create-merit-task" });
 
