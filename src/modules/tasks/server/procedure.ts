@@ -10,11 +10,12 @@ import { generateTaskId } from "@/modules/tasks/utils";
 import { TRPCError } from "@trpc/server";
 import { buildPermissionContext, getUserRole } from "../permissions";
 
-interface ApprovalCVSProps {
+interface ApprovalCSVProps {
   employeeId: string;
   checker?: string;
   approver: string;
 }
+
 
 export const taskProcedure = createTRPCRouter({
   getOne: protectedProcedure
@@ -119,7 +120,7 @@ export const taskProcedure = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const file = path.join(process.cwd(), "src/data", "approval.csv");
 
-      const record = readCSV<ApprovalCVSProps>(file).find(
+      const record = readCSV<ApprovalCSVProps>(file).find(
         (r) => r.employeeId === ctx.user.username,
       );
 
@@ -378,5 +379,153 @@ export const taskProcedure = createTRPCRouter({
       return { 
         id: res.formId,
       }
-    })
+    }),
+  getManyByYear: protectedProcedure
+    .input(
+      z.object({
+        year: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const approvalFile = path.join(process.cwd(), "src/data", "approval.csv");
+      const approvalRecords = readCSV<ApprovalCSVProps>(approvalFile);
+
+      const targetApproval = approvalRecords
+        .filter(
+          (f) =>
+            f.checker === ctx.user.employee.id ||
+            f.approver === ctx.user.employee.id,
+        )
+        .map((record) => record.employeeId);
+
+      const [forms, employees] = await Promise.all([
+        db.form.findMany({
+          where: {
+            AND: [
+              {
+                tasks: {
+                  some: {
+                    ownerId: {
+                      in: targetApproval,
+                    },
+                  },
+                },
+              },
+              {
+                year: {
+                  gte: input.year - 1,
+                  lte: input.year,
+                },
+              },
+            ],
+          },
+          include: {
+            tasks: {
+              orderBy: {
+                updatedAt: "asc",
+              },
+              include: {
+                owner: true,
+              },
+            },
+          },
+        }),
+        db.employee.findMany({
+          where: {
+            id: {
+              in: targetApproval,
+            },
+          },
+        }),
+      ]);
+
+      const kpiFormsByEmployee = forms.filter((f) => f.type === FormType.KPI).reduce<
+        Record<string, (typeof forms)[0][]>
+      >((acc, form) => {
+        acc[form.tasks[0].ownerId] ??= [];
+        acc[form.tasks[0].ownerId].push(form);
+        return acc;
+      }, {});
+
+      const meritFormsByEmployee = forms.filter((f) => f.type === FormType.MERIT).reduce<
+        Record<string, (typeof forms)[0][]>
+      >((acc, form) => {
+        acc[form.tasks[0].ownerId] ??= [];
+        acc[form.tasks[0].ownerId].push(form);
+        return acc;
+      }, {});
+
+      // หา employee ที่ไม่มี form ใดๆ
+      const employeesWithNoForm = employees.filter(
+        (emp) =>
+          !kpiFormsByEmployee[emp.id]?.length &&
+          !meritFormsByEmployee[emp.id]?.length,
+      );
+      
+      
+      const kpiPending = forms.filter((f) => f.type === FormType.KPI)
+        .flatMap((k) => k.tasks)
+        .filter((t) => t.status === Status.PENDING_CHECKER || t.status === Status.PENDING_APPROVER)
+        .length;
+
+      const meritPending = forms.filter((f) => f.type === FormType.MERIT)
+        .flatMap((m) => m.tasks)
+        .filter((t) => t.status === Status.PENDING_CHECKER || t.status === Status.PENDING_APPROVER)
+        .length;
+
+      return {
+        info: {
+          total: employees.length,
+          done: {
+            bonus: forms.filter((f) => f.type === FormType.KPI && f.period === Period.EVALUATION).length,
+            merit: forms.filter((f) => f.type === FormType.MERIT && f.period === Period.EVALUATION).length,
+          },
+          notDone: {
+            bonus:
+              forms.filter((f) => f.type === FormType.KPI && f.period !== Period.EVALUATION).length +
+              employeesWithNoForm.length,
+            merit:
+              forms.filter((f) => f.type === FormType.MERIT && f.period !== Period.EVALUATION).length +
+              employeesWithNoForm.length,
+          },
+          pending: kpiPending + meritPending,
+        },
+        employees: employees.map((employee) => {
+          const employeeKpiForms = kpiFormsByEmployee[employee.id] || [];
+          const employeeMeritForms = meritFormsByEmployee[employee.id] || [];
+  
+          // หา form ที่ตรงกับปีที่ต้องการ (prioritize current year)
+          const kpiForm =
+            employeeKpiForms.find((f) => f.year === input.year) ||
+            employeeKpiForms[0] ||
+            null;
+          const meritForm =
+            employeeMeritForms.find((f) => f.year === input.year) ||
+            employeeMeritForms[0] ||
+            null;
+  
+          // รวม tasks จาก form ทั้งหมด
+          const allKpiTasks = employeeKpiForms.flatMap((f) => f.tasks);
+          const allMeritTasks = employeeMeritForms.flatMap((f) => f.tasks);
+  
+          return {
+            employee,
+            form: {
+              bonus: kpiForm
+                ? {
+                    ...kpiForm,
+                    tasks: allKpiTasks,
+                  }
+                : null,
+              merit: meritForm
+                ? {
+                    ...meritForm,
+                    tasks: allMeritTasks,
+                  }
+                : null,
+            },
+          };
+        }),
+      };
+    }),
 });

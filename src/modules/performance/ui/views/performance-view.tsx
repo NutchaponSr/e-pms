@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { KpiInfo } from "@/modules/kpi/ui/components/kpi-info";
 import { MeritInfo } from "@/modules/merit/ui/components/merit-info";
 import { TaskSection } from "@/modules/tasks/ui/components/task-section";
+import { FormTracker } from "@/modules/tasks/ui/components/form-tracker";
 
 interface Props {
   year: number;
@@ -56,6 +57,9 @@ export const PerformanceView = ({ year }: Props) => {
         </div>
         <div className="col-start-2 select-none">
           <TaskSection />
+        </div>
+        <div className="col-start-2 select-none">
+          <FormTracker year={year} />
         </div>
       </Tabs>
     </div>
