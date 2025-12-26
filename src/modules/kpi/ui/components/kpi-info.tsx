@@ -57,7 +57,7 @@ export const KpiInfo = ({ year }: Props) => {
             <div className="flex items-center justify-center size-4 me-2">
               <TargetIcon className="size-3.5 shrink-0 block text-secondary" />
             </div>
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium">
               KPI Bonus
             </span>
           </div>
@@ -69,7 +69,7 @@ export const KpiInfo = ({ year }: Props) => {
           </Button>
         )}
       </div>
-      <div className="px-0 z-1 relative flex flex-col rounded-lg bg-[#202020e6] shadow-[unset] backdrop-blur-[48px] min-h-0 max-h-full py-0 flex-1">
+      <div className="px-0 z-1 relative flex flex-col rounded-lg bg-[#ffffffe6] dark:bg-[#202020e6] dark:shadow-[unset] backdrop-blur-[48px] min-h-0 max-h-full py-0 flex-1 shadow-[0_12px_32px_0_rgba(0,0,0,0.02),0_0_0_1.25px_rgba(0,0,0,0.05)]">
         <div className="basis-0 grow px-9 pt-8 pb-6 border-b border-border">
           <div className="flex flex-col justify-start min-h-full text-tertiary overflow-hidden text-sm">
             <Event
@@ -151,7 +151,7 @@ export const KpiInfo = ({ year }: Props) => {
                   dataKey="label"
                   tickLine={false}
                   tickMargin={8}
-                  tick={{ fill: "var(--color-primary)" }}
+                  tick={{ fill: "var(--color-chart)" }}
                 />
                 <YAxis
                   axisLine={false}

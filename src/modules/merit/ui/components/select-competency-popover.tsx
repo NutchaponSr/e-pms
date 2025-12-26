@@ -80,22 +80,22 @@ export const SelectCompetencyPopover = ({ value, types, perform, onSelect, selec
       <PopoverContent 
         align="start" 
         side="bottom" 
-        className="p-0 bg-[#252525] max-w-[calc(100vw-24px)] overflow-hidden w-[414px] border-border/50 shadow-xl" 
+        className="p-0 max-w-[calc(100vw-24px)] overflow-hidden w-[414px] border-border/50 shadow-xl" 
         sideOffset={4}
       >
         <Command 
-          className="min-w-[180px] max-w-[calc(100vw-24px)] h-[50vh] max-h-[70vh]"
+          className="min-w-[180px] max-w-[calc(100vw-24px)] h-auto max-h-[70vh]"
           shouldFilter={true}
         >
           <div className="shrink-0 border-b border-border/30">
             <div className="flex items-center gap-2 px-3 py-2.5">
-              <div className="flex items-center w-full text-sm leading-5 relative rounded-sm dark:shadow-[0_0_0_1.25px_#ffffff13] dark:bg-[#ffffff0e] cursor-text px-3 h-7 py-0.5 transition-all duration-200 focus-within:shadow-[0_0_0_1.5px_#ffffff20]">
+              <div className="flex items-center w-full text-sm leading-5 relative rounded-sm dark:shadow-[0_0_0_1.25px_#ffffff13] bg-input cursor-text px-3 h-7 py-0.5 transition-all duration-200 focus-within:shadow-[0_0_0_1.5px_#ffffff20]">
                 <Search className="absolute left-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Command.Input 
                   placeholder="ค้นหา Competency..."
                   value={searchQuery}
                   onValueChange={setSearchQuery}
-                  className="w-full block resize-none p-0 pl-7 bg-transparent focus-visible:outline-none focus-visible:ring-0 text-sm placeholder:text-muted-foreground"
+                  className="w-full block resize-none p-0 pl-5 bg-transparent focus-visible:outline-none focus-visible:ring-0 text-sm placeholder:text-muted-foreground"
                 />
               </div>
             </div>

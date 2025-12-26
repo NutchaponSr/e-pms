@@ -164,7 +164,7 @@ export const CultureEvaluationContent = ({
                   <FormControl>
                     <AttachButton
                       value={field.value as string | null}
-                      canPerform={true}
+                      canPerform={permissions.canPerformOwner}
                       onChange={field.onChange}
                       onRemove={() => deleteCultureFile({ id: eva1st!.id })}
                     />

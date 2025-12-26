@@ -12,11 +12,12 @@ interface Props {
   id: string;
   taskId: string;
   period: Period;
+  app: string;
   confirmTitle?: string;
   onSave?: () => void;
 }
 
-export const Confirmation = ({ id, taskId, period, confirmTitle, onSave }: Props) => {
+export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: Props) => {
   const { save } = useSaveForm();
   const { mutation: confirmation, ctx } = useConfirmation(id, period);
 
@@ -36,11 +37,11 @@ export const Confirmation = ({ id, taskId, period, confirmTitle, onSave }: Props
 
   return (
     <div className="transition-opacity opacity-100 relative">
-      <div className="absolute bottom-5 translate-x-[calc(-50%+120px)] left-1/2 z-9999 dark:shadow-[0_3px_18px_0px_#00000008] w-[30%] isolation-auto flex items-center justify-between flex-row p-3 rounded-md border border-[#383836] backdrop-blur-xl bg-[#32302c] gap-3">
+      <div className="absolute bottom-5 translate-x-[calc(-50%+120px)] left-1/2 z-9999 dark:shadow-[0_3px_18px_0px_#00000008] w-[30%] isolation-auto flex items-center justify-between flex-row p-3 rounded-md border border-[#e6e5e3] dark:border-[#383836] backdrop-blur-xl dark:bg-[#32302c] gap-3 bg-[#5448310a] shadow-[0_3px_18px_0px_#00000008]">
         <div className="flex items-center gap-2">
           <div className="flex items-start flex-col">
             <div className="text-sm leading-5">
-              KPI Bonus
+              {app}
             </div>
             <div className="text-xs leading-4 text-tertiary">
               confirmation

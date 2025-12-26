@@ -25,6 +25,8 @@ import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { useEvaluateKpis } from "../../api/use-evaluate-kpis";
 import { EmployeeInfo } from "@/components/employee-info";
 import { NumberTicker } from "@/components/number-ticker";
+import { createPortal } from "react-dom";
+import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
 
 interface Props {
   id: string;
@@ -181,6 +183,18 @@ export const KpiEvaluationScreen = ({
             ))}
           </div>
         </div>
+
+        {props.permissions.approve && createPortal(
+          <Confirmation 
+            id={id} 
+            app="KPI Bonus"
+            taskId={form.tasks.id} 
+            period={period} 
+            confirmTitle="Confirm KPI Evaluation"
+            onSave={() => evaluateKpis({ ...f.getValues(), saved: false })}
+          />,
+          document.body
+        )}
       </form>
     </Form>
   );

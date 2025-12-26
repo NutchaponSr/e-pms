@@ -216,11 +216,11 @@ export const FormTracker = ({ year }: Props) => {
                 <Command>
                   <div className="shrink-0 border-b border-border/30">
                     <div className="flex items-center gap-2 px-3 py-2.5">
-                      <div className="flex items-center w-full text-sm leading-5 relative rounded-sm dark:shadow-[0_0_0_1.25px_#ffffff13] dark:bg-[#ffffff0e] cursor-text px-3 h-7 py-0.5 transition-all duration-200 focus-within:shadow-[0_0_0_1.5px_#ffffff20]">
-                        <SearchIcon className="absolute left-2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <div className="flex items-center w-full text-sm leading-5 relative rounded-sm shadow-[0_0_0_1.25px_#0f0f0f1a] dark:shadow-[0_0_0_1.25px_#ffffff13] bg-input cursor-text px-3 h-7 py-0.5 transition-all duration-200 focus-within:shadow-[0_0_0_1.5px_#ffffff20]">
+                        <SearchIcon className="absolute left-2 h-4 w-4 pointer-events-none" />
                         <Command.Input 
-                          placeholder="ค้นหา Competency..."
-                          className="w-full block resize-none p-0 pl-5 bg-transparent focus-visible:outline-none focus-visible:ring-0 text-sm placeholder:text-muted-foreground"
+                          placeholder="Search..."
+                          className="w-full block resize-none p-0 pl-5 bg-transparent focus-visible:outline-none focus-visible:ring-0 text-sm placeholder:text-tertiary"
                         />
                       </div>
                     </div>

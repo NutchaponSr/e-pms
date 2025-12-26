@@ -109,7 +109,7 @@ export const Message = ({ isLast, comment, permissions }: Props) => {
         </div>
 
         <div data-show={permissions.write} className="absolute end-0.5 -top-1 mt-0 transition group-hover/message:opacity-100 opacity-0 data-[show=false]:group-hover/message:opacity-0">
-          <div className="flex items-center gap-0.5 bg-[#202020] dark:shadow-[0_0_0_1.25px_#383836,0px_4px_12px_-2px_#00000029] rounded-sm w-fit p-0.5">
+          <div className="flex items-center gap-0.5 bg-background shadow-[0_2px_12px_0_rgba(29,27,22,0.06)] dark:shadow-[0px_4px_12px_-2px_#00000029] rounded-sm w-fit p-0.5 border border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="xsIcon" variant="ghost" type="button" className="text-tertiary hover:text-tertiary">

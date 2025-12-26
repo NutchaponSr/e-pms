@@ -24,12 +24,14 @@ interface Props {
 export const PerformanceView = ({ year }: Props) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const years = Array.from({ length: 5 }, (_, index) => new Date().getFullYear() - index);
+  const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
+  const years = [nextYear, ...Array.from({ length: 5 }, (_, index) => currentYear - index)];
 
   return (
     <div className="z-1 w-full h-full cursor-default bg-background overflow-x-hidden overflow-y-auto">
       <Tabs defaultValue={searchParams.year?.toString()} onValueChange={(value) => setSearchParams({ year: parseInt(value) })} className="grid grid-cols-[minmax(0,56px)_minmax(auto,1fr)_minmax(0,56px)] pb-40 relative gap-10">
-        <div className="sticky top-0 col-span-full z-100 bg-background after:absolute after:-bottom-px after:left-0 after:z-50 after:w-full after:h-[1.25px] after:bg-border after:block">
+        <div className="sticky top-0 col-span-full z-100 bg-background after:absolute after:-bottom-[2.75px] after:left-0 after:z-50 after:w-full after:h-[1.25px] after:bg-border after:block">
           <div className="flex items-center px-3">
             <TabsList>
               {years.map((year) => (

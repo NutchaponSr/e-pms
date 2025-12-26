@@ -54,6 +54,7 @@ export const Breadcrumb = () => {
     .map((segment, index) => {
       const path = "/" + segments.slice(0, index + 1).join("/");
 
+      // Check if this specific path should be hidden
       if (HIDDEN_PATHS.some((pattern) => pattern.test(path))) {
         return null;
       }
@@ -68,8 +69,19 @@ export const Breadcrumb = () => {
       };
     })
     .filter((item): item is BreadcrumbItem => item !== null);
-
-  if (breadcrumbs.length === 0) return null;
+  
+  // Show breadcrumb even if no segments (but we have Home link)
+  if (breadcrumbs.length === 0 && pathname !== "/") {
+    return (
+      <nav aria-label="Breadcrumb" className="flex items-center leading-[1.2] text-sm h-full grow-0 min-w-0 me-2">
+        <Button asChild size="xs" variant="ghost">
+          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Home
+          </Link>
+        </Button>
+      </nav>
+    );
+  }
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center leading-[1.2] text-sm h-full grow-0 min-w-0 me-2">
@@ -82,7 +94,7 @@ export const Breadcrumb = () => {
       {breadcrumbs.map((crumb) => (
         <React.Fragment key={crumb.href}>
           <span className="w-2 flex items-center justify-center m-0">
-            <HiSlash className="size-5 text-[#494846] block shrink-0" />
+            <HiSlash className="size-5 text-[#d4d3cf] dark:text-[#494846] block shrink-0" />
           </span>
           {crumb.isDisabled || crumb.isActive ? (
             <span className="px-1 text-sm text-muted-foreground truncate max-w-40">

@@ -26,7 +26,7 @@ export const CardProfile = ({ employee, children }: Props) => {
               name={employee?.name || ""}
               className={{
                 container: "size-10",
-                fallback: "text-xl font-bold bg-[#ffffff18]! rounded-full"
+                fallback: "text-xl font-bold bg-marine! rounded-full text-white!"
               }}
             />
             <div className="flex flex-col gap-[3px] overflow-hidden w-full">
