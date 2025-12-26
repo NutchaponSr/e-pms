@@ -230,13 +230,11 @@ export const meritProcedure = createTRPCRouter({
 
       const competencyRecordsWithComments = plain.competencyRecords.map((record, index) => ({
         ...record,
-        order: index + 1,
         comments: plainCompetencyWithCommentsByRecordId[record.id] || [],
       }));
 
-      const cultureRecordsWithComments = plain.cultureRecords.map((record, index) => ({
+      const cultureRecordsWithComments = plain.cultureRecords.map((record) => ({
         ...record,
-        order: index + 1,
         comments: plainCultureWithCommentsByRecordId[record.id] || [],
       }));
 
