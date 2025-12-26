@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -43,6 +45,15 @@ export const SignInScreen = () => {
   return (
     <>
       <div className="flex flex-col">
+        <div className="flex items-center justify-center">
+          <Image 
+            src="/logo.svg"
+            alt="e-PMS"
+            width={80}
+            height={80}
+          />
+        </div>
+        <div className="h-4 flex" />
         <h1 className="text-wrap whitespace-normal [word-break:break-word] text-2xl">Sign In</h1>
         <h3 className="text-wrap whitespace-normal [word-break:break-word] text-base text-muted-foreground">
           Welcome back to e-PMS!

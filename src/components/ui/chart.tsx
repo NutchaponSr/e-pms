@@ -175,7 +175,7 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        "bg-[#252525] grid min-w-32 items-start gap-1.5 rounded-sm px-2.5 py-1.5 text-xs dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f]",
+        "bg-popover grid min-w-32 items-start gap-1.5 rounded-sm px-2.5 py-1.5 text-xs dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f] shadow-[0_14px_28px_-6px_#0000001a,0_2px_4px_-1px_#0000000f,0_0_0_1.25px_#54483114]",
         className
       )}
     >
@@ -232,7 +232,7 @@ function ChartTooltipContent({
                     >
                       <div className="grid gap-1.5">
                         {nestLabel ? tooltipLabel : null}
-                        <span className="text-primary">
+                        <span className="text-primary capitalize">
                           {itemConfig?.label || item.name}
                         </span>
                       </div>

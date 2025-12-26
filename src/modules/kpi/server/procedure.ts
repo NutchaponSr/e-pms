@@ -36,11 +36,7 @@ export const kpiProcedure = createTRPCRouter({
         where: {
           type: FormType.KPI,
           year: input.year,
-          tasks: {
-            some: {
-              ownerId: ctx.user.username,
-            },
-          },
+          employeeId: ctx.user.username,
         },
         include: {
           tasks: true,

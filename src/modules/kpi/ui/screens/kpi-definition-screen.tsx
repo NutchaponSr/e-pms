@@ -195,6 +195,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
         {permissions.approve && createPortal(
           <Confirmation 
             id={id} 
+            app="KPI Bonus"
             taskId={form.tasks.id} 
             period={period} 
             confirmTitle="Confirm KPI Bonus"

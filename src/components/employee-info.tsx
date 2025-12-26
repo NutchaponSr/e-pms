@@ -28,7 +28,7 @@ export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
               className={{
                 container:
                   "shrink-0 grow-0 rounded size-7 flex items-center justify-center dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f]",
-                fallback: "bg-[#ffffff18]! rounded text-secondary! text-lg",
+                fallback: "bg-marine! rounded text-white! text-lg",
               }}
             />
             <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis">
@@ -114,54 +114,11 @@ export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
       <div className="xl:col-span-1 col-span-4 xl:border-l-[1.5px] border-t border-border">
         <div className="flex flex-col p-3 h-full grow-0 justify-between">
           <div className="flex items-center gap-1.5 mb-1">
-            <div className="p-1 rounded-sm bg-blue-500">
+            <div className="p-1 rounded-sm bg-marine">
               <FaWeightHanging className="size-3.5 text-white" />
             </div>
             <p className="text-sm font-medium max-w-full whitespace-nowrap overflow-hidden text-ellipsis">Weight</p>
           </div>
-
-          {/* {showActualWeight ? (
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Actual</p>
-                  <span className="text-base font-bold tabular-nums">
-                    <NumberTicker value={weight.actual} decimalPlaces={1} delay={0.2} />
-                  </span>
-                </div>
-              <div>
-                <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Full</p>
-                <span className="text-base font-bold tabular-nums from-foreground to-foreground/70 font-mono">
-                  {weight.full.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-start justify-between">
-              <div className="flex items-start flex-col text-secondary">
-                <span className="text-xs font-medium uppercase tracking-wide">
-                  Full
-                </span>
-              </div>
-              <div className="flex flex-col items-start p-3">
-                <NumberTicker
-                  value={weight.full}
-                  decimalPlaces={2}
-                  className="text-3xl font-semibold tracking-tighter whitespace-pre-wrap text-primary"
-                />
-              </div>
-            </div>
-          )}
-
-
-          {showActualWeight && (
-            <div className="space-y-0.5">
-              <span className="text-muted-foreground text-xs">Progress</span>
-              <Progress
-                className="h-1 w-full"
-                  value={Math.min((weight.actual / weight.full) * 100, 100)}
-              />
-            </div>
-          )} */}
           {children}
         </div>
       </div>

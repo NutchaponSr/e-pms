@@ -7,7 +7,7 @@ export const badgeVariant = cva("inline-flex items-center shrink max-w-full w-fi
   {
     variants: {
       color: {
-        orange: "text-[#fbebde] bg-[#ff8f477b]", 
+        orange: "text-[#6a4222] dark:text-[#fbebde] bg-[#c4580034] dark:bg-[#ff8f477b]", 
       },
     },
     defaultVariants: {

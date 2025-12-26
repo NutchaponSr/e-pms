@@ -27,6 +27,8 @@ import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { toast } from "sonner";
 import { competencyLevels, cultureLevels } from "../../constant";
+import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
+import { createPortal } from "react-dom";
 
 interface Props {
   id: string;
@@ -355,6 +357,18 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             </AccordionItem>
           </Accordion>
         </div>
+
+        {permissions.approve && createPortal(
+          <Confirmation 
+            id={id} 
+            app="Merit"
+            taskId={data.tasks.id} 
+            period={period} 
+            confirmTitle="Confirm Merit Evaluation"
+            onSave={() => evaluateBulkMerit({ ...form.getValues(), saved: false })}
+          />,
+          document.body
+        )}
       </form>
     </Form>
   );

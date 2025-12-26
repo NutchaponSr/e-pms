@@ -15,8 +15,8 @@ export const UserProfile = ({ employee } :Props) => {
           <UserAvatar
             name={employee?.name || ""}
             className={{
-              container: "shrink-0 grow-0 rounded size-6 flex items-center justify-center",
-              fallback: "bg-[#ffffff18]! rounded text-secondary! text-sm"
+              container: "shrink-0 grow-0 rounded-full size-6 flex items-center justify-center",
+              fallback: "bg-marine! rounded text-white! text-sm"
             }}
           />
         </div>

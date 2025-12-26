@@ -39,7 +39,7 @@ export const Event = ({
           <div className="flex w-full gap-1 overflow-hidden">
             <div className={cn(
               "w-1 rounded shrink-0", 
-              buttonCtx.active ? "bg-[#2f2f2f]" : "bg-description/10 border-description border border-dashed"
+              buttonCtx.active ? "bg-description" : "bg-description/10 border-description border border-dashed"
             )}/>
             <div className="flex flex-col">
               <div className="flex flex-col grow shrink ps-2.5 overflow-hidden">
@@ -54,7 +54,7 @@ export const Event = ({
                   onClick={buttonCtx.onClick}
                   data-active={buttonCtx.active} 
                   disabled={buttonCtx.disabled}
-                  className="w-fit pt-0.5 px-2 flex-row bg-[#252525] rounded items-center min-h-6 hover:bg-[#2f2f2f] data-[active=true]:flex hidden"
+                  className="w-fit pt-0.5 px-2 flex-row bg-[#0000000d] hover:bg-[#0000001a] dark:bg-[#252525] rounded items-center min-h-6 dark:hover:bg-[#2f2f2f] data-[active=true]:flex hidden text-tertiary"
                 >
                   {buttonCtx.label}
                 </button>

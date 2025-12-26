@@ -35,6 +35,8 @@ import { EmployeeInfo } from "@/components/employee-info";
 import { NumberTicker } from "@/components/number-ticker";
 import { useEffect, useMemo } from "react";
 import { MeritUpload } from "../components/merit-upload";
+import { createPortal } from "react-dom";
+import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
 
 interface Props {
   id: string;
@@ -232,6 +234,18 @@ export const MeritDefinitionScreen = ({
             </AccordionItem>
           </Accordion>
         </div>
+        
+        {permissions.approve && createPortal(
+          <Confirmation 
+            id={id} 
+            app="Merit"
+            taskId={data.tasks.id} 
+            period={period} 
+            confirmTitle="Confirm Merit Definition"
+            onSave={() => definitionBulkMerit({ ...form.getValues(), saved: false })}
+          />,
+          document.body
+        )}
       </form>
     </Form>
   );

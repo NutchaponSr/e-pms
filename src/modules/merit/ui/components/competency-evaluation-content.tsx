@@ -166,7 +166,7 @@ export const CompetencyEvaluationContent = ({
                   <FormControl>
                     <AttachButton
                       value={field.value as string | null}
-                      canPerform={true}
+                      canPerform={permissions.canPerformOwner}
                       onChange={field.onChange}
                       onRemove={() => deleteCompetencyFile({ id: eva1st!.id })}
                     />

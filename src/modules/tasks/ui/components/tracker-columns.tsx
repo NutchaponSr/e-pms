@@ -61,7 +61,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
           <>
             {row.original.form.bonus?.tasks[0] && row.original.form.bonus?.tasks[0]?.status !== Status.NOT_STARTED && ( 
               <div className="justify-end absolute top-1.5 mx-1 inset-x-0.5 group-hover/row:flex hidden data-[disabled=true]:group-hover/row:hidden">
-                <div className="sticky flex bg-popover p-0.5 h-6 dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
+                <div className="sticky flex bg-popover p-0.5 h-6 shadow-[0px_4px_12px_-2px_#00000014,0_0_0_1.25px_#54483114] dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
                   <Link 
                     href={`/performance/kpi/${row.original.form.bonus.id}/${periodRoutes[Period.IN_DRAFT]}`} 
                     className="flex items-center justify-center text-[11px] font-medium whitespace-nowrap overflow-hidden text-ellipsis text-primary tracking-wider uppercase px-1 hover:bg-accent rounded"
@@ -88,7 +88,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
               <div 
                 className="justify-end absolute top-1.5 mx-1 inset-x-0.5 group-hover/row:flex hidden data-[disabled=true]:group-hover/row:hidden"
               >
-                <div className="sticky flex bg-popover p-0.5 h-6 dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
+                <div className="sticky flex bg-popover p-0.5 h-6 shadow-[0px_4px_12px_-2px_#00000014,0_0_0_1.25px_#54483114] dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
                   <Link 
                     href={`/performance/kpi/${row.original.form.bonus.id}/${periodRoutes[Period.EVALUATION]}`} 
                     className="flex items-center justify-center text-[11px] font-medium whitespace-nowrap overflow-hidden text-ellipsis text-primary tracking-wider uppercase px-1 hover:bg-accent rounded"
@@ -123,7 +123,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
           <>
             {row.original.form.merit?.tasks[0] && row.original.form.merit?.tasks[0]?.status !== Status.NOT_STARTED && (
               <div className="justify-end absolute top-1.5 mx-1 inset-x-0.5 group-hover/row:flex hidden data-[disabled=true]:group-hover/row:hidden">
-                <div className="sticky flex bg-popover p-0.5 h-6 dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
+                <div className="sticky flex bg-popover p-0.5 h-6 shadow-[0px_4px_12px_-2px_#00000014,0_0_0_1.25px_#54483114] dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
                   <Link 
                     href={`/performance/merit/${row.original.form.merit.id}/${periodRoutes[Period.IN_DRAFT]}`} 
                     className="flex items-center justify-center text-[11px] font-medium whitespace-nowrap overflow-hidden text-ellipsis text-primary tracking-wider uppercase px-1 hover:bg-accent rounded"
@@ -148,7 +148,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
           <>
             {row.original.form.merit?.tasks[1] && row.original.form.merit?.tasks[1]?.status !== Status.NOT_STARTED && (
               <div className="justify-end absolute top-1.5 mx-1 inset-x-0.5 group-hover/row:flex hidden data-[disabled=true]:group-hover/row:hidden">
-                <div className="sticky flex bg-popover p-0.5 h-6 dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
+                <div className="sticky flex bg-popover p-0.5 h-6 shadow-[0px_4px_12px_-2px_#00000014,0_0_0_1.25px_#54483114] dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
                   <Link 
                     href={`/performance/merit/${row.original.form.merit.id}/${periodRoutes[Period.EVALUATION_1ST]}`} 
                     className="flex items-center justify-center text-[11px] font-medium whitespace-nowrap overflow-hidden text-ellipsis text-primary tracking-wider uppercase px-1 hover:bg-accent rounded"
@@ -173,7 +173,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
           <>
             {row.original.form.merit?.tasks[2] && row.original.form.merit?.tasks[2]?.status !== Status.NOT_STARTED && (
               <div className="justify-end absolute top-1.5 mx-1 inset-x-0.5 group-hover/row:flex hidden data-[disabled=true]:group-hover/row:hidden">
-                <div className="sticky flex bg-popover p-0.5 h-6 dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
+                <div className="sticky flex bg-popover p-0.5 h-6 shadow-[0px_4px_12px_-2px_#00000014,0_0_0_1.25px_#54483114] dark:shadow-[0_0_0_1px_#30302e,0px_4px_12px_-2px_#00000029] rounded end-1">
                   <Link 
                     href={`/performance/merit/${row.original.form.merit.id}/${periodRoutes[Period.EVALUATION_2ND]}`} 
                     className="flex items-center justify-center text-[11px] font-medium whitespace-nowrap overflow-hidden text-ellipsis text-primary tracking-wider uppercase px-1 hover:bg-accent rounded"

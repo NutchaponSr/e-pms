@@ -75,7 +75,7 @@ export const CultureDefinitionContent = ({
           label="Evidence"
           className={{
             ...formRecord.blue,
-            form: "col-span-2 grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2",
+            form: "col-span-2 grow-0 shrink-0 basis-auto p-2 box-content h-max bg-[#0080d50c] dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2",
           }}
           textareaRef={(el) => {
             evidenceRef.current = el;
