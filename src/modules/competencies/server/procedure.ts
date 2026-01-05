@@ -29,6 +29,8 @@ export const competencyProcedure = createTRPCRouter({
                     contains: input.search,
                     mode: "insensitive",
                   },
+                },
+                {
                   definition: {
                     contains: input.search,
                     mode: "insensitive",
