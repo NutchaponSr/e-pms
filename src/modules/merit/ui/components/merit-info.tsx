@@ -31,7 +31,6 @@ import { useExportMerit } from "../../api/use-export-merit";
 import { Button } from "@/components/ui/button";
 import { useCreateMeritTask } from "../../api/use-create-merit-task";
 
-
 const chartConfig = {
   approval: {
     label: "Approval",
@@ -49,9 +48,10 @@ export const MeritInfo = ({ year }: Props) => {
 
   const [selectedCategory, setSelectedCategory] = useState<"competency" | "culture">("competency");
 
-  const { mutation: createTask, ctx: createMeritTaskCtx } = useCreateMeritTask();
   const { data } = useSuspenseQuery(trpc.merit.getInfo.queryOptions({ year }));
+
   const { mutation: exportMerit, ctx: exportMeritCtx } = useExportMerit();
+  const { mutation: createTask, ctx: createMeritTaskCtx } = useCreateMeritTask();
 
   const chartData = data.chart.map((item) => ({
     period: item.period,
@@ -123,7 +123,7 @@ export const MeritInfo = ({ year }: Props) => {
                 active: data.task.draft?.status === Status.DONE,
                 label: !!data.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, 12, 2025)) {
+                  if (!isInRange(year, 1, 6, 2025)) {
                     toast.error(
                       "You can only evaluate Merit from January to June",
                     );
@@ -152,9 +152,9 @@ export const MeritInfo = ({ year }: Props) => {
                 active: data.task.evaluation1st?.status === Status.DONE,
                 label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, 12, 2025)) {
+                  if (!isInRange(year, 7, 12, 2025)) {
                     toast.error(
-                      "You can only evaluate Merit from January to June",
+                      "You can only evaluate Merit from July to December",
                     );
                     return;
                   }

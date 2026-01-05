@@ -38,7 +38,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-9999 bg-black/50",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-9999 bg-black/30",
         className
       )}
       {...props}
@@ -60,7 +60,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-9999 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-sm p-6 duration-200 outline-none sm:max-w-lg dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f] shadow-[0_14px_28px_-6px_#0000001a,0_2px_4px_-1px_#0000000f,0_0_0_1.25px_#54483114]",
+          "bg-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-9999 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-0 rounded-sm p-6 duration-200 outline-none sm:max-w-lg dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f] shadow-[0_24px_48px_-8px_#0000003d,0_4px_12px_-1px_#0000001f,0_0_0_1.25px_#54483114] backdrop-blur-2xl",
           className
         )}
         {...props}
@@ -129,6 +129,14 @@ function DialogDescription({
   )
 }
 
+function DialogHidden() {
+  return (
+    <DialogHeader>
+      <DialogPrimitive.Title className="sr-only"></DialogPrimitive.Title>
+    </DialogHeader>
+  );
+}
+
 export {
   Dialog,
   DialogClose,
@@ -140,4 +148,5 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  DialogHidden,
 }
