@@ -9,16 +9,37 @@ export const competencyProcedure = createTRPCRouter({
   getMany: protectedProcedure
     .input(
       z.object({
+        search: z.string().optional(),
         types: z.array(z.enum(CompetencyType)),
       }),
     )
     .query(async ({ input }) => {
       const res = await db.competency.findMany({
         where: {
-          type: {
-            in: input.types,
-          },
-        },
+          AND: [
+            {
+              type: {
+                in: input.types,
+              },
+            },
+            {
+              OR: [
+                {
+                  name: {
+                    contains: input.search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  definition: {
+                    contains: input.search,
+                    mode: "insensitive",
+                  },
+                },
+              ],
+            }
+          ]
+        }
       });
 
       return res;

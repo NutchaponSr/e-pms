@@ -7,7 +7,7 @@ export function generateTaskId(): string {
 export function isInRange(year: number, start: number, end: number, exceptYear?: number): boolean {
   const now = new Date();
   const currentYear = getYear(now);
-  const currentMonth = getMonth(now);
+  const currentMonth = getMonth(now) + 1; // getMonth returns 0-11, but we need 1-12
 
   if (!!exceptYear && currentYear <= exceptYear) return true;
 
