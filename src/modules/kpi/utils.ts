@@ -24,7 +24,7 @@ export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
     strategy: kpi.strategy ?? "",
     method: kpi.method ?? "",
     type: kpi.type,
-    target120: kpi.target120,
+    target60: kpi.target60,
     target70: kpi.target70,
     target80: kpi.target80,
     target90: kpi.target90,

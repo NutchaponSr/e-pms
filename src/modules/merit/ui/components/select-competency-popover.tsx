@@ -31,6 +31,7 @@ interface Props {
 
 export const SelectCompetencyPopover = ({ 
   types, 
+  perform,
   onSelect, 
   selectedCompetencyId, 
   value, 
@@ -71,25 +72,26 @@ export const SelectCompetencyPopover = ({
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
+      <DialogTrigger disabled={!perform} asChild>
         <Button 
           type="button" 
           size="lg" 
-          data-selected={isButtonSelected}
           className={cn(
-            "w-full justify-between text-xl text-tertiary transition-all duration-200",
-            "hover:bg-accent/10 hover:text-tertiary data-[selected=true]:text-primary",
-            isButtonSelected && "font-medium text-foreground"
+            "w-full justify-between text-xl text-tertiary transition-all",
+            isButtonSelected && "font-medium text-foreground",
+            !perform && "text-primary opacity-100!"
           )} 
-          variant="ghost"
+          variant={!perform ? "ghost" :"outline"}
         >
           <span className="truncate flex-1 text-left">{displayText}</span>
-          <ChevronDownIcon 
-            className={cn(
-              "ml-2 size-6 shrink-0 transition-transform duration-200",
-              isButtonSelected && "rotate-180"
-            )} 
-          />
+          {perform && (
+            <ChevronDownIcon 
+              className={cn(
+                "ml-2 size-6 shrink-0 transition-transform duration-200 stroke-[1.5]",
+                isButtonSelected && "rotate-180"
+              )} 
+            />
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false} className="max-w-[755px]! w-full top-1/4! p-0 translate-y-[-25%]">

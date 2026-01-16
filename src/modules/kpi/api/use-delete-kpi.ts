@@ -12,12 +12,12 @@ export const useDeleteKpi = (formId: string, period: Period) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const createKpi = useMutation(trpc.kpi.delete.mutationOptions());
+  const deleteKpi = useMutation(trpc.kpi.delete.mutationOptions());
 
   const mutation = (value: RequestType) => {
     toast.loading("Deleting KPI...", { id: "delete-kpi" });
 
-    createKpi.mutate(value, {
+    deleteKpi.mutate(value, {
       onSuccess: () => {
         queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id: formId, period }));
 
@@ -29,5 +29,8 @@ export const useDeleteKpi = (formId: string, period: Period) => {
     });
   };
 
-  return mutation;
+  return {
+    mutation,
+    opt: deleteKpi,
+  };
 };

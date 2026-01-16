@@ -18,9 +18,6 @@ export const useExportKpi = () => {
     const res = await exportExcel.mutateAsync({
       ...value,
     }, {
-      onSuccess: () => {
-        toast.success("Exported!", { id: "export" });
-      },
       onError: (ctx) => {
         toast.error(ctx.message || "Something went wrong", { id: "export" });
       },

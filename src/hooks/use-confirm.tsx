@@ -50,7 +50,7 @@ export const useConfirm = ({
 
   const ConfirmationDialog = () => (
     <Dialog open={promise !== null} modal={false}>
-      <DialogContent showCloseButton={false} className={cn(className)}>
+      <DialogContent showCloseButton={false} className={cn(className, "gap-5")}>
         <DialogHeader className="flex flex-col relative gap-2 items-center w-full">
           <DialogTitle>
             {title}

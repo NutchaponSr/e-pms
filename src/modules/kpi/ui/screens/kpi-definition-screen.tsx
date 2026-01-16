@@ -177,17 +177,16 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
             className="grid grid-cols-1 gap-y-6 data-[empty=true]:hidden"
           >
             {fields.map((field, index) => (
-              <Card key={field.fieldId} className="group/card">
-                <KpiDefinitionContent 
-                  kpi={field} 
-                  index={index} 
-                  form={f} 
-                  formId={id} 
-                  period={period} 
-                  permissions={permissions}
-                  comments={form?.kpis.find((kpi) => kpi.id === field.id)?.comments || []}
-                />
-              </Card>
+              <KpiDefinitionContent 
+                kpi={field} 
+                index={index}
+                key={field.id} 
+                form={f} 
+                formId={id} 
+                period={period} 
+                permissions={permissions}
+                comments={form?.kpis.find((kpi) => kpi.id === field.id)?.comments || []}
+              />
             ))}
           </div>
         </div>

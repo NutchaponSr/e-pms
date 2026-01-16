@@ -1,21 +1,21 @@
-import * as React from "react";
-import { KpiDefinition, KpiDefinitions } from "../../schema/definition";
+import { KpiDefinition, KpiDefinitions } from "@/modules/kpi/schema/definition";
 import { UseFormReturn } from "react-hook-form";
-import { kpiCategoies } from "../../constants";
-import { MoreHorizontalIcon, TargetIcon } from "lucide-react";
-import { CommentSection } from "@/components/comment-section";
-import { Separator } from "@/components/ui/separator";
-import { useCreateComment } from "@/modules/comments/api/use-create-comment";
+
 import { Period } from "@/generated/prisma/enums";
 import { CommentWithEmployee } from "@/modules/comments/types";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BsTrash3 } from "react-icons/bs";
-import { useDeleteKpi } from "../../api/use-delete-kpi";
-import { FormGenerator } from "@/components/form-generator";
-import { formRecord } from "@/types/form";
-import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
 import { Action } from "@/modules/tasks/permissions";
+import { cva } from "class-variance-authority";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/badge";
+import { Button } from "@/components/ui/button";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { kpiCategoies } from "../../constants";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useDeleteKpi } from "../../api/use-delete-kpi";
+import { useConfirm } from "@/hooks/use-confirm";
 
 interface Props {
   kpi: KpiDefinition;
@@ -27,248 +27,298 @@ interface Props {
   permissions: Record<Action, boolean>;
 }
 
+const header = cva("h-8 border-r border-border bg-sidebar shadow-[inset_0_1.25px_0_rgba(42,28,0,0.07),inset_0_-1.25px_0_rgba(42,28,0,0.07)] dark:shadow-[inset_0_1.25px_0_rgba(255,255,243,0.082),inset_0_-1.25px_0_rgba(255,255,243,0.082)] px-2");
+
 export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
-  const createComment = useCreateComment();
-  const deleteKpi = useDeleteKpi(props.formId, props.period);
+  const [ConfirmationDialog, confirm] = useConfirm({
+    title: "Delete KPI",
+    description: "Are you sure you want to delete this KPI?",
+  });
 
-  // Refs for textarea elements
-  const objectiveRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const definitionRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const methodRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const target70Ref = React.useRef<HTMLTextAreaElement | null>(null);
-  const target80Ref = React.useRef<HTMLTextAreaElement | null>(null);
-  const target90Ref = React.useRef<HTMLTextAreaElement | null>(null);
-  const target100Ref = React.useRef<HTMLTextAreaElement | null>(null);
-  const target120Ref = React.useRef<HTMLTextAreaElement | null>(null);
+  const { mutation: deleteKpi } = useDeleteKpi(props.formId, props.period);
 
-  // Use hook to sync textarea heights
-  const { groupSyncFunctions } = useSyncTextareaHeights([
-    {
-      refs: [objectiveRef, definitionRef, methodRef],
-      breakpoint: "(min-width: 1024px)",
-    },
-    {
-      refs: [target70Ref, target80Ref, target90Ref, target100Ref, target120Ref],
-      breakpoint: "(min-width: 768px)",
-    },
-  ]);
+  const [rowHeights, setRowHeights] = useState<number[]>([]);
+  const targetRanges = [
+    "< 70%",
+    "> 70% <= 80%",
+    "> 80% <= 90%",
+    "> 90% <= 100%",
+    "100%",
+  ];
 
-  const syncTextareaHeights = groupSyncFunctions[0];
-  const syncTargetTextareaHeights = groupSyncFunctions[1];
+  const detailRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useLayoutEffect(() => {
+    const updateHeights = () => {
+      const heights = detailRefs.current.map((ref) => {
+        if (!ref) return 81; // Default min height
+        // offsetHeight already includes padding and border
+        return ref.offsetHeight;
+      });
+      setRowHeights(heights);
+    }
+
+    // Initial update with a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      updateHeights();
+    }, 0);
+
+    // Use requestAnimationFrame for immediate update after render
+    const rafId = requestAnimationFrame(() => {
+      updateHeights();
+    });
+
+    const observers: ResizeObserver[] = [];
+    detailRefs.current.forEach((ref) => {
+      if (ref) {
+        const observer = new ResizeObserver(() => {
+          updateHeights();
+        });
+        observer.observe(ref);
+        observers.push(observer);
+      }
+    });
+
+    return () => {
+      clearTimeout(timeoutId);
+      cancelAnimationFrame(rafId);
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
+
+  const onDelete = async () => {
+    const ok = await confirm();
+
+    if (ok) {
+      deleteKpi({ id: props.kpi.id });
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center grow gap-2"> 
-        <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
-          <div className="text-white text-xl font-semibold">
-            {index + 1}
+    <div className="mt-0 min-w-full border-b relative overflow-hidden">
+      <ConfirmationDialog />
+      <div className="grid grid-cols-[1fr_100px_160px_1fr] divide-x divide-border">
+        <div className={cn(header())}>
+          <div className="flex items-center h-full gap-2">
+            <Badge color="orange" label={(index + 1).toString()} />
+            <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis text-start grow">
+              Kpi Details
+            </div>
+            <Button type="button" variant="dangerOutline" size="xxs" onClick={onDelete}>
+              Delete
+            </Button>
           </div>
         </div>
-        <FormGenerator 
-          name={`kpis.${index}.name`}
-          form={form}
-          variant="bigText"
-          disabled={!props.permissions.write}
-          placeholder="KPI's Name"
-          className={{
-            form: "grow",
-            input: "max-w-full w-full whitespace-pre-wrap wrap-break-word p-0.5 -m-0.5 leading-9 overflow-hidden focus-visible:outline-none resize-none h-full field-sizing-content break-all text-2xl font-bold cursor-text",
-          }}
-        />
-      </div>
-
-      <div className="grid lg:grid-cols-4 grid-cols-2 gap-2 overflow-hidden">
-        <FormGenerator 
-          name={`kpis.${index}.category`}
-          form={form}
-          variant="selection"
-          disabled={!props.permissions.write}
-          label="Category"
-          placeholder="Select a Category"
-          className={formRecord.blue}
-          selectOptions={Object.entries(kpiCategoies).map(([key, value]) => ({
-            key,
-            label: value,
-          }))}
-        />
-        <FormGenerator  
-          name={`kpis.${index}.weight`}
-          form={form}
-          variant="numeric"
-          disabled={!props.permissions.write}
-          label="Weight"
-          className={formRecord.blue}
-        />
-        <FormGenerator 
-          name={`kpis.${index}.strategy`}
-          form={form}
-          variant="text"
-          disabled={!props.permissions.write}
-          label="Strategy"
-          className={formRecord.blue}
-        />
-        <FormGenerator 
-          name={`kpis.${index}.type`}
-          form={form}
-          variant="selection"
-          disabled={!props.permissions.write}
-          label="Type"
-          className={formRecord.blue}
-          selectOptions={[{
-            key: "improvement",
-            label: "Improvement",
-          }, {
-            key: "project",
-            label: "Project",
-          }]}
-          placeholder="Select a Type"
-        />
-      </div>
-
-      <div className="grid lg:grid-cols-3 grid-cols-1 gap-2 overflow-hidden">
-        <FormGenerator 
-          name={`kpis.${index}.objective`}
-          form={form}
-          variant="bigText"
-          disabled={!props.permissions.write}
-          label="Objective"
-          className={formRecord.blue}
-          textareaRef={(el) => {
-            objectiveRef.current = el;
-            syncTextareaHeights();
-          }}
-          onInput={() => syncTextareaHeights()}
-        />
-        <FormGenerator 
-          name={`kpis.${index}.definition`}
-          form={form}
-          variant="bigText"
-          disabled={!props.permissions.write}
-          label="Definition"
-          className={formRecord.blue}
-          textareaRef={(el) => {
-            definitionRef.current = el;
-            syncTextareaHeights();
-          }}
-          onInput={() => syncTextareaHeights()}
-        />
-        <FormGenerator 
-          name={`kpis.${index}.method`}
-          form={form}
-          variant="bigText"
-          disabled={!props.permissions.write}
-          label="Method"
-          className={formRecord.blue}
-          textareaRef={(el) => {
-            methodRef.current = el;
-            syncTextareaHeights();
-          }}
-          onInput={() => syncTextareaHeights()}
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="py-0.5 text-sm leading-4.5 text-secondary flex flex-row items-center font-medium gap-1 ms-1.5">
-          <TargetIcon className="size-4 shrink-0 block text-secondary" />
-          Target
+        <div className={cn(header())}>
+          <div className="flex items-center h-full">
+            <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
+              Weight
+            </div>
+          </div>
         </div>
-        <div className="grid md:grid-cols-5 grid-cols-1 gap-2 overflow-hidden">
-          <FormGenerator 
-            name={`kpis.${index}.target70`}
-            form={form}
-            variant="bigText"
-            disabled={!props.permissions.write}
-            label="Need Improve (<80%)"
-            className={formRecord.default}
-            textareaRef={(el) => {
-              target70Ref.current = el;
-              syncTargetTextareaHeights();
-            }}
-            onInput={() => syncTargetTextareaHeights()}
-          />
-          <FormGenerator 
-            name={`kpis.${index}.target80`}
-            form={form}
-            variant="bigText"
-            disabled={!props.permissions.write}
-            label="Level 2 (90%)"
-            className={formRecord.default}
-            textareaRef={(el) => {
-              target80Ref.current = el;
-              syncTargetTextareaHeights();
-            }}
-            onInput={() => syncTargetTextareaHeights()}
-          />
-          <FormGenerator 
-            name={`kpis.${index}.target90`}
-            form={form}
-            variant="bigText"
-            disabled={!props.permissions.write}
-            label="Meet expert (100%)"
-            className={formRecord.default}
-            textareaRef={(el) => {
-              target90Ref.current = el;
-              syncTargetTextareaHeights();
-            }}
-            onInput={() => syncTargetTextareaHeights()}
-          />
-          <FormGenerator 
-            name={`kpis.${index}.target100`}
-            form={form}
-            variant="bigText"
-            disabled={!props.permissions.write}
-            label="Level 4 (110%)"
-            className={formRecord.default}
-            textareaRef={(el) => {
-              target100Ref.current = el;
-              syncTargetTextareaHeights();
-            }}
-            onInput={() => syncTargetTextareaHeights()}
-          />
-          <FormGenerator 
-            name={`kpis.${index}.target120`}
-            form={form}
-            variant="bigText"
-            disabled={!props.permissions.write}
-            label="Outstand (120%)"
-            className={formRecord.default}
-            textareaRef={(el) => {
-              target120Ref.current = el;
-              syncTargetTextareaHeights();
-            }}
-            onInput={() => syncTargetTextareaHeights()}
+        <div className={cn(header())}>
+          <div className="flex items-center h-full">
+            <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
+              Target Range
+            </div>
+          </div>
+        </div>
+        <div className={cn("border-none", header())}>
+          <div className="flex items-center h-full">
+            <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
+              Target Detail
+            </div>
+          </div>
+        </div>
+
+        <div className="p-2 overflow-hidden">
+          <div className="flex flex-col gap-2">
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.category`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Individual KPI</FormLabel>
+                  <Select>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an individual KPI" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(kpiCategoies).map(([key, value]) => (
+                        <SelectItem key={key} value={key}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.name`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">ตัวชี้วัดการดำเนินงานหลัก</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.definition`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">ความหมายและสูตรคำนวณ</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>  
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.method`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">แหล่งข้อมูลที่ใช้วัดผลลัพธ์</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+        <div className="p-2">
+          <FormField 
+            control={form.control}
+            name={`kpis.${index}.weight`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Weight</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field}
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="text-xs"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
-      </div>
-      <Separator />
-      <CommentSection 
-        permissions={props.permissions}
-        comments={props.comments}
-        onCreate={(content) => {
-          createComment({ 
-            connectId: props.kpi.id, 
-            content, 
-            period: props.period, 
-            formId: props.formId 
-          })
-        }} 
-      />
-
-      <div data-show={props.permissions.write} className="absolute end-4 mt-0 transition group-hover/card:opacity-100 opacity-0 z-999 data-[show=false]:group-hover/card:opacity-0">
-        <div className="flex items-center gap-0.5 bg-background shadow-[0_2px_12px_0_rgba(29,27,22,0.06)] dark:shadow-[0px_4px_12px_-2px_#00000029] rounded-sm w-fit p-0.5 border border-border">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="xsIcon" variant="ghost" type="button" className="text-tertiary hover:text-tertiary">
-                <MoreHorizontalIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem variant="destructive" onClick={() => deleteKpi({ id: props.kpi.id })}>
-                <BsTrash3 />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex flex-col divide-y divide-border">
+          {targetRanges.map((item, rangeIndex) => (
+            <div 
+              key={rangeIndex}
+              className="flex items-center justify-center p-3"
+              style={{ 
+                height: rowHeights[rangeIndex] ? `${rowHeights[rangeIndex]}px` : "auto",
+                minHeight: rowHeights[rangeIndex] ? `${rowHeights[rangeIndex]}px` : "81px"
+              }}
+            >
+              <span className="text-sm font-medium font-mono">{item}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col divide-y divide-border">
+          <div ref={(el) => { detailRefs.current[0] = el }} className="p-2">
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.target60`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      value={field.value ?? ""}  
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div ref={(el) => { detailRefs.current[1] = el }} className="p-2">
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.target70`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      value={field.value ?? ""}  
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div ref={(el) => { detailRefs.current[2] = el }} className="p-2">
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.target80`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      value={field.value ?? ""}  
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div ref={(el) => { detailRefs.current[3] = el }} className="p-2">
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.target90`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      value={field.value ?? ""}  
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div ref={(el) => { detailRefs.current[4] = el }} className="p-2">
+            <FormField 
+              control={form.control}
+              name={`kpis.${index}.target100`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      value={field.value ?? ""}  
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
       </div>
     </div>

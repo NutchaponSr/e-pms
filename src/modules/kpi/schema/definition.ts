@@ -2,31 +2,31 @@ import { z } from "zod";
 
 import { KpiCategory } from "@/generated/prisma/enums";
 
-const kpiDefinitionBaseSchema = z.object({
+export const kpiDefinitionSchema = z.object({
   id: z.string(),
   name: z.string().trim().min(1),
   year: z.number(),
   category: z.enum(KpiCategory),
   weight: z.coerce.number().min(0).max(100),
-  objective: z.string().trim().min(1),
+  objective: z.string().trim().nullable().default(null),
   definition: z.string().trim().min(1),
-  strategy: z.string().trim().min(1),
+  strategy: z.string().trim().nullable().default(null),
   method: z.string().trim().min(1),
   target100: z.string().trim().nullable().default(null),
-  target120: z.string().trim().nullable().default(null),
   target80: z.string().trim().nullable().default(null),
   target90: z.string().trim().nullable().default(null),
   target70: z.string().trim().nullable().default(null),
+  target60: z.string().trim().nullable().default(null),
   type: z.string().trim().nullable().default("FP"),
 });
 
-export const kpiDefinitionSchema = kpiDefinitionBaseSchema.refine(
-  (data) => (data.year >= 2025 ? data.type !== null && data.type !== "" : true),
-  {
-    message: "Type is required",
-    path: ["type"],
-  },
-);
+// export const kpiDefinitionSchema = kpiDefinitionBaseSchema.refine(
+//   (data) => (data.year >= 2025 ? data.type !== null && data.type !== "" : true),
+//   {
+//     message: "Type is required",
+//     path: ["type"],
+//   },
+// );
 
 export const kpiDefinitionsSchema = z.object({
   kpis: z.array(kpiDefinitionSchema),
@@ -34,7 +34,7 @@ export const kpiDefinitionsSchema = z.object({
 
 // Schema for raw input data from database (before validation/transformation)
 // Adapted from kpiDefinitionBaseSchema with nullable fields and unknown weight
-export const rawKpiForMappingSchema = kpiDefinitionBaseSchema.extend({
+export const rawKpiForMappingSchema = kpiDefinitionSchema.extend({
   name: z.string().nullable(),
   category: z.enum(KpiCategory).nullable(),
   weight: z.unknown(), // Accepts Decimal, number, string, or null
