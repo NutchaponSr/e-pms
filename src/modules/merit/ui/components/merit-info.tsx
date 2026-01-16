@@ -152,12 +152,12 @@ export const MeritInfo = ({ year }: Props) => {
                 active: data.task.evaluation1st?.status === Status.DONE,
                 label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 7, 12, 2025)) {
-                    toast.error(
-                      "You can only evaluate Merit from July to December",
-                    );
-                    return;
-                  }
+                  // if (!isInRange(year, 7, 12, 2025)) {
+                  //   toast.error(
+                  //     "You can only evaluate Merit from July to December",
+                  //   );
+                  //   return;
+                  // }
 
                   if (!!data.task.evaluation2nd) {
                     router.push(
@@ -166,7 +166,7 @@ export const MeritInfo = ({ year }: Props) => {
                   } else {
                     createTask({
                       year,
-                      period: Period.EVALUATION_1ST,
+                      period: Period.EVALUATION_2ND,
                     });
                   }
                 },

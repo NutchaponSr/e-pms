@@ -15,7 +15,11 @@ export const kpiUploadSchema = z.object({
     .union([z.string(), z.number()])
     .transform((val) => (val === null || val === undefined ? null : String(val).trim() || null))
     .nullable(),
-  target120: z
+  target60: z
+    .union([z.string(), z.number()])
+    .transform((val) => (val === null || val === undefined ? null : String(val).trim() || null))
+    .nullable(),
+  target70: z
     .union([z.string(), z.number()])
     .transform((val) => (val === null || val === undefined ? null : String(val).trim() || null))
     .nullable(),

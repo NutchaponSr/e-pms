@@ -83,42 +83,34 @@ export const CompetencyDefinitionContent = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center grow gap-2"> 
-        <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
-          <div className="text-white text-xl font-semibold">
-            {index + 1}
+      <div className="grid grid-cols-5 gap-2">
+        <div className="flex items-start grow gap-2 col-span-4"> 
+          <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
+            <div className="text-white text-xl font-semibold">
+              {index + 1}
+            </div>
           </div>
+          
+          <FormField 
+            control={form.control}
+            name={`competencies.${index}.competencyId`}
+            render={({ field }) => (
+              <FormItem className="grow">
+                <FormControl>
+                  <SelectCompetencyPopover
+                    perform={permissions.write}
+                    types={allowedTypes}
+                    onSelect={(competency) => field.onChange(competency.id)}
+                      selectedCompetencyId={field.value || competencyRecord.competencyId || selectedCompetency?.id || undefined}
+                      value={field.value || competencyRecord.competencyId || selectedCompetency?.id || ""}
+                      fallbackCompetency={competencyRecord.competency || null}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        
-        <FormField 
-          control={form.control}
-          name={`competencies.${index}.competencyId`}
-          render={({ field }) => (
-            <FormItem className="grow">
-              <FormControl>
-                <SelectCompetencyPopover
-                  perform={permissions.write}
-                  types={allowedTypes}
-                  onSelect={(competency) => field.onChange(competency.id)}
-                    selectedCompetencyId={field.value || competencyRecord.competencyId || selectedCompetency?.id || undefined}
-                    value={field.value || competencyRecord.competencyId || selectedCompetency?.id || ""}
-                    fallbackCompetency={competencyRecord.competency || null}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <div className="grid grid-cols-3 gap-2">
-        <CardInfo label="Description" variant="default" className="col-span-2">
-          <div className="relative w-auto flex items-center px-2.5 py-2">
-            <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-              {definition}
-            </p>
-          </div>
-        </CardInfo>
         <FormGenerator 
           name={`competencies.${index}.weight`}
           form={form}
@@ -127,6 +119,16 @@ export const CompetencyDefinitionContent = ({
           label="Weight"
           className={formRecord.blue}
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        <CardInfo label="Description" variant="default">
+          <div className="relative w-auto flex items-center px-2.5 py-2">
+            <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
+              {definition}
+            </p>
+          </div>
+        </CardInfo>
       </div>
 
       <div className="flex flex-col gap-2">

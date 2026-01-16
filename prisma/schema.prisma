@@ -197,10 +197,10 @@ model KpiEvaluation {
   method String?
 
   target100 String? @db.Text
-  target120 String? @db.Text
   target80 String? @db.Text
   target90 String? @db.Text
   target70 String? @db.Text
+  target60 String? @db.Text
   definition String? @db.Text
   type String?
 

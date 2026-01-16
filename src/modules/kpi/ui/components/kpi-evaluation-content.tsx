@@ -48,63 +48,35 @@ export const KpiEvaluationContent = ({
   finalSumWeight,
 }: Props) => {
   const targetPopulated = useMemo(() => {
-    const targets =
-      year >= 2025
-        ? [
-            {
-              id: "70",
-              title: "< 80%",
-              detail: kpi.target70,
-            },
-            {
-              id: "80",
-              title: "> 80% <= 90%",
-              detail: kpi.target80,
-            },
-            {
-              id: "90",
-              title: "> 90% <= 100%",
-              detail: kpi.target90,
-            },
-            {
-              id: "100",
-              title: "> 100% <= 110%",
-              detail: kpi.target100,
-            },
-            ...(kpi.target120
-              ? [
-                  {
-                    id: "120",
-                    title: "> 110% <= 120%",
-                    detail: kpi.target120,
-                  },
-                ]
-              : []),
-          ]
-        : [
-            {
-              id: "70",
-              title: "< 70%",
-              detail: kpi.target70,
-            },
-            {
-              id: "80",
-              title: "> 70% <= 80%",
-              detail: kpi.target80,
-            },
-            {
-              id: "90",
-              title: "> 80% <= 90%",
-              detail: kpi.target90,
-            },
-            {
-              id: "100",
-              title: "> 90% <= 100%",
-              detail: kpi.target100,
-            },
-          ]
+    const targets = [
+      {
+        id: "60",
+        title: "< 70%",
+        detail: kpi.target60,
+      },
+      {
+        id: "70",
+        title: "> 70% <= 80%",
+        detail: kpi.target70,
+      },
+      {
+        id: "80",
+        title: "> 80% <= 90%",
+        detail: kpi.target80,
+      },
+      {
+        id: "90",
+        title: "> 90% <= 100%",
+        detail: kpi.target90,
+      },
+      {
+        id: "100",
+        title: "100%",
+        detail: kpi.target100,
+      },
+    ];
     return targets
-  }, [kpi.target70, kpi.target80, kpi.target90, kpi.target100, kpi.target120, year]);
+  }, [kpi.target70, kpi.target80, kpi.target90, kpi.target100, kpi.target60, year]);
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
   const checkerActualRef = useRef<HTMLTextAreaElement | null>(null);
@@ -129,11 +101,7 @@ export const KpiEvaluationContent = ({
 
   return (
       <div className="w-full relative z-80 flex flex-col gap-4">
-        <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
-          <div className="text-white text-xl font-semibold">
-            {index + 1}
-          </div>
-        </div>
+        <Badge color="orange" label={(index + 1).toString()} />
         <div className="grid grid-cols-5 gap-4">
           <CardInfo label="Individual KPI" variant="default" className="h-auto">
             <div className="relative w-auto flex items-center px-2.5 py-2">

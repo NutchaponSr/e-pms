@@ -169,6 +169,7 @@ export const meritProcedure = createTRPCRouter({
       const kpi = await db.form.findFirst({
         where: {
           year: merit.year,
+          employeeId: merit.employeeId,
           type: FormType.KPI,
         },
         include: {
@@ -255,7 +256,7 @@ export const meritProcedure = createTRPCRouter({
           competencyRecords: competencyRecordsWithComments,
           cultureRecords: cultureRecordsWithComments,
           tasks: task,
-          kpi: merit.period === Period.EVALUATION_2ND
+          kpi:  (task.context as { period: Period })?.period === Period.EVALUATION_2ND 
             ? (() => {
               const sum = kpi?.kpis.reduce((acc, comp, idx) => {
                 const level = Number(comp.achievementApprover ?? 0);

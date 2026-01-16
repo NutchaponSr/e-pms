@@ -200,11 +200,6 @@ export const TargetTable = ({
   achievementChecker,
   achievementApprover,
 }: KpiTargetTableProps) => {
-  const getValue = (rowId: string) => {
-    if (rowId === "120") return 120;
-    return year >= 2025 ? Number(rowId) + 10 : Number(rowId);
-  };
-
   const handleValueChange = (field: "achievementOwner" | "achievementChecker" | "achievementApprover", value: string) => {
     form.setValue(`kpis.${index}.${field}`, value ? Number.parseFloat(value) : null, {
       shouldDirty: true,
@@ -219,7 +214,7 @@ export const TargetTable = ({
         <TableHeader hasChecker={hasChecker} />
         <tbody>
           {targets.map((row) => {
-            const value = getValue(row.id);
+            const value = row.id;
             const valueStr = value.toString();
 
             const ownerId = `owner-${index}-${value}`;

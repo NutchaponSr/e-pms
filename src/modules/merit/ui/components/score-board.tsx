@@ -30,7 +30,7 @@ export const ScoreBoard = ({ title, kpi, competency, culture, total }: Props) =>
             </div>
           
             <span className="text-sm font-medium">
-              {kpi}
+              {formatDecimal(kpi)}
             </span>
           </div>
           <div className="flex flex-row items-center justify-between h-full">
