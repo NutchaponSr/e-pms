@@ -50,33 +50,28 @@ export const KpiEvaluationContent = ({
   const targetPopulated = useMemo(() => {
     const targets = [
       {
-        id: "60",
-        title: "< 70%",
-        detail: kpi.target60,
-      },
-      {
         id: "70",
-        title: "> 70% <= 80%",
+        title: "< 70%",
         detail: kpi.target70,
       },
       {
         id: "80",
-        title: "> 80% <= 90%",
+        title: "> 70% <= 80%",
         detail: kpi.target80,
       },
       {
         id: "90",
-        title: "> 90% <= 100%",
+        title: "> 80% <= 90%",
         detail: kpi.target90,
       },
       {
         id: "100",
-        title: "100%",
+        title: "> 90% <= 100%",
         detail: kpi.target100,
       },
     ];
     return targets
-  }, [kpi.target70, kpi.target80, kpi.target90, kpi.target100, kpi.target60, year]);
+  }, [kpi.target70, kpi.target80, kpi.target90, kpi.target100, year]);
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
   const checkerActualRef = useRef<HTMLTextAreaElement | null>(null);

@@ -43,7 +43,6 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
     "> 70% <= 80%",
     "> 80% <= 90%",
     "> 90% <= 100%",
-    "100%",
   ];
 
   const detailRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -237,7 +236,7 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
           <div ref={(el) => { detailRefs.current[0] = el }} className="p-2">
             <FormField 
               control={form.control}
-              name={`kpis.${index}.target60`}
+              name={`kpis.${index}.target70`}
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
@@ -254,7 +253,7 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
           <div ref={(el) => { detailRefs.current[1] = el }} className="p-2">
             <FormField 
               control={form.control}
-              name={`kpis.${index}.target70`}
+              name={`kpis.${index}.target80`}
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
@@ -271,23 +270,6 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
           <div ref={(el) => { detailRefs.current[2] = el }} className="p-2">
             <FormField 
               control={form.control}
-              name={`kpis.${index}.target80`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea 
-                      {...field} 
-                      value={field.value ?? ""}  
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div ref={(el) => { detailRefs.current[3] = el }} className="p-2">
-            <FormField 
-              control={form.control}
               name={`kpis.${index}.target90`}
               render={({ field }) => (
                 <FormItem>
@@ -302,7 +284,7 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
               )}
             />
           </div>
-          <div ref={(el) => { detailRefs.current[4] = el }} className="p-2">
+          <div ref={(el) => { detailRefs.current[3] = el }} className="p-2">
             <FormField 
               control={form.control}
               name={`kpis.${index}.target100`}
