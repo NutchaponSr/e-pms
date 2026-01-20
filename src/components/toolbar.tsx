@@ -25,6 +25,7 @@ interface Props {
   onWorkflow: () => void;
   onSaveDraft: () => void;
   onUpload?: () => void;
+  onExport?: () => void;
   permissions: Record<Action, boolean>;
 }
 
@@ -34,6 +35,7 @@ export const Toolbar = ({
   onWorkflow,
   onSaveDraft,
   onUpload,
+  onExport,
   permissions,
 }: Props) => {
   const [ConfirmationDialog, confirm] = useConfirm({
@@ -70,75 +72,91 @@ export const Toolbar = ({
             <ConfirmationDialog />
             <StatusBadge {...status} />
           </div>
-          <div 
-            data-show={permissions.write}
-            className="relative shrink-0 rounded overflow-hidden h-7 ml-1 data-[show=true]:inline-flex hidden gap-1"
-          >
-            <Button 
-              size="sm"
-              type="submit" 
-              className="rounded gap-1.5"
-              variant="primaryGhost"
-            >
-              <BsSave className="stroke-[0.25] size-4" />
-              Final Confirmation
-            </Button>
-            <button 
-              type="button" 
-              onClick={onSaveDraft}
-              className="transition flex items-center justify-center whitespace-nowrap rounded px-2 font-medium bg-marine text-white text-sm hover:bg-marine/80 gap-1.5"
-            >
-              <BsFloppy2Fill className="stroke-[0.25] size-4" />
-              Save Draft
-            </button>
-            <div data-show={!!onCreate || !!onUpload} className="flex-row data-[show=true]:flex hidden">
-              {!!onCreate && !!onUpload ? (
-                <>
-                  <Separator orientation="vertical" className="mx-1" />
-                  <button 
-                    type="button" 
-                    onClick={onCreate} 
-                    className="transition flex items-center justify-center whitespace-nowrap rounded-l px-2 font-medium bg-marine text-white text-sm hover:bg-marine/80"
-                  >
-                    New
-                  </button>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="transition flex items-center justify-center whitespace-nowrap rounded-r bg-marine shadow-[inset_1px_0_0_rgba(55,53,47,0.16)] text-white text-sm w-6 hover:bg-marine/80 focus-visible:outline-none">
-                        <ChevronDownIcon className="size-4" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent align="end" className="w-[260px] p-1">
-                      <h3 className="text-sm data-inset:pl-8! select-none flex items-center min-h-7 ps-1 font-medium text-primary">Import</h3>
-                      <Button 
-                        type="button"
-                        variant="ghost" 
-                        className="h-auto px-2 w-full" 
-                        onClick={onUpload}
-                      >
-                        <div className="flex items-center justify-center min-w-5 min-h-5 self-start">
-                          <BsFiletypeCsv className="stroke-[0.15]! size-5 mt-0.5" />
-                        </div>
-                        <div className="grow shrink basis-auto">
-                          <h5 className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-start">CSV</h5>
-                          <p className="text-xs text-secondary wrap-break-words text-start">Upload and process a CSV file</p>
-                        </div>
-                      </Button>
-                    </PopoverContent>
-                  </Popover>
-                </>
-              ) : (
-                <Button 
+          <div className="relative shrink-0 rounded overflow-hidden h-7 ml-1 flex">
+            {onExport && (
+                <Button
+                  type="button"
+                  variant="primary" 
                   size="sm"
-                  type="button" 
-                  className="rounded gap-1.5"
-                  variant="primary"
-                  onClick={onUpload}
+                  onClick={onExport}
+                  className="rounded gap-1.5 px-2"
                 >
-                  <BsUpload className="stroke-[0.25] size-4" />
-                  Import
+                  Export
                 </Button>
               )}
+            <div 
+              data-show={permissions.write}
+              className="data-[show=true]:inline-flex hidden gap-1"
+            >
+              <Separator orientation="vertical" className="mx-1" />
+              <Button 
+                size="sm"
+                type="submit" 
+                className="rounded gap-1.5"
+                variant="primaryGhost"
+              >
+                <BsSave className="stroke-[0.25] size-4" />
+                Final Confirmation
+              </Button>
+              <Button 
+                type="button"
+                variant="primary" 
+                size="sm"
+                onClick={onSaveDraft}
+                className="rounded gap-1.5"
+              >
+                <BsFloppy2Fill className="stroke-[0.25] size-4" />
+                Save Draft
+              </Button>
+              <div data-show={!!onCreate || !!onUpload} className="flex-row data-[show=true]:flex hidden">
+                {!!onCreate && !!onUpload ? (
+                  <>
+                    <Separator orientation="vertical" className="mx-1" />
+                    <button 
+                      type="button" 
+                      onClick={onCreate} 
+                      className="transition flex items-center justify-center whitespace-nowrap rounded-l px-2 font-medium bg-marine text-white text-sm hover:bg-marine/80"
+                    >
+                      New
+                    </button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="transition flex items-center justify-center whitespace-nowrap rounded-r bg-marine shadow-[inset_1px_0_0_rgba(55,53,47,0.16)] text-white text-sm w-6 hover:bg-marine/80 focus-visible:outline-none">
+                          <ChevronDownIcon className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" className="w-[260px] p-1">
+                        <h3 className="text-sm data-inset:pl-8! select-none flex items-center min-h-7 ps-1 font-medium text-primary">Import</h3>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          className="h-auto px-2 w-full" 
+                          onClick={onUpload}
+                        >
+                          <div className="flex items-center justify-center min-w-5 min-h-5 self-start">
+                            <BsFiletypeCsv className="stroke-[0.15]! size-5 mt-0.5" />
+                          </div>
+                          <div className="grow shrink basis-auto">
+                            <h5 className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-start">CSV</h5>
+                            <p className="text-xs text-secondary wrap-break-words text-start">Upload and process a CSV file</p>
+                          </div>
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
+                  </>
+                ) : (
+                  <Button 
+                    size="sm"
+                    type="button" 
+                    className="rounded gap-1.5"
+                    variant="primary"
+                    onClick={onUpload}
+                  >
+                    <BsUpload className="stroke-[0.25] size-4" />
+                    Import
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -6,7 +6,8 @@ import {
   CultureEvaluation, 
   CultureRecord, 
   Employee, 
-  Form 
+  Form, 
+  Task
 } from "@/generated/prisma/client";
 
 export interface MeritFormWithInfo extends Form {
@@ -19,4 +20,11 @@ export interface MeritFormWithInfo extends Form {
     cultureEvaluations: CultureEvaluation[];
   })[];
   employee: Employee;
+}
+
+export interface MeritDefinitionWithTasks extends MeritFormWithInfo {
+  task: Task & {
+    checker?: Employee;
+    approver: Employee;
+  };
 }

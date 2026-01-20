@@ -1,5 +1,5 @@
 import { BsTriangleFill } from "react-icons/bs";
-import { Resolver, useForm } from "react-hook-form";
+import { Resolver, useForm, useWatch } from "react-hook-form";
 import { inferProcedureOutput } from "@trpc/server";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRef } from "react";
@@ -22,7 +22,7 @@ import { CompetencyDefinitionContent } from "@/modules/merit/ui/components/compe
 
 import { Action } from "@/modules/tasks/permissions";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
-import { meritDefinitionMap } from "@/modules/merit/utils";
+import { exportMeritDefinition, meritDefinitionMap } from "@/modules/merit/utils";
 import { MeritDefinition, meritDefinitionSchema } from "@/modules/merit/schemas/definition";
 import { Rank } from "@/types/employees";
 import { CultureDefinitionContent } from "../components/culture-definition-content";
@@ -37,6 +37,7 @@ import { useEffect, useMemo } from "react";
 import { MeritUpload } from "../components/merit-upload";
 import { createPortal } from "react-dom";
 import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
+import { Employee, Task } from "@/generated/prisma/client";
 
 interface Props {
   id: string;
@@ -68,7 +69,11 @@ export const MeritDefinitionScreen = ({
     definitionBulkMerit({ ...data, saved: true });
   };
 
-  const totalWeightCompetency = data.competencyRecords.reduce((sum, competency) => sum + (Number(competency.weight) || 0), 0);
+  const competencies = useWatch({ control: form.control, name: "competencies" });
+
+  const totalWeightCompetency = useMemo(() => {
+    return competencies?.reduce((sum, kpi) => sum + (Number(kpi?.weight) || 0), 0) ?? 0;
+  }, [competencies]);
 
   useEffect(() => {
     if (!data) return;
@@ -138,6 +143,15 @@ export const MeritDefinitionScreen = ({
             }
 
             startWorkflow({ id: data.tasks.id });
+          }}
+          onExport={async () => {
+            await exportMeritDefinition({
+              ...data,
+              competencyRecords: data.competencyRecords,
+              cultureRecords: data.cultureRecords,
+              employee: data.tasks?.owner,
+              task: data.tasks as Task & { checker?: Employee; approver: Employee },
+            });
           }}
           onSaveDraft={() => definitionBulkMerit({ ...form.getValues(), saved: false })}
           onUpload={() => fileRef.current?.click()}

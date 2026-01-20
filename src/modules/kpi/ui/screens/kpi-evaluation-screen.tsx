@@ -10,13 +10,13 @@ import { Toolbar } from "@/components/toolbar";
 import { Action, Approval } from "@/modules/tasks/permissions";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { KpisEvaluation, kpisEvaluationSchema } from "@/modules/kpi/schema/evaluation";
-import { kpiEvaluationMap, validateWeight } from "../../utils";
+import { exportDefinitionKpi, kpiEvaluationMap, validateWeight } from "../../utils";
 import { Card } from "@/components/card";
 import { Rank } from "@/types/employees";
 import { StateInfo } from "@/components/state-info";
 import { KpiEvaluationContent } from "../components/kpi-evaluation-content";
 import { useCallback, useEffect, useMemo } from "react";
-import { KpiEvaluation, Period } from "@/generated/prisma/client";
+import { Employee, KpiEvaluation, Task, Period } from "@/generated/prisma/client";
 import { formatDecimal } from "@/lib/utils";
 import { useWeight } from "../../stores/use-weight";
 import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
@@ -158,6 +158,12 @@ export const KpiEvaluationScreen = ({
             startWorkflow({ id: form.tasks!.id })
           }}
           onSaveDraft={() => evaluateKpis({ ...f.getValues(), saved: false })}
+          onExport={async () => exportDefinitionKpi({
+            ...form,
+            kpis: form.kpis,
+            employee: form.tasks?.owner,
+            task: form.tasks as Task & { checker?: Employee; approver: Employee },
+          })}
         />
 
         <div className="px-3 mx-auto w-full flex flex-col justify-start grow pb-45">

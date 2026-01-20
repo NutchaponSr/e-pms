@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { BsFileEarmarkText, BsPlusLg } from "react-icons/bs";
-import { Resolver, useFieldArray, useForm } from "react-hook-form";
+import { Resolver, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import {
 import { Form } from "@/components/ui/form";
 import { KpiDefinitions, kpiDefinitionsSchema } from "../../schema/definition";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { kpiDefinitionMap, validateWeight } from "../../utils";
+import { exportDefinitionKpi, kpiDefinitionMap, validateWeight } from "../../utils";
 import { useUpdateBulkKpis } from "../../api/use-update-bulk-kpis";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
@@ -38,6 +38,7 @@ import { KpiUpload } from "../components/kpi-upload";
 import { EmployeeInfo } from "@/components/employee-info";
 import { Progress } from "@/components/ui/progress";
 import { NumberTicker } from "@/components/number-ticker";
+import { Employee, Task } from "@/generated/prisma/client";
 
 interface Props {
   id: string;
@@ -77,9 +78,14 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
     keyName: "fieldId",
   });
 
+  const watchedKpis = useWatch({
+    control: f.control,
+    name: "kpis",
+  });
+
   const totalWeight = useMemo(() => {
-    return form.kpis?.reduce((sum, kpi) => sum + (Number(kpi?.weight) || 0), 0) ?? 0;
-  }, [form.kpis]);
+    return watchedKpis?.reduce((sum, kpi) => sum + (Number(kpi?.weight) || 0), 0) ?? 0;
+  }, [watchedKpis]);
 
   useEffect(() => {
     f.reset({ kpis: kpisMapped });
@@ -106,6 +112,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
             <div>
               <p className="text-[10px] font-medium text-secondary uppercase tracking-wider">Actual</p>
               <span className="text-base font-bold tabular-nums">
+                {/* Change to total weight from useForm */}
                 <NumberTicker value={totalWeight} decimalPlaces={1} delay={0.2} />
               </span>
             </div>
@@ -117,12 +124,12 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
           </div>
         </div>
         <div className="space-y-0.5">
-            <span className="text-muted-foreground text-xs">Progress</span>
-            <Progress
-              className="h-1 w-full"
-              value={Math.min((totalWeight / validateWeight(form.tasks?.owner.rank as Rank)) * 100, 100)}
-            />
-          </div>
+          <span className="text-muted-foreground text-xs">Progress</span>
+          <Progress
+            className="h-1 w-full"
+            value={Math.min((totalWeight / validateWeight(form.tasks?.owner.rank as Rank)) * 100, 100)}
+          />
+        </div>
         </EmployeeInfo>
 
         <KpiUpload 
@@ -135,6 +142,14 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
           permissions={permissions}
           status={STATUS_VARIANTS[form.tasks?.status!]}
           onCreate={() => createKpi({ formId: id, period })} 
+          onExport={async () => {
+            await exportDefinitionKpi({
+              ...form,
+              kpis: form.kpis,
+              employee: form.tasks?.owner,
+              task: form.tasks as Task & { checker?: Employee; approver: Employee },
+            });
+          }}
           onWorkflow={() => {
             if (!save) {
               toast.error("Please confirm the form before starting the workflow");

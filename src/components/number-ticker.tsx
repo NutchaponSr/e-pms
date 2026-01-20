@@ -29,9 +29,11 @@ export function NumberTicker({
     stiffness: 100,
   })
   const isInView = useInView(ref, { once: true, margin: "0px" })
+  const hasAnimated = useRef(false)
 
   useEffect(() => {
-    if (isInView) {
+    if (isInView || hasAnimated.current) {
+      hasAnimated.current = true
       const timer = setTimeout(() => {
         motionValue.set(direction === "down" ? startValue : value)
       }, delay * 1000)

@@ -1,3 +1,5 @@
+import ExcelJS from "exceljs";
+
 import { z } from "zod";
 import { CompetencyType, Period } from "@/generated/prisma/enums";
 import { MeritDefinition } from "./schemas/definition";
@@ -8,7 +10,7 @@ import { Approval } from "../tasks/permissions";
 import { MeritEvaluation } from "./schemas/evaluation";
 import { competencyUploadSchema, cultureUploadSchema } from "./schemas/upload";
 import { CompetencyRecord, CompetencyEvaluation, CultureRecord, CultureEvaluation } from "@/generated/prisma/client";
-import { MeritFormWithInfo } from "./types";
+import { MeritDefinitionWithTasks, MeritFormWithInfo } from "./types";
 import { PERIOD_LABELS } from "../tasks/constant";
 import { formatDecimal } from "@/lib/utils";
 
@@ -427,4 +429,567 @@ export function formatMeritExport(meritForm: MeritFormWithInfo) {
 
   // 🟣 รวมทั้งหมด
   return [...inDraft, ...sortedEval1st, ...sortedEval2nd];
+}
+
+function getManagerLevelLabel(rank: Rank | string): string {
+  const r = rank as Rank;
+
+  if (r === Rank.MGR) {
+    return "Manager";
+  }
+
+  if (r === Rank.GM || r === Rank.AGM) {
+    return "GM/AGM";
+  }
+
+  if (r === Rank.MD || r === Rank.VP) {
+    return "MD/VP";
+  }
+
+  return "-";
+}
+
+export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Merit");
+
+  worksheet.columns = [
+    { width: 5 }, // A - No.
+    { width: 25 }, // B - Name
+    { width: 10 }, // C - Weight
+    { width: 30 }, // D - Expected Behavior
+    { width: 30 }, // E - Input
+    { width: 30 }, // F - Output
+    { width: 25 }, // G - Actual 1
+    { width: 20 }, // H - Level 1
+    { width: 10 }, // I - Score 1
+    { width: 25 }, // J - Actual 2
+    { width: 20 }, // K - Level 2
+    { width: 10 }, // L - Score 2
+  ];  
+
+  const blueHeader = {
+    fill: {
+      type: "pattern" as const,
+      pattern: "solid" as const,
+      fgColor: { argb: "FFE8F0FE" },
+    },
+    font: { bold: true, color: { argb: "FF1E40AF" } },
+    border: {
+      top: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+      left: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+      bottom: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+      right: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+    },
+    alignment: {
+      horizontal: "center" as const,
+      vertical: "middle" as const,
+      wrapText: true,
+    },
+  };
+
+  const cellBorder = {
+    top: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+    left: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+    bottom: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+    right: { style: "thin" as const, color: { argb: "FF93C5FD" } },
+  };
+
+  // Title
+  worksheet.mergeCells("A1:J1");
+  const titleCell = worksheet.getCell("A1");
+  titleCell.value = `แบบประเมินผลการปฏิบัติงาน ประจำปี ${meritForm.year}`;
+  titleCell.font = {
+    bold: true,
+    size: 16,
+    color: {
+      argb: "FF1E40AF",
+    },
+  };
+
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+  worksheet.getRow(1).height = 30;
+
+  worksheet.mergeCells("A2:I2");
+  const subtitleCell = worksheet.getCell("A2");
+  subtitleCell.value = "Merit";
+  subtitleCell.font = { bold: true, color: { argb: "FF1E40AF" } };
+  subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
+
+  const managerCell = worksheet.getCell("J2");
+  managerCell.value = getManagerLevelLabel(meritForm.employee.rank as Rank);
+  managerCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2563EB" },
+  };
+  managerCell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  managerCell.alignment = { horizontal: "center", vertical: "middle" };
+  worksheet.getRow(2).height = 25;
+
+  let currentRow = 4;
+
+  // Header row for info Section
+  worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+  worksheet.getCell(`A${currentRow}`).value = "ผู้ได้รับการประเมิน (Owner)";
+  worksheet.getCell(`A${currentRow}`).style = blueHeader;
+
+  worksheet.mergeCells(`C${currentRow}:E${currentRow}`);
+  worksheet.getCell(`C${currentRow}`).value = "ข้อมูล (Info)";
+  worksheet.getCell(`C${currentRow}`).style = blueHeader;
+
+  worksheet.mergeCells(`F${currentRow}:G${currentRow}`);
+  worksheet.getCell(`F${currentRow}`).value = "ผู้ประเมิน (Approver)";
+  worksheet.getCell(`F${currentRow}`).style = blueHeader;
+
+  worksheet.mergeCells(`H${currentRow}:J${currentRow}`);
+  worksheet.getCell(`H${currentRow}`).value = "ข้อมูล (Info)";
+  worksheet.getCell(`H${currentRow}`).style = blueHeader;
+
+  // ให้เส้นขอบหัวตาราง Owner/Info/Approver/Info แสดงครบทุกคอลัมน์
+  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
+    worksheet.getCell(`${col}${currentRow}`).border = cellBorder
+  }
+
+  currentRow++;
+
+  const infoRows = [
+    {
+      label: "ชื่อ-สกุล (Name-Surname)",
+      evalueeValue: meritForm.employee.name,
+      evaluatorLabel: "ลำดับที่ 1 (Approver 1)",
+      evaluatorValue: meritForm.task.checker?.name,
+    },
+    {
+      label: "แผนก (Department)",
+      evalueeValue: meritForm.employee.department,
+      evaluatorLabel: "ตำแหน่ง (Position)",
+      evaluatorValue: meritForm.task.checker?.position,
+    },
+    {
+      label: "รหัส (Emp ID)",
+      evalueeValue: meritForm.employee.id,
+      evaluatorLabel: "ลำดับที่ 2 (Approver 2)",
+      evaluatorValue: meritForm.task.approver.name,
+    },
+    {
+      label: "ตำแหน่ง (Position)",
+      evalueeValue: meritForm.employee.position,
+      evaluatorLabel: "ตำแหน่ง (Position)",
+      evaluatorValue: meritForm.task.approver.position,
+    },
+    {
+      label: "ระดับ (Level)",
+      evalueeValue: meritForm.employee.rank,
+      evaluatorLabel: "",
+      evaluatorValue: "",
+    },
+    {
+      label: "บริษัท (Company)",
+      evalueeValue: meritForm.employee.division,
+      evaluatorLabel: "",
+      evaluatorValue: "",
+    },
+  ];
+
+  for (const info of infoRows) {
+    worksheet.mergeCells(`A${currentRow}:B${currentRow}`)
+    worksheet.getCell(`A${currentRow}`).value = info.label
+    worksheet.getCell(`A${currentRow}`).border = cellBorder
+    worksheet.getCell(`A${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+
+    worksheet.mergeCells(`C${currentRow}:E${currentRow}`)
+    worksheet.getCell(`C${currentRow}`).value = info.evalueeValue
+    worksheet.getCell(`C${currentRow}`).border = cellBorder
+    worksheet.getCell(`C${currentRow}`).font = { size: 9 }
+
+    worksheet.mergeCells(`F${currentRow}:G${currentRow}`)
+    worksheet.getCell(`F${currentRow}`).value = info.evaluatorLabel
+    worksheet.getCell(`F${currentRow}`).border = cellBorder
+    worksheet.getCell(`F${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+
+    worksheet.mergeCells(`H${currentRow}:J${currentRow}`)
+    worksheet.getCell(`H${currentRow}`).value = info.evaluatorValue
+    worksheet.getCell(`H${currentRow}`).border = cellBorder
+    worksheet.getCell(`H${currentRow}`).font = { size: 9 }
+
+    // ให้เส้นขอบต่อเนื่องครบทุกคอลัมน์ในแถวข้อมูล
+    for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
+      worksheet.getCell(`${col}${currentRow}`).border = cellBorder
+    }
+
+    currentRow++
+  }
+
+  currentRow++;
+
+  // ========== COMPETENCY SECTION ==========
+  worksheet.mergeCells(`A${currentRow}:L${currentRow}`)
+  worksheet.getCell(`A${currentRow}`).value = "Competency (สมรรถนะ)"
+  worksheet.getCell(`A${currentRow}`).font = { bold: true, color: { argb: "FF1E40AF" }, size: 12 }
+  worksheet.getCell(`A${currentRow}`).border = cellBorder
+  currentRow++
+
+  // Competency Table Headers Row 1
+  const compHeaderRow1 = currentRow
+  worksheet.getCell(`A${compHeaderRow1}`).value = "ที่ \n(No.)"
+  worksheet.getCell(`B${compHeaderRow1}`).value = "สมรรถนะ \n(Competency)"
+  worksheet.getCell(`C${compHeaderRow1}`).value = "น้ำหนัก \n(Weight)"
+  worksheet.getCell(`D${compHeaderRow1}`).value = "พฤติกรรมที่คาดหวังตามสมรรถนะ \n(Expected Behavior base on competency)"
+  worksheet.getCell(`E${compHeaderRow1}`).value = "การแสดงออกตามพฤติกรรมที่คาดหวัง\n(Demonstration of Expected Behavior)"
+  worksheet.getCell(`F${compHeaderRow1}`).value = "โครงการ/กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง \n(Projects / Activities Demonstrating Expected Behavior)"
+  worksheet.mergeCells(`G${compHeaderRow1}:I${compHeaderRow1}`)
+  worksheet.getCell(`G${compHeaderRow1}`).value = "การทบทวนผลการปฏิบัติงานกลางปี (JAN - JUN) \n(Mid-Year Review)"
+  worksheet.mergeCells(`J${compHeaderRow1}:L${compHeaderRow1}`)
+  worksheet.getCell(`J${compHeaderRow1}`).value = "การประเมินผลการปฏิบัคิงานปลายปี (JUN - DEC) \n(End-Year Evaluation)"
+
+  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]) {
+    worksheet.getCell(`${col}${compHeaderRow1}`).style = blueHeader
+  }
+  worksheet.getRow(compHeaderRow1).height = 40
+  worksheet.getRow(compHeaderRow1).font = { size: 9, color: { argb: "FF1E40AF" } }
+
+  currentRow++
+  const compHeaderRow2 = currentRow
+
+  // Competency Table Headers Row 2
+  worksheet.getCell(`A${compHeaderRow2}`).value = ""
+  worksheet.getCell(`B${compHeaderRow2}`).value = ""
+  worksheet.getCell(`C${compHeaderRow2}`).value = ""
+  worksheet.getCell(`D${compHeaderRow2}`).value = ""
+  worksheet.getCell(`E${compHeaderRow2}`).value = ""
+  worksheet.getCell(`F${compHeaderRow2}`).value = ""
+  worksheet.getCell(`G${compHeaderRow2}`).value = "ข้อมูล/หลักฐาน การประเมิน \n(Evaluation Data / Evidence)"
+  worksheet.getCell(`H${compHeaderRow2}`).value = "ระดับความสำเร็จ \n(Level of Achievement)"
+  worksheet.getCell(`I${compHeaderRow2}`).value = "คะแนน \n(Score)"
+  worksheet.getCell(`J${compHeaderRow2}`).value = "ข้อมูล/หลักฐาน การประเมิน \n(Evaluation Data / Evidence)"
+  worksheet.getCell(`K${compHeaderRow2}`).value = "ระดับความสำเร็จ \n(Level of Achievement)"
+  worksheet.getCell(`L${compHeaderRow2}`).value = "คะแนน \n(Score)"
+
+  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]) {
+    worksheet.getCell(`${col}${compHeaderRow2}`).style = blueHeader
+  }
+  worksheet.getRow(compHeaderRow2).height = 30
+  worksheet.getRow(compHeaderRow2).font = { size: 9, color: { argb: "FF1E40AF" } }
+
+  worksheet.mergeCells(`A${compHeaderRow1}:A${compHeaderRow2}`)
+  worksheet.mergeCells(`B${compHeaderRow1}:B${compHeaderRow2}`)
+  worksheet.mergeCells(`C${compHeaderRow1}:C${compHeaderRow2}`)
+  worksheet.mergeCells(`D${compHeaderRow1}:D${compHeaderRow2}`)
+  worksheet.mergeCells(`E${compHeaderRow1}:E${compHeaderRow2}`)
+  worksheet.mergeCells(`F${compHeaderRow1}:F${compHeaderRow2}`)
+
+  currentRow++;
+
+  for (let i = 0; i < meritForm.competencyRecords.length; i++) {
+    const comp = meritForm.competencyRecords[i]
+    worksheet.getCell(`A${currentRow}`).value = i + 1
+    worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`A${currentRow}`).border = cellBorder
+    worksheet.getCell(`A${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`B${currentRow}`).value = comp.competency?.name
+    worksheet.getCell(`B${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`B${currentRow}`).border = cellBorder
+    worksheet.getCell(`B${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`C${currentRow}`).value = formatDecimal(Number(comp.weight))
+    worksheet.getCell(`C${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`C${currentRow}`).border = cellBorder
+    worksheet.getCell(`C${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`D${currentRow}`).value = comp.competency?.[`t${comp.expectedLevel}` as 't1' | 't2' | 't3' | 't4' | 't5'] as string | null
+    worksheet.getCell(`D${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`D${currentRow}`).border = cellBorder 
+    worksheet.getCell(`D${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`E${currentRow}`).value = comp.input
+    worksheet.getCell(`E${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`E${currentRow}`).border = cellBorder
+    worksheet.getCell(`E${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`F${currentRow}`).value = comp.output
+    worksheet.getCell(`F${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`F${currentRow}`).border = cellBorder
+    worksheet.getCell(`F${currentRow}`).font = { size: 9 }
+
+    // TODO: Sum of Achievement Evident
+    worksheet.getCell(`G${currentRow}`).value = comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_1ST)?.actualApprover
+    worksheet.getCell(`G${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`G${currentRow}`).border = cellBorder
+    worksheet.getCell(`G${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`H${currentRow}`).value = comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_1ST)?.levelApprover || 0;
+    worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`H${currentRow}`).border = cellBorder
+    worksheet.getCell(`H${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`I${currentRow}`).value = formatDecimal(((comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_1ST)?.levelApprover ?? 0) / 5) * Number(comp.weight))
+    worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`I${currentRow}`).border = cellBorder
+    worksheet.getCell(`I${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`J${currentRow}`).value = comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_2ND)?.actualApprover
+    worksheet.getCell(`J${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`J${currentRow}`).border = cellBorder
+    worksheet.getCell(`J${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`K${currentRow}`).value = comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_2ND)?.levelApprover || 0;
+    worksheet.getCell(`K${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`K${currentRow}`).border = cellBorder 
+    worksheet.getCell(`K${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`L${currentRow}`).value = formatDecimal(((comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_2ND)?.levelApprover ?? 0) / 5) * Number(comp.weight))
+    worksheet.getCell(`L${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`L${currentRow}`).border = cellBorder
+    worksheet.getCell(`L${currentRow}`).font = { size: 9 }
+
+    worksheet.getRow(currentRow).height = 60
+    currentRow++
+  }
+
+  // Competency Footer
+  const competencyTotalWeight = meritForm.competencyRecords.reduce(
+    (acc, comp) => acc + Number(comp.weight ?? 0),
+    0,
+  )
+
+  // แสดงผลรวม Weight ให้ตรงกับคอลัมน์ Weight (C)
+  worksheet.mergeCells(`A${currentRow}:B${currentRow}`)
+  worksheet.getCell(`A${currentRow}`).value = "รวม (คะแนนเต็ม) / Total (Full Score)"
+  worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "right", vertical: "middle" }
+  worksheet.getCell(`A${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`A${currentRow}`).border = cellBorder
+  worksheet.getCell(`A${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  worksheet.getCell(`C${currentRow}`).value = competencyTotalWeight ? formatDecimal(competencyTotalWeight) : ""
+  worksheet.getCell(`C${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`C${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`C${currentRow}`).border = cellBorder
+  worksheet.getCell(`C${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  worksheet.getCell(`H${currentRow}`).value = "คะแนนที่ได้ (Score achieved)"
+  worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`H${currentRow}`).border = cellBorder
+  worksheet.getCell(`H${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+  
+  // Find sum of Score
+  worksheet.getCell(`I${currentRow}`).value = formatDecimal(sumCompetencyByPeriod(
+    meritForm.competencyRecords,
+    Period.EVALUATION_1ST,
+    "levelApprover"
+  ))
+  worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`I${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`I${currentRow}`).border = cellBorder
+  worksheet.getCell(`I${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+  
+  worksheet.getCell(`K${currentRow}`).value = "คะแนนที่ได้ (Score achieved)"
+  worksheet.getCell(`K${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`K${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`K${currentRow}`).border = cellBorder
+  worksheet.getCell(`K${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  // Sum of Score
+  worksheet.getCell(`L${currentRow}`).value = formatDecimal(sumCompetencyByPeriod(
+    meritForm.competencyRecords,
+    Period.EVALUATION_2ND,
+    "levelApprover"
+  ))
+  worksheet.getCell(`L${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`L${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`L${currentRow}`).border = cellBorder
+  worksheet.getCell(`L${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  // เติมพื้นหลังและเส้นขอบให้ครบทุกคอลัมน์ในแถว footer
+  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]) {
+    const cell = worksheet.getCell(`${col}${currentRow}`)
+    cell.border = cellBorder
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+  }
+
+  currentRow += 2;
+
+  // ========== CULTURE SECTION ==========
+  worksheet.mergeCells(`A${currentRow}:L${currentRow}`)
+  worksheet.getCell(`A${currentRow}`).value = "Culture (วัฒนธรรม)"
+  worksheet.getCell(`A${currentRow}`).font = { bold: true, color: { argb: "FF1E40AF" }, size: 12 }
+  worksheet.getCell(`A${currentRow}`).border = cellBorder
+  currentRow++
+
+  // Culture Table Headers Row 1
+  const cultHeaderRow1 = currentRow
+  worksheet.getCell(`A${cultHeaderRow1}`).value = "ที่ \n(No.)"
+  worksheet.getCell(`B${cultHeaderRow1}`).value = "วัฒนธรรม \n(Culture)"
+  worksheet.getCell(`C${cultHeaderRow1}`).value = "น้ำหนัก \n(Weight)"
+  worksheet.mergeCells(`D${cultHeaderRow1}:F${cultHeaderRow1}`)
+  worksheet.getCell(`D${cultHeaderRow1}`).value = "พฤติกรรมที่คาดหวังตามวัฒนธรรม \n(Expected Behavior base on culture)"
+  worksheet.mergeCells(`G${cultHeaderRow1}:I${cultHeaderRow1}`)
+  worksheet.getCell(`G${cultHeaderRow1}`).value = "การทบทวนผลการปฏิบัติงานกลางปี (JAN - JUN) \n(Mid-Year Review)"
+  worksheet.mergeCells(`J${cultHeaderRow1}:L${cultHeaderRow1}`)
+  worksheet.getCell(`J${cultHeaderRow1}`).value = "การประเมินผลการปฏิบัคิงานปลายปี (JUN - DEC) \n(End-Year Evaluation)"
+
+  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]) {
+    worksheet.getCell(`${col}${cultHeaderRow1}`).style = blueHeader
+  }
+  worksheet.getRow(cultHeaderRow1).height = 30
+
+  currentRow++
+  const cultHeaderRow2 = currentRow
+
+  // Culture Table Headers Row 2
+  worksheet.getCell(`A${cultHeaderRow2}`).value = ""
+  worksheet.getCell(`B${cultHeaderRow2}`).value = ""
+  worksheet.getCell(`C${cultHeaderRow2}`).value = ""
+  worksheet.mergeCells(`D${cultHeaderRow2}:F${cultHeaderRow2}`)
+  worksheet.getCell(`D${cultHeaderRow2}`).value = ""
+  worksheet.getCell(`G${cultHeaderRow2}`).value = "ข้อมูล/หลักฐาน การประเมิน \n(Evaluation Data / Evidence)"
+  worksheet.getCell(`H${cultHeaderRow2}`).value = "ระดับความสำเร็จ \n(Level of Achievement)"
+  worksheet.getCell(`I${cultHeaderRow2}`).value = "คะแนน \n(Score)"
+  worksheet.getCell(`J${cultHeaderRow2}`).value = "ข้อมูล/หลักฐาน การประเมิน \n(Evaluation Data / Evidence)"
+  worksheet.getCell(`K${cultHeaderRow2}`).value = "ระดับความสำเร็จ \n(Level of Achievement)"
+  worksheet.getCell(`L${cultHeaderRow2}`).value = "คะแนน \n(Score)"
+
+  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]) {
+    worksheet.getCell(`${col}${cultHeaderRow2}`).style = blueHeader
+  }
+  worksheet.getRow(cultHeaderRow2).height = 30
+
+  // Merge header cells
+  worksheet.mergeCells(`A${cultHeaderRow1}:A${cultHeaderRow2}`)
+  worksheet.mergeCells(`B${cultHeaderRow1}:B${cultHeaderRow2}`)
+  worksheet.mergeCells(`C${cultHeaderRow1}:C${cultHeaderRow2}`)
+
+  currentRow++
+
+  // Culture Data Rows
+  for (let i = 0; i < meritForm.cultureRecords.length; i++) {
+    const cult = meritForm.cultureRecords[i]
+    worksheet.getCell(`A${currentRow}`).value = i + 1
+    worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`A${currentRow}`).border = cellBorder
+    worksheet.getCell(`A${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`B${currentRow}`).value = cult.culture.name
+    worksheet.getCell(`B${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`B${currentRow}`).border = cellBorder
+    worksheet.getCell(`B${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`C${currentRow}`).value = formatDecimal(30 / meritForm.cultureRecords.length)
+    worksheet.getCell(`C${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`C${currentRow}`).border = cellBorder
+    worksheet.getCell(`C${currentRow}`).font = { size: 9 }
+
+    worksheet.mergeCells(`D${currentRow}:F${currentRow}`)
+    worksheet.getCell(`D${currentRow}`).value = cult.evidence
+    worksheet.getCell(`D${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`D${currentRow}`).border = cellBorder
+    worksheet.getCell(`D${currentRow}`).font = { size: 9 }
+
+    // TODO: Sum of Achievement Evident
+    worksheet.getCell(`G${currentRow}`).value = cult.cultureEvaluations.find((f) => f.period === Period.EVALUATION_1ST)?.actualApprover
+    worksheet.getCell(`G${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`G${currentRow}`).border = cellBorder 
+    worksheet.getCell(`G${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`H${currentRow}`).value = cult.cultureEvaluations.find((f) => f.period === Period.EVALUATION_1ST)?.levelBehaviorApprover || 0
+    worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`H${currentRow}`).border = cellBorder
+    worksheet.getCell(`H${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`I${currentRow}`).value = formatDecimal(((cult.cultureEvaluations.find((f) => f.period === Period.EVALUATION_1ST)?.levelBehaviorApprover ?? 0) / 5) * Number(30 / meritForm.cultureRecords.length))
+    worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`I${currentRow}`).border = cellBorder
+    worksheet.getCell(`I${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`J${currentRow}`).value = cult.cultureEvaluations.find((f) => f.period === Period.EVALUATION_2ND)?.actualApprover
+    worksheet.getCell(`J${currentRow}`).alignment = { vertical: "top", wrapText: true }
+    worksheet.getCell(`J${currentRow}`).border = cellBorder
+    worksheet.getCell(`J${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`K${currentRow}`).value = cult.cultureEvaluations.find((f) => f.period === Period.EVALUATION_2ND)?.levelBehaviorApprover || 0
+    worksheet.getCell(`K${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`K${currentRow}`).border = cellBorder
+    worksheet.getCell(`K${currentRow}`).font = { size: 9 }
+
+    worksheet.getCell(`L${currentRow}`).value = formatDecimal(((cult.cultureEvaluations.find((f) => f.period === Period.EVALUATION_2ND)?.levelBehaviorApprover ?? 0) / 5) * Number(30 / meritForm.cultureRecords.length))
+    worksheet.getCell(`L${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+    worksheet.getCell(`L${currentRow}`).border = cellBorder
+    worksheet.getCell(`L${currentRow}`).font = { size: 9 }
+
+    worksheet.getRow(currentRow).height = 60
+    currentRow++
+  }
+
+  // Culture Footer
+  // แสดงผลรวม Weight ให้ตรงกับคอลัมน์ Weight (C)
+  worksheet.mergeCells(`A${currentRow}:B${currentRow}`)
+  worksheet.getCell(`A${currentRow}`).value = "รวม (คะแนนเต็ม) / Total (Full Score)"
+  worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "right", vertical: "middle" }
+  worksheet.getCell(`A${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`A${currentRow}`).border = cellBorder
+  worksheet.getCell(`A${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  worksheet.getCell(`C${currentRow}`).value = 30
+  worksheet.getCell(`C${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`C${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`C${currentRow}`).border = cellBorder
+  worksheet.getCell(`C${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  worksheet.getCell(`H${currentRow}`).value = "คะแนนที่ได้ (Score achieved)"
+  worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`H${currentRow}`).border = cellBorder
+  worksheet.getCell(`H${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+  
+  // Find sum of Score
+  worksheet.getCell(`I${currentRow}`).value = formatDecimal(sumCultureByPeriod(
+    meritForm.cultureRecords,
+    Period.EVALUATION_1ST,
+    "levelBehaviorApprover"
+  ))
+  worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`I${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`I${currentRow}`).border = cellBorder
+  worksheet.getCell(`I${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+  
+  worksheet.getCell(`K${currentRow}`).value = "คะแนนที่ได้ (Score achieved)"
+  worksheet.getCell(`K${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`K${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`K${currentRow}`).border = cellBorder
+  worksheet.getCell(`K${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  // Sum of Score
+  worksheet.getCell(`L${currentRow}`).value = formatDecimal(sumCultureByPeriod(
+    meritForm.cultureRecords,
+    Period.EVALUATION_2ND,
+    "levelBehaviorApprover"
+  ))
+  worksheet.getCell(`L${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`L${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`L${currentRow}`).border = cellBorder
+  worksheet.getCell(`L${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  // เติมพื้นหลังและเส้นขอบให้ครบทุกคอลัมน์ในแถว footer
+  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]) {
+    const cell = worksheet.getCell(`${col}${currentRow}`)
+    cell.border = cellBorder
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+  }
+
+  // Generate and download file
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `Merit_Bonus_${meritForm.year}_${meritForm.employee.name}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
