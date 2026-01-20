@@ -78,7 +78,7 @@ export const SelectCompetencyPopover = ({
           size="lg" 
           className={cn(
             "w-full justify-between text-xl text-tertiary transition-all",
-            isButtonSelected && "font-medium text-foreground",
+            isButtonSelected && "font-medium text-primary",
             !perform && "text-primary opacity-100!"
           )} 
           variant={!perform ? "ghost" :"outline"}

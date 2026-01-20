@@ -4,7 +4,7 @@ import { AppRouter } from "@/trpc/routers/_app";
 import { Period } from "@/generated/prisma/enums";
 
 import { Action, Approval } from "@/modules/tasks/permissions";
-import { meritEvaluationsMap } from "../../utils";
+import { exportMeritDefinition, meritEvaluationsMap } from "../../utils";
 import { useEffect, useMemo } from "react";
 import { MeritEvaluation, meritEvaluationsSchema } from "../../schemas/evaluation";
 import { Resolver, useForm, useWatch } from "react-hook-form";
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { competencyLevels, cultureLevels } from "../../constant";
 import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
 import { createPortal } from "react-dom";
+import { Employee, Task } from "@/generated/prisma/client";
 
 interface Props {
   id: string;
@@ -169,6 +170,15 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             }
 
             startWorkflow({ id: data.tasks.id });
+          }}
+          onExport={async () => {
+            await exportMeritDefinition({
+              ...data,
+              competencyRecords: data.competencyRecords,
+              cultureRecords: data.cultureRecords,
+              employee: data.tasks?.owner,
+              task: data.tasks as Task & { checker?: Employee; approver: Employee },
+            });
           }}
           onSaveDraft={() => evaluateBulkMerit({ ...form.getValues(), saved: false })}
           permissions={permissions}
