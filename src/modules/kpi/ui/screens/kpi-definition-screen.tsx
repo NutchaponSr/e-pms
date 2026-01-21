@@ -72,7 +72,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
     },
   });
 
-  const { fields, replace } = useFieldArray({
+  const { fields, replace, append, remove } = useFieldArray({
     control: f.control,
     name: "kpis",
     keyName: "fieldId",
@@ -88,9 +88,22 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
   }, [watchedKpis]);
 
   useEffect(() => {
-    f.reset({ kpis: kpisMapped });
-    replace(kpisMapped);
-  }, [form?.kpis, year]); 
+    const incoming = kpisMapped;
+    const current = f.getValues("kpis") ?? [];
+
+    if (!f.formState.isDirty) {
+      f.reset({ kpis: incoming });
+      replace(incoming);
+      return;
+    }
+
+    const currentIds = new Set(current.map((k) => k.id));
+    const newOnes = incoming.filter((k) => !currentIds.has(k.id));
+
+    if (newOnes.length) {
+      append(newOnes);
+    }
+  }, [form?.kpis, year, kpisMapped, f, replace, append]); 
 
   useEffect(() => {
     setWeight(totalWeight);
@@ -178,6 +191,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
               <Button
                 variant="outline"
                 size="lg"
+                type="button"
                 disabled={!permissions.write}
                 onClick={() => createKpi({ formId: id, period })}
               >
@@ -188,7 +202,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
           </Empty>
 
           <div
-            data-empty={form?.kpis.length === 0}
+            data-empty={fields.length === 0}
             className="grid grid-cols-1 gap-y-6 data-[empty=true]:hidden"
           >
             {fields.map((field, index) => (
@@ -200,9 +214,20 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
                 formId={id} 
                 period={period} 
                 permissions={permissions}
+                onLocalDelete={() => remove(index)}
                 comments={form?.kpis.find((kpi) => kpi.id === field.id)?.comments || []}
               />
             ))}
+            <Button
+              variant="outline"
+              size="lg"
+              type="button"
+              disabled={!permissions.write}
+              onClick={() => createKpi({ formId: id, period })}
+            >
+              <BsPlusLg />
+              New KPI
+            </Button>
           </div>
         </div>
 

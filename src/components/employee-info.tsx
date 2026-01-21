@@ -19,8 +19,8 @@ interface Props {
 export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
 
   return (
-    <section className="grid xl:grid-cols-6 grid-cols-4 z-2 relative bg-background border-y border-border">
-      <div className="col-span-5 relative py-2 flex flex-col">
+    <section className="grid xl:grid-cols-6 grid-cols-4 bg-background border-y border-border sticky top-0 min-h-[136px] h-[136px] z-100">
+      <div className="col-span-5 relative py-2 flex flex-col h-full">
         <div className="h-full flex justify-stretch gap-3 px-3">
           <div className="flex flex-row gap-2.5 items-center">
             <UserAvatar

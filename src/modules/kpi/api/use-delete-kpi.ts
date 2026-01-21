@@ -14,19 +14,21 @@ export const useDeleteKpi = (formId: string, period: Period) => {
 
   const deleteKpi = useMutation(trpc.kpi.delete.mutationOptions());
 
-  const mutation = (value: RequestType) => {
-    toast.loading("Deleting KPI...", { id: "delete-kpi" });
+  const mutation = async (value: RequestType) => {
+    const toastId = "delete-kpi";
+    toast.loading("Deleting KPI...", { id: toastId });
 
-    deleteKpi.mutate(value, {
-      onSuccess: () => {
-        queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id: formId, period }));
+    try {
+      await deleteKpi.mutateAsync(value);
 
-        toast.success("KPI Deleted!", { id: "delete-kpi" });
-      },
-      onError: (ctx) => {
-        toast.error(ctx.message || "Something went wrong", { id: "delete-kpi" });
-      },
-    });
+      await queryClient.invalidateQueries(
+        trpc.kpi.getOne.queryOptions({ id: formId, period }),
+      );
+
+      toast.success("KPI Deleted!", { id: toastId });
+    } catch (error: any) {
+      toast.error(error?.message || "Something went wrong", { id: toastId });
+    }
   };
 
   return {

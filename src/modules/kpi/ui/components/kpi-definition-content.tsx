@@ -25,11 +25,12 @@ interface Props {
   form: UseFormReturn<KpiDefinitions>;
   comments: CommentWithEmployee[];
   permissions: Record<Action, boolean>;
+  onLocalDelete?: () => void;
 }
 
 const header = cva("h-8 border-r border-border bg-sidebar shadow-[inset_0_1.25px_0_rgba(42,28,0,0.07),inset_0_-1.25px_0_rgba(42,28,0,0.07)] dark:shadow-[inset_0_1.25px_0_rgba(255,255,243,0.082),inset_0_-1.25px_0_rgba(255,255,243,0.082)] px-2");
 
-export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
+export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: Props) => {
   const [ConfirmationDialog, confirm] = useConfirm({
     title: "Delete KPI",
     description: "Are you sure you want to delete this KPI?",
@@ -90,6 +91,7 @@ export const KpiDefinitionContent = ({ index, form, ...props }: Props) => {
 
     if (ok) {
       deleteKpi({ id: props.kpi.id });
+      onLocalDelete?.();
     }
   }
 

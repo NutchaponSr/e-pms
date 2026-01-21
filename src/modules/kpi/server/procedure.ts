@@ -10,7 +10,10 @@ import { FormType, KpiCategory, Period, Status } from "@/generated/prisma/enums"
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
 import { kpiEvaluationSchema } from "@/modules/kpi/schema/evaluation";
-import { kpiDefinitionSchema } from "@/modules/kpi/schema/definition";
+import {
+  kpiDefinitionInputSchema,
+  kpiDefinitionSchema,
+} from "@/modules/kpi/schema/definition";
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 import { calculateSumAchievement, formatKpiExport } from "../utils";
 import { exportExcel, formatDecimal } from "@/lib/utils";
@@ -331,7 +334,7 @@ export const kpiProcedure = createTRPCRouter({
   updateBulk: protectedProcedure
     .input(
       z.object({
-        kpis: z.array(kpiDefinitionSchema.omit({ year: true })),
+        kpis: z.array(kpiDefinitionInputSchema),
       }),
     )
     .mutation(async ({ input }) => {

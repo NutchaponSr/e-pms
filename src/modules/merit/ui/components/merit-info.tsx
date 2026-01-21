@@ -32,9 +32,17 @@ import { Button } from "@/components/ui/button";
 import { useCreateMeritTask } from "../../api/use-create-merit-task";
 
 const chartConfig = {
-  approval: {
-    label: "Approval",
+  owner: {
+    label: "Owner",
     color: "var(--color-chart-1)",
+  },
+  checker: {
+    label: "Checker",
+    color: "var(--color-chart-2)",
+  },
+  approver: {
+    label: "Approver",
+    color: "var(--color-chart-3)",
   },
 } satisfies ChartConfig;
 
@@ -222,7 +230,7 @@ export const MeritInfo = ({ year }: Props) => {
                   <Bar
                     key={index}
                     dataKey={key as string}
-                    fill="#5e9fe8"
+                    fill={chartConfig[key as keyof typeof chartConfig]?.color}
                     radius={4}
                     barSize={64}
                   />

@@ -20,6 +20,16 @@ export const kpiDefinitionSchema = z.object({
   type: z.string().trim().nullable().default("FP"),
 });
 
+// Looser schema for inputs that may omit key fields (used by update bulk)
+export const kpiDefinitionInputSchema = kpiDefinitionSchema
+  .omit({ year: true })
+  .extend({
+    name: z.string().trim().nullable(),
+    category: z.enum(KpiCategory).nullable(),
+    definition: z.string().trim().nullable(),
+    method: z.string().trim().nullable(),
+  });
+
 // export const kpiDefinitionSchema = kpiDefinitionBaseSchema.refine(
 //   (data) => (data.year >= 2025 ? data.type !== null && data.type !== "" : true),
 //   {

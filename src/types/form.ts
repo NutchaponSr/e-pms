@@ -27,7 +27,7 @@ export const formRecord: Record<FormColor, formClassName> = {
     label: "whitespace-nowrap text-sm text-primary",
   },
   blue: {
-    form: "grow-0 shrink-0 basis-auto p-2 h-max bg-[#0080d50c] dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2",
+    form: "grow-0 shrink-0 basis-auto p-2 h-max bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2",
     input: "w-full dark:shadow-[0_0_0_1px_rgba(39,131,222,0.1)] shadow-[0_4px_12px_0_rgba(25,25,25,0.029),0_1px_2px_0_rgba(25,25,25,0.019),0_0_0_1.25px_rgba(0,124,215,0.094)] min-h-10 bg-background hover:bg-[#0070db15] dark:hover:bg-[#213041] transition text-primary focus:outline-none focus:ring-0 rounded-sm p-2.5 text-sm leading-tight h-full",
     label: "whitespace-nowrap text-sm text-marine",
   },

@@ -206,8 +206,8 @@ export async function exportDefinitionKpi(
     { width: 25 }, // B - Individual KPIs
     { width: 10 }, // C - Weight
     { width: 8 }, // D - Target Level
-    { width: 20 }, // E - Target Value
-    { width: 25 }, // F - Definition
+    { width: 30 }, // E - Target Value
+    { width: 30 }, // F - Definition
     { width: 30 }, // G - Reporting Method
     { width: 25 }, // H - Achievement Evident
     { width: 15 }, // I - Achieved Level
@@ -449,7 +449,7 @@ export async function exportDefinitionKpi(
     const startRow = currentRow
 
     for (let levelIndex = 0; levelIndex < targetLevels.length; levelIndex++) {
-      const level = targetLevels[levelIndex]
+      const level = targetLevels[levelIndex];
 
       if (levelIndex === 0) {
         // First row of each KPI - set values that will be merged
@@ -496,7 +496,7 @@ export async function exportDefinitionKpi(
       worksheet.getCell(`D${currentRow}`).font = { size: 9 }
 
       // Target value column
-      worksheet.getCell(`E${currentRow}`).value = kpi.actualApprover
+      worksheet.getCell(`E${currentRow}`).value = getTargetValue(kpi, level)
       worksheet.getCell(`E${currentRow}`).border = cellBorder
       worksheet.getCell(`E${currentRow}`).font = { size: 9 }
 

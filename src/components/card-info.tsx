@@ -4,7 +4,7 @@ import { cva, VariantProps } from "class-variance-authority";
 const cardVariants = cva("", {
   variants: {
     card: {
-      default: "bg-[#0080d50c] dark:bg-[#298bfd10]",
+      default: "bg-[#0080d51c] dark:bg-[#298bfd10]",
       gray: "bg-[#42230308] dark:bg-[#fcfcfc08]"
     },
     label: {

@@ -52,7 +52,7 @@ export const Toolbar = ({
   }
 
   return (
-    <div className="flex items-center gap-1.5 w-full min-w-[420px] max-w-full mx-auto py-4 px-3 sticky top-0 z-100 bg-background">
+    <div className="flex items-center gap-1.5 w-full min-w-[420px] max-w-full mx-auto py-4 px-3 sticky top-[136px] z-100 bg-background">
       <div className="grow h-full">
         <div className="flex flex-row justify-between items-center h-full gap-0.5">
           <div className="inline-flex items-center gap-1 relative shrink-0 h-7">
