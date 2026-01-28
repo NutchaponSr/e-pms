@@ -329,7 +329,7 @@ export const meritProcedure = createTRPCRouter({
             tasks: {
               some: {
                 ownerId: ctx.user.username,
-                status: Status.DONE,
+                status: Status.COMPLETED,
               },
             },
           },
@@ -346,7 +346,7 @@ export const meritProcedure = createTRPCRouter({
       const evaluationKpiTask = approvedKpiTask?.tasks.find((f) => (f.context as { period: Period }).period === Period.EVALUATION);
 
       //  && meritTask.context.period === EVALUATION_1ST
-      if ((!evaluationKpiTask || evaluationKpiTask.status !== Status.DONE) && (existingMeritTask?.context as { period: Period })?.period === Period.EVALUATION_1ST) {
+      if ((!evaluationKpiTask || evaluationKpiTask.status !== Status.COMPLETED) && (existingMeritTask?.context as { period: Period })?.period === Period.EVALUATION_1ST) {
         
         throw new TRPCError({
           code: "BAD_REQUEST",

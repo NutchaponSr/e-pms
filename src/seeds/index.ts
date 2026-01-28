@@ -7,10 +7,10 @@ import { seedCompetencies } from "./seed-competency";
 
 async function seed() {
   await clear();
-  await seedEmployee();
+  // await seedEmployee();
 
   await seedCompetencies();
-  await seedCulture();
+  // await seedCulture();
 }
 
 (async () => {

@@ -77,7 +77,7 @@ export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
                   <div className="flex items-center leading-4.5 min-w-0 text-xs text-secondary">
                     <BsPersonFill className="size-3.5 me-1" />
                     <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                      Owner
+                      พนักงาน (Employee)
                     </div>
                   </div>
                 </div>
@@ -89,7 +89,7 @@ export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
                     <div className="flex items-center leading-4.5 min-w-0 text-xs text-secondary">
                       <BsPersonFill className="size-3.5 me-1" />
                       <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                        Checker
+                        ผู้ประเมินลำดับที่ 1 (Evaluator 1)
                       </div>
                     </div>
                   </div>
@@ -101,7 +101,7 @@ export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
                   <div className="flex items-center leading-4.5 min-w-0 text-xs text-secondary">
                     <BsPersonFill className="size-3.5 me-1" />
                     <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                      Approver
+                      ผู้ประเมินลำดับที่ 2 (Evaluator 2)
                     </div>
                   </div>
                 </div>

@@ -181,7 +181,7 @@ export const MeritDefinitionScreen = ({
                     </AccordionTrigger>
 
                     <h2 className="text-primary text-lg font-semibold">
-                      Competency
+                      สมรรถนะ (Competency)
                     </h2>
                   </div>
                 </div>
@@ -222,7 +222,7 @@ export const MeritDefinitionScreen = ({
                     </AccordionTrigger>
 
                     <h2 className="text-primary text-lg font-semibold">
-                      Culture
+                      วัฒนธรรม (Culture)
                     </h2>
                   </div>
                 </div>

@@ -26,14 +26,14 @@ const Page = async () => {
                     Hi {name}, How can we help you?
                   </h1>
                 </div>
-                <SearchCommand />
+                {/* <SearchCommand /> */}
               </section>
             </div>
           </div>
         </div>
         <div className="col-start-2 flex flex-col gap-5">
           <article className="flex flex-col gap-8">
-            <CategoryCarasel />
+            {/* <CategoryCarasel /> */}
             <ApplicationsList />
           </article>
         </div>

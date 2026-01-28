@@ -116,13 +116,13 @@ export const CompetencyDefinitionContent = ({
           form={form}
           variant="numeric"
           disabled={!permissions.write}
-          label="Weight"
+          label={`น้ำหนัก \n(Weight)`}
           className={formRecord.blue}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-2">
-        <CardInfo label="Description" variant="default">
+        <CardInfo label="คำนิยาม (Definition)" variant="default">
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
               {definition}
@@ -134,7 +134,7 @@ export const CompetencyDefinitionContent = ({
       <div className="flex flex-col gap-2">
         <div className="py-0.5 text-sm leading-4.5 text-secondary flex flex-row items-center font-medium gap-1 ms-1.5">
           <TargetIcon className="size-4 shrink-0 block text-secondary" />
-          Expected Level
+          พฤติกรรมที่คาดหวัง (Expected Level)
         </div>
         <FormField
           control={form.control}
@@ -246,7 +246,8 @@ export const CompetencyDefinitionContent = ({
           form={form}
           variant="bigText"
           disabled={!permissions.write}
-          label="Input"
+          label="การแสดงออกตามพฤติกรรมที่คาดหวัง"
+          description="Demonstration of Expected Behavior"
           className={formRecord.blue}
           textareaRef={(el) => {
             inputRef.current = el;
@@ -259,7 +260,8 @@ export const CompetencyDefinitionContent = ({
           form={form}
           variant="bigText"
           disabled={!permissions.write}
-          label="Output"
+          label="โครงการ/กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง"
+          description="Detail of demonstration of expected behavior"
           className={formRecord.blue}
           textareaRef={(el) => {
             outputRef.current = el;

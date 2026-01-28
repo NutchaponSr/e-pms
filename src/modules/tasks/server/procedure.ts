@@ -70,20 +70,12 @@ export const taskProcedure = createTRPCRouter({
         where: {
           OR: [
             {
-              status: Status.PENDING_CHECKER,
+              status: Status.WAITING_APPROVER_1,
               checkerId: ctx.user.username,
             },
             {
-              status: Status.PENDING_APPROVER,
+              status: Status.WAITING_APPROVER_2,
               approverId: ctx.user.username,
-            },
-            {
-              status: Status.REJECTED_BY_CHECKER,
-              ownerId: ctx.user.username,
-            },
-            {
-              status: Status.REJECTED_BY_APPROVER,
-              ownerId: ctx.user.username,
             },
           ],
         },
@@ -136,7 +128,7 @@ export const taskProcedure = createTRPCRouter({
           id: input.id,
         },
         data: {
-          status: hasChecker ? Status.PENDING_CHECKER : Status.PENDING_APPROVER,
+          status: hasChecker ? Status.WAITING_APPROVER_1 : Status.WAITING_APPROVER_2,
         },
         include: {
           form: true,
@@ -190,7 +182,7 @@ export const taskProcedure = createTRPCRouter({
               id: input.id,
             },
             data: {
-              status: Status.PENDING_APPROVER,
+              status: Status.WAITING_APPROVER_2,
               checkedAt: new Date(),
             },
             include: {
@@ -206,7 +198,7 @@ export const taskProcedure = createTRPCRouter({
               id: input.id,
             },
             data: {
-              status: Status.REJECTED_BY_CHECKER,
+              status: Status.WAITING_APPROVER_1,
             },
             include: {
               owner: true,
@@ -223,7 +215,7 @@ export const taskProcedure = createTRPCRouter({
               id: input.id,
             },
             data: {
-              status: Status.DONE,
+              status: Status.COMPLETED,
               approvedAt: new Date(),
             },
             include: {
@@ -239,7 +231,7 @@ export const taskProcedure = createTRPCRouter({
               id: input.id,
             },
             data: {
-              status: Status.REJECTED_BY_APPROVER,
+              status: Status.WAITING_APPROVER_2,
             },
             include: {
               owner: true,
@@ -276,8 +268,8 @@ export const taskProcedure = createTRPCRouter({
         app: formType[res.form.type],
         approvedAt: res.approvedAt,
         checkedAt: res.checkedAt,
-        isApproved: res.status === Status.DONE,
-        checkedBy: res.status === Status.REJECTED_BY_CHECKER ? res.checker?.name : res.status === Status.REJECTED_BY_APPROVER ? res.approver?.name : undefined,
+        isApproved: res.status === Status.COMPLETED,
+        checkedBy: res.status === Status.WAITING_APPROVER_1 ? res.checker?.name : res.status === Status.WAITING_APPROVER_2 ? res.approver?.name : undefined,
         period: (res.context as { period: Period })?.period,
       };
     }),
@@ -366,12 +358,12 @@ export const taskProcedure = createTRPCRouter({
       
       const kpiPending = forms.filter((f) => f.type === FormType.KPI)
         .flatMap((k) => k.tasks)
-        .filter((t) => t.status === Status.PENDING_CHECKER || t.status === Status.PENDING_APPROVER)
+        .filter((t) => t.status === Status.WAITING_APPROVER_1 || t.status === Status.WAITING_APPROVER_2)
         .length;
 
       const meritPending = forms.filter((f) => f.type === FormType.MERIT)
         .flatMap((m) => m.tasks)
-        .filter((t) => t.status === Status.PENDING_CHECKER || t.status === Status.PENDING_APPROVER)
+        .filter((t) => t.status === Status.WAITING_APPROVER_1 || t.status === Status.WAITING_APPROVER_2)
         .length;
 
       return {

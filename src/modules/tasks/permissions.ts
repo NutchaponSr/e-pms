@@ -24,30 +24,20 @@ const permissions: Record<Status, Record<Approval, Action[]>> = {
     checker: ["read"],
     approver: ["read"],
   },
-  [Status.PENDING_CHECKER]: {
+  [Status.WAITING_APPROVER_1]: {
     owner: ["read"],
     checker: ["write", "read", "approve"],
     approver: ["read"],
   },
-  [Status.REJECTED_BY_CHECKER]: {
+  [Status.WAITING_APPROVER_2]: {
     owner: ["write", "read"],
     checker: ["read"],
     approver: ["read"],
   },
-  [Status.PENDING_APPROVER]: {
+  [Status.COMPLETED]: {
     owner: ["read"],
     checker: ["read"],
     approver: ["write", "read", "approve"],
-  },
-  [Status.REJECTED_BY_APPROVER]: {
-    owner: ["write", "read"],
-    checker: ["read"],
-    approver: ["read"],
-  },
-  [Status.DONE]: {
-    owner: ["read"],
-    checker: ["read"],
-    approver: ["read"],
   },
 } 
 

@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 
 // ตั้งค่า breadcrumb ได้จากตรงนี้
 // - PATH_LABELS: เปลี่ยนชื่อ path ให้เป็นข้อความที่ต้องการ
+//   - รองรับ pattern แบบใช้ `*` แทน slug 1 segment เช่น `/performance/kpi/*/definition`
 // - HIDDEN_PATHS: ซ่อน path ไม่ให้แสดงใน breadcrumb (รองรับ regex)
 // - DISABLED_PATHS: แสดงแต่กดไม่ได้ (ไม่เป็นลิงก์)
 const PATH_LABELS: Record<string, string> = {
-  // ตัวอย่าง:
-  // "/performance": "Performance Management",
-  // "/performance/kpi": "KPI",
+  "/performance": "e-PMS",
+  "/performance/kpi": "KPI Bonus",
+  "/performance/kpi/*/definition": "KPI Setting",
+  "/performance/merit": "KPI Merit",
+  "/performance/merit/*/definition": "Merit Setting",
 };
 
 // ใช้ regex เพื่อซ่อน path ตาม pattern ได้
@@ -50,6 +53,32 @@ export const Breadcrumb = () => {
       .join(" ");
   };
 
+  const escapeRegex = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const getLabelForPath = (path: string): string | undefined => {
+    // ตรงตัวก่อน
+    if (PATH_LABELS[path]) return PATH_LABELS[path];
+
+    // ลอง match pattern ที่มี *
+    for (const [pattern, label] of Object.entries(PATH_LABELS)) {
+      if (!pattern.includes("*")) continue;
+
+      const regex = new RegExp(
+        "^" +
+          pattern
+            .split("*")
+            .map((part) => escapeRegex(part))
+            .join("[^/]+") +
+          "$",
+      );
+
+      if (regex.test(path)) return label;
+    }
+
+    return undefined;
+  };
+
   const breadcrumbs: BreadcrumbItem[] = segments
     .map((segment, index) => {
       const path = "/" + segments.slice(0, index + 1).join("/");
@@ -59,7 +88,7 @@ export const Breadcrumb = () => {
         return null;
       }
 
-      const label = PATH_LABELS[path] ?? formatSlug(segment);
+      const label = getLabelForPath(path) ?? formatSlug(segment);
 
       return {
         label,

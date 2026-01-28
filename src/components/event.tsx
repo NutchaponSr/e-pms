@@ -5,9 +5,9 @@ import { Status } from "@/generated/prisma/enums";
 import { StatusBadge } from "@/components/status-badge";
 
 import { StatusVariant } from "@/modules/tasks/types";
+import { Button } from "./ui/button";
 
 interface Props {
-  dueDate: string;
   title: string;
   description: string;
   status?: {
@@ -23,7 +23,6 @@ interface Props {
 }
 
 export const Event = ({ 
-  dueDate, 
   title, 
   description, 
   status = { label: "Not Started", variant: "purple" },
@@ -31,34 +30,34 @@ export const Event = ({
 }: Props) => {
   return (
     <div className="flex flex-row pb-2.5 last:pb-0">
-      <div className="w-1/5 pe-2.5 flex flex-col text-xs font-medium">
-        {dueDate}
-      </div>
-      <div className="w-4/5">
+      <div className="w-full">
         <div className="mb-3.5 flex">
           <div className="flex w-full gap-1 overflow-hidden">
             <div className={cn(
-              "w-1 rounded shrink-0", 
-              buttonCtx.active ? "bg-description" : "bg-description/10 border-description border border-dashed"
-            )}/>
-            <div className="flex flex-col">
-              <div className="flex flex-col grow shrink ps-2.5 overflow-hidden">
+              "flex flex-col w-full p-2 rounded",
+              buttonCtx.active ? "bg-[#0080d51c] dark:bg-[#298bfd10] border border-[#0080d51c] dark:border-[#298bfd10] border-dashed" : "bg-description/10 border-description border border-dashed"
+            )}>
+              <div className="flex flex-col grow shrink ps-2.5 overflow-hidden gap-1">
                 <div className="flex items-center gap-2 h-[22px] overflow-hidden min-w-0">
                   <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis text-secondary">{title}</span>
                   <StatusBadge {...status} />
                 </div>
-                <span className="text-xs leading-5">{description}</span>
+                <span className="text-xs leading-4">{description}</span>
               </div>
-              <div className="mt-1.5 ps-2.5">
-                <button 
-                  onClick={buttonCtx.onClick}
-                  data-active={buttonCtx.active} 
-                  disabled={buttonCtx.disabled}
-                  className="w-fit pt-0.5 px-2 flex-row bg-[#0000000d] hover:bg-[#0000001a] dark:bg-[#252525] rounded items-center min-h-6 dark:hover:bg-[#2f2f2f] data-[active=true]:flex hidden text-tertiary"
-                >
-                  {buttonCtx.label}
-                </button>
-              </div>
+              {buttonCtx.active && (
+                <div className="mt-1.5 ps-2.5">
+                  <Button 
+                    size="xs"
+                    variant="primary"
+                    onClick={buttonCtx.onClick}
+                    data-active={buttonCtx.active} 
+                    disabled={buttonCtx.disabled}
+                    className="rounded px-2"
+                  >
+                    {buttonCtx.label}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

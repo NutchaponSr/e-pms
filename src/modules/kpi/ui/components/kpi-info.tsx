@@ -73,13 +73,12 @@ export const KpiInfo = ({ year }: Props) => {
         <div className="basis-0 grow px-9 pt-8 pb-6 border-b border-border">
           <div className="flex flex-col justify-start min-h-full text-tertiary overflow-hidden text-sm">
             <Event
-              dueDate="Jan - Mar"
-              title="KPI Definition"
+              title="KPI Setting"
               description="Define measurable goals aligned with team and company priorities"
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: data.task.draft !== null,
+                active: isInRange(year, 1, 3) && data.task.draft?.status !== Status.COMPLETED,
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 3, 2025)) {
@@ -103,13 +102,12 @@ export const KpiInfo = ({ year }: Props) => {
               }}
             />
             <Event
-              dueDate="Jan - Dec"
               title="Evaluation"
               status={STATUS_VARIANTS[data.task.evaluation?.status!]}
-              description="Assessment of progress towards defined KPIs"
+              description="Measures achievement based on actual performance results"
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: data.task.draft?.status === Status.DONE,
+                active: isInRange(year, 6, 7) && data.task.evaluation?.status !== Status.COMPLETED,
                 label: !!data.task.evaluation ? "Evaluate" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 12, 2025)) {

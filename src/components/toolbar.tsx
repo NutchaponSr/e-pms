@@ -56,44 +56,19 @@ export const Toolbar = ({
       <div className="grow h-full">
         <div className="flex flex-row justify-between items-center h-full gap-0.5">
           <div className="inline-flex items-center gap-1 relative shrink-0 h-7">
-            {permissions["start-workflow"] && (
-              <>
-                <Button
-                  size="sm"
-                  type="button"
-                  className="rounded"
-                  onClick={onStartWorkflow}
-                >
-                  Start workflow
-                </Button>
-                <Separator orientation="vertical" className="mx-1" />
-              </>
-            )}
             <ConfirmationDialog />
             <StatusBadge {...status} />
           </div>
           <div className="relative shrink-0 rounded overflow-hidden h-7 ml-1 flex">
-            {onExport && (
-                <Button
-                  type="button"
-                  variant="primary" 
-                  size="sm"
-                  onClick={onExport}
-                  className="rounded gap-1.5 px-2"
-                >
-                  Export
-                </Button>
-              )}
             <div 
               data-show={permissions.write}
               className="data-[show=true]:inline-flex hidden gap-1"
             >
-              <Separator orientation="vertical" className="mx-1" />
               <Button 
                 size="sm"
                 type="submit" 
                 className="rounded gap-1.5"
-                variant="primaryGhost"
+                variant="primary"
               >
                 <BsSave className="stroke-[0.25] size-4" />
                 Final Confirmation
@@ -108,7 +83,29 @@ export const Toolbar = ({
                 <BsFloppy2Fill className="stroke-[0.25] size-4" />
                 Save Draft
               </Button>
-              <div data-show={!!onCreate || !!onUpload} className="flex-row data-[show=true]:flex hidden">
+              {permissions["start-workflow"] && (
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="primary" 
+                  className="rounded"
+                  onClick={onStartWorkflow}
+                >
+                  Start workflow
+                </Button>
+              )}
+              {onExport && (
+                <Button
+                  type="button"
+                  variant="primary" 
+                  size="sm"
+                  onClick={onExport}
+                  className="rounded gap-1.5 px-2"
+                >
+                  Export
+                </Button>
+              )}
+              {/* <div data-show={!!onCreate || !!onUpload} className="flex-row data-[show=true]:flex hidden">
                 {!!onCreate && !!onUpload ? (
                   <>
                     <Separator orientation="vertical" className="mx-1" />
@@ -156,7 +153,7 @@ export const Toolbar = ({
                     Import
                   </Button>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

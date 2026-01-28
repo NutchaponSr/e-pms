@@ -66,16 +66,26 @@ export const CultureDefinitionContent = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-5 gap-2">
+        <CardInfo label="พฤติกรรมที่คาดหวัง (Expected Behavior)" variant="default" className="col-span-2">
+          <div className="relative w-auto flex items-center px-2.5 py-2">
+            <p className="max-w-full w-full whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
+            {Array.isArray(cultureRecord.culture?.belief) ? cultureRecord.culture?.belief?.map((item, idx) => (
+                <li className="list-disc list-inside text-primary" key={idx}>{String(item)}</li>
+              )) : null}
+            </p>
+          </div>
+        </CardInfo>
         <FormGenerator 
           name={`cultures.${index}.evidence`}
           form={form}
           variant="bigText"
           disabled={!permissions.write}
-          label="Evidence"
+          label="การแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expected Behavior)"
           className={{
             ...formRecord.blue,
             form: "col-span-2 grow-0 shrink-0 basis-auto p-2 box-content h-max bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2",
+            input: "w-full dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] shadow-[0_4px_12px_0_rgba(25,25,25,.029),0_1px_2px_0_rgba(25,25,25,.019),0_0_0_1.25px_#2a1c0012] bg-background hover:bg-[#42230308] dark:hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 rounded-sm p-2.5 text-sm leading-tight h-full min-h-20",
           }}
           textareaRef={(el) => {
             evidenceRef.current = el;
@@ -83,7 +93,7 @@ export const CultureDefinitionContent = ({
           }}
           onInput={() => syncTextareaHeights()}
         />
-        <CardInfo label="Weight" variant="default">
+        <CardInfo label="น้ำหนัก (Weight)" variant="default">
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6">
               {formatDecimal(weight)}

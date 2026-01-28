@@ -10,11 +10,9 @@ export const routes: Record<FormType, string> = {
 export const STATUSES: Record<Status, string> = {
   [Status.NOT_STARTED]: "Not Started",
   [Status.IN_DRAFT]: "In Draft",
-  [Status.PENDING_CHECKER]: "Pending Checker",
-  [Status.REJECTED_BY_CHECKER]: "Rejected by Checker",
-  [Status.PENDING_APPROVER]: "Pending Approver",
-  [Status.REJECTED_BY_APPROVER]: "Rejected by Approver",
-  [Status.DONE]: "Done",
+  [Status.WAITING_APPROVER_1]: "Waiting Approver 1",
+  [Status.WAITING_APPROVER_2]: "Waiting Approver 2",
+  [Status.COMPLETED]: "Completed",
 };  
 
 export const STATUS_VARIANTS: Record<Status, {
@@ -23,11 +21,9 @@ export const STATUS_VARIANTS: Record<Status, {
 }> = {
   [Status.NOT_STARTED]: { label: "Not Started", variant: "purple" },
   [Status.IN_DRAFT]: { label: "In Draft", variant: "orange" },
-  [Status.PENDING_CHECKER]: { label: "Pending Checker", variant: "default" },
-  [Status.REJECTED_BY_CHECKER]: { label: "Rejected by Checker", variant: "red" },
-  [Status.PENDING_APPROVER]: { label: "Pending Approver", variant: "default" },
-  [Status.REJECTED_BY_APPROVER]: { label: "Rejected by Approver", variant: "red" },
-  [Status.DONE]: { label: "Done", variant: "green" },
+  [Status.WAITING_APPROVER_1]: { label: "Waiting Approver 1", variant: "default" },
+  [Status.WAITING_APPROVER_2]: { label: "Waiting Approver 2", variant: "default" },
+  [Status.COMPLETED]: { label: "Completed", variant: "green" },
 };
 
 export const periodRoutes: Record<Period, string> = {

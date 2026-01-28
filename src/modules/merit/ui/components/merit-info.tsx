@@ -92,13 +92,12 @@ export const MeritInfo = ({ year }: Props) => {
         <div className="basis-0 grow px-9 pt-8 pb-6 border-b border-border">
           <div className="flex flex-col justify-start min-h-full text-tertiary overflow-hidden text-sm">
             <Event
-              dueDate="Jan - Mar"
               title="Merit Definition"
-              description="Define measurable goals that will inform merit evaluation"
+              description="Define behaviors indicators that align with expected competencies and company culture"
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{  
                 disabled: createMeritTaskCtx.isPending,
-                active: data.task.draft !== null,
+                active: isInRange(year, 1, 3) && data.task.draft?.status !== Status.COMPLETED,
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 3, 2025)) {
@@ -121,19 +120,18 @@ export const MeritInfo = ({ year }: Props) => {
                 },
               }}
             />
-            <Event
-              dueDate="Jan - Jun"
+            <Event  
               title="Evaluation 1st"
               status={STATUS_VARIANTS[data.task.evaluation1st?.status!]}
-              description="Mid-year merit review to assess progress and performance"
+              description="Mid-year review to assess performance progress and behavioral expectations"
               buttonCtx={{
                 disabled: createMeritTaskCtx.isPending,
-                active: data.task.draft?.status === Status.DONE,
+                active: isInRange(year, 6, 7) && data.task.evaluation1st?.status !== Status.COMPLETED,
                 label: !!data.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, 6, 2025)) {
+                  if (!isInRange(year, 6, 7, 2025)) {
                     toast.error(
-                      "You can only evaluate Merit from January to June",
+                      "You can only evaluate Merit from June to July",
                     );
                     return;
                   }
@@ -152,20 +150,19 @@ export const MeritInfo = ({ year }: Props) => {
               }}
             />
             <Event
-              dueDate="Jul - Dec"
               title="Evaluation 2nd"
               status={STATUS_VARIANTS[data.task.evaluation2nd?.status!]}
-              description="Year-end merit review for final performance assessment and bonus eligibility"
+              description="Year-end assessment of performance results and behavioral outcomes"
               buttonCtx={{
-                active: data.task.evaluation1st?.status === Status.DONE,
+                active: isInRange(year, 11, 12) && data.task.evaluation2nd?.status !== Status.COMPLETED,
                 label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
                 onClick: () => {
-                  // if (!isInRange(year, 7, 12, 2025)) {
-                  //   toast.error(
-                  //     "You can only evaluate Merit from July to December",
-                  //   );
-                  //   return;
-                  // }
+                  if (!isInRange(year, 11, 12, 2025)) {
+                    toast.error(
+                      "You can only evaluate Merit from November to December",
+                    );
+                    return;
+                  }
 
                   if (!!data.task.evaluation2nd) {
                     router.push(

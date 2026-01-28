@@ -102,7 +102,7 @@ export const FormTracker = ({ year }: Props) => {
                 value: kpiBonus.filter((row) =>
                   row.original.form.bonus?.tasks?.some(
                     (task) =>
-                      task.status === Status.DONE &&
+                      task.status === Status.COMPLETED &&
                       typeof task.context === "object" &&
                       task.context !== null &&
                       "period" in task.context &&
@@ -115,7 +115,7 @@ export const FormTracker = ({ year }: Props) => {
                 value: kpiBonus.filter((row) =>
                   row.original.form.bonus?.tasks?.some(
                     (task) =>
-                      task.status === Status.DONE &&
+                      task.status === Status.COMPLETED &&
                       typeof task.context === "object" &&
                       task.context !== null &&
                       "period" in task.context &&
@@ -132,7 +132,7 @@ export const FormTracker = ({ year }: Props) => {
                 value: merit.filter((row) =>
                   row.original.form.merit?.tasks?.some(
                     (task) =>
-                      task.status === Status.DONE &&
+                      task.status === Status.COMPLETED &&
                       typeof task.context === "object" &&
                       task.context !== null &&
                       "period" in task.context &&
@@ -145,7 +145,7 @@ export const FormTracker = ({ year }: Props) => {
                 value: merit.filter((row) =>
                   row.original.form.merit?.tasks?.some(
                     (task) =>
-                      task.status === Status.DONE &&
+                      task.status === Status.COMPLETED &&
                       typeof task.context === "object" &&
                       task.context !== null &&
                       "period" in task.context &&
@@ -158,7 +158,7 @@ export const FormTracker = ({ year }: Props) => {
                 value: merit.filter((row) =>
                   row.original.form.merit?.tasks?.some(
                     (task) =>
-                      task.status === Status.DONE &&
+                      task.status === Status.COMPLETED &&
                       typeof task.context === "object" &&
                       task.context !== null &&
                       "period" in task.context &&
@@ -172,11 +172,11 @@ export const FormTracker = ({ year }: Props) => {
             data={[
               {
                 label: "KPI Bonus",
-                value: kpiBonus.filter((row) => row.original.form.bonus?.tasks?.some((task) => task.status === Status.PENDING_APPROVER || task.status === Status.PENDING_CHECKER)).length,
+                value: kpiBonus.filter((row) => row.original.form.bonus?.tasks?.some((task) => task.status === Status.WAITING_APPROVER_1 || task.status === Status.WAITING_APPROVER_2)).length,
               },
               {
                 label: "Merit",
-                value: merit.filter((row) => row.original.form.merit?.tasks?.some((task) => task.status === Status.PENDING_APPROVER || task.status === Status.PENDING_CHECKER)).length,
+                value: merit.filter((row) => row.original.form.merit?.tasks?.some((task) => task.status === Status.WAITING_APPROVER_1 || task.status === Status.WAITING_APPROVER_2)).length,
               },  
             ]}
           />  

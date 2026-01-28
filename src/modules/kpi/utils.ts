@@ -11,6 +11,7 @@ import { kpiEvaluationSchema } from "./schema/evaluation";
 import { PERIOD_LABELS } from "../tasks/constant";
 import { Employee, Form, KpiEvaluation, Task } from "@/generated/prisma/client";
 import { formatDecimal } from "@/lib/utils";
+import { kpiCategoies } from "./constants";
 
 export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
   const weightStr = kpi.weight == null ? "0" : String(kpi.weight);
@@ -256,14 +257,14 @@ export async function exportDefinitionKpi(
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
   worksheet.getRow(1).height = 30;
 
-  worksheet.mergeCells("A2:I2");
+  worksheet.mergeCells("A2:J2");
   const subtitleCell = worksheet.getCell("A2");
   subtitleCell.value = "KPI Bonus";
   subtitleCell.font = { bold: true, color: { argb: "FF1E40AF" } };
   subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
 
   // have 3 levels are Manager, GM/AGM และ MD/VP else "-"
-  const managerCell = worksheet.getCell("J2");
+  const managerCell = worksheet.getCell("J3");
   managerCell.value = getManagerLevelLabel(kpiForm.employee.rank as Rank);
   managerCell.fill = {
     type: "pattern",
@@ -272,13 +273,14 @@ export async function exportDefinitionKpi(
   };
   managerCell.font = { bold: true, color: { argb: "FFFFFFFF" } };
   managerCell.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.getRow(2).height = 25;
+  worksheet.getRow(2).height = 32;
+  worksheet.getRow(3).height = 32;
 
   let currentRow = 4;
 
   // Header row for info Section
   worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-  worksheet.getCell(`A${currentRow}`).value = "ผู้ได้รับการประเมิน (Owner)";
+  worksheet.getCell(`A${currentRow}`).value = "พนักงาน (Employee)";
   worksheet.getCell(`A${currentRow}`).style = blueHeader;
 
   worksheet.mergeCells(`C${currentRow}:E${currentRow}`);
@@ -286,7 +288,7 @@ export async function exportDefinitionKpi(
   worksheet.getCell(`C${currentRow}`).style = blueHeader;
 
   worksheet.mergeCells(`F${currentRow}:G${currentRow}`);
-  worksheet.getCell(`F${currentRow}`).value = "ผู้ประเมิน (Approver)";
+  worksheet.getCell(`F${currentRow}`).value = "ผู้ประเมิน (Evaluator)";
   worksheet.getCell(`F${currentRow}`).style = blueHeader;
 
   worksheet.mergeCells(`H${currentRow}:J${currentRow}`);
@@ -304,7 +306,7 @@ export async function exportDefinitionKpi(
     {
       label: "ชื่อ-สกุล (Name-Surname)",
       evalueeValue: kpiForm.employee.name,
-      evaluatorLabel: "ลำดับที่ 1 (Approver 1)",
+      evaluatorLabel: "ผู้ประเมินลำดับที่ 1 (Evaluator #1)",
       evaluatorValue: kpiForm.task.checker?.name,
     },
     {
@@ -316,7 +318,7 @@ export async function exportDefinitionKpi(
     {
       label: "รหัส (Emp ID)",
       evalueeValue: kpiForm.employee.id,
-      evaluatorLabel: "ลำดับที่ 2 (Approver 2)",
+      evaluatorLabel: "ผู้ประเมินลำดับที่ 2 (Evaluator #2)",
       evaluatorValue: kpiForm.task.approver.name,
     },
     {
@@ -408,7 +410,7 @@ export async function exportDefinitionKpi(
   for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
     worksheet.getCell(`${col}${headerRow2}`).style = blueHeader
   }
-  worksheet.getRow(headerRow2).height = 25
+  worksheet.getRow(headerRow2).height = 28;
   worksheet.getRow(headerRow2).font = { size: 9, color: { argb: "FF1E40AF" } }
 
   // Merge header cells that span two rows
@@ -458,7 +460,7 @@ export async function exportDefinitionKpi(
         worksheet.getCell(`A${currentRow}`).border = cellBorder
         worksheet.getCell(`A${currentRow}`).font = { size: 9 }
 
-        worksheet.getCell(`B${currentRow}`).value = kpi.name
+        worksheet.getCell(`B${currentRow}`).value = `${kpi.name} \n${kpiCategoies[kpi.category!] ?? ""}`
         worksheet.getCell(`B${currentRow}`).alignment = { vertical: "top", wrapText: true }
         worksheet.getCell(`B${currentRow}`).border = cellBorder
         worksheet.getCell(`B${currentRow}`).font = { size: 9 }
@@ -501,8 +503,7 @@ export async function exportDefinitionKpi(
       worksheet.getCell(`E${currentRow}`).font = { size: 9 }
 
       // Achieved level column (checkbox representation)
-      const isChecked = kpi.achievementApprover === level;
-      worksheet.getCell(`I${currentRow}`).value = `${isChecked ? "☑" : "☐"} ${level} ${levelDescriptions[level]}`
+      worksheet.getCell(`I${currentRow}`).value = `${level} ${levelDescriptions[level]}`
       worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "left", vertical: "middle" }
       worksheet.getCell(`I${currentRow}`).border = cellBorder
       worksheet.getCell(`I${currentRow}`).font = { size: 8 }

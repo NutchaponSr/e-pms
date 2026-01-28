@@ -39,7 +39,7 @@ export const APP_CATEGORIES: AppCategory[] = [
     title: "Performance & Tasks",
     items: [
       {
-        title: "Performance",
+        title: "e-PMS",
         href: "/performance",
         description: "Track and manage employee performance reviews and goals",
         icon: TrendingUpIcon,

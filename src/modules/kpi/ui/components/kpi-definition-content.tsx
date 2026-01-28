@@ -40,10 +40,10 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
 
   const [rowHeights, setRowHeights] = useState<number[]>([]);
   const targetRanges = [
-    "< 70%",
-    "> 70% <= 80%",
-    "> 80% <= 90%",
-    "> 90% <= 100%",
+    { label: "70%", description: "(≤ 70%)" },
+    { label: "80%", description: "(≥70% - 80%)" },
+    { label: "90%", description: "(≥80% - 90%)" },
+    { label: "100%", description: "(≥90% - 100%)" },
   ];
 
   const detailRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -103,7 +103,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
           <div className="flex items-center h-full gap-2">
             <Badge color="orange" label={(index + 1).toString()} />
             <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis text-start grow">
-              Kpi Details
+              Individual KPI
             </div>
             <Button type="button" variant="dangerOutline" size="xxs" onClick={onDelete}>
               Delete
@@ -113,21 +113,21 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
         <div className={cn(header())}>
           <div className="flex items-center h-full">
             <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-              Weight
+              น้ำหนัก (Weight)
             </div>
           </div>
         </div>
         <div className={cn(header())}>
           <div className="flex items-center h-full">
             <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-              Target Range
+              เป้าหมาย (Target Range)
             </div>
           </div>
         </div>
         <div className={cn("border-none", header())}>
           <div className="flex items-center h-full">
             <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-              Target Detail
+              รายละเอียดเป้าหมาย (Target Detail)
             </div>
           </div>
         </div>
@@ -139,7 +139,10 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
               name={`kpis.${index}.category`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Individual KPI</FormLabel>
+                  <FormLabel className="text-xs">
+                    มุมมอง KPI ตาม Balance Scorecard <br /> 
+                    (KPI Perspective based on Balance Scorecard)
+                  </FormLabel>
                   <Select>
                     <FormControl>
                       <SelectTrigger>
@@ -163,7 +166,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
               name={`kpis.${index}.name`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">ตัวชี้วัดการดำเนินงานหลัก</FormLabel>
+                  <FormLabel className="text-xs">ตัวชี้วัดหลัก <br /> (Key Performance Indicator (KPI))</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
@@ -176,7 +179,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
               name={`kpis.${index}.definition`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">ความหมายและสูตรคำนวณ</FormLabel>
+                  <FormLabel className="text-xs">คำจำกัดความและสูตรคำนวณ <br /> (Definition and Calculation Formula)</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>  
@@ -189,7 +192,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
               name={`kpis.${index}.method`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">แหล่งข้อมูลที่ใช้วัดผลลัพธ์</FormLabel>
+                  <FormLabel className="text-xs">รูปแบบและวิธีการรายงานผลสำเร็จ <br /> (Format/Method of Reporting Achievement)</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
@@ -230,7 +233,10 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                 minHeight: rowHeights[rangeIndex] ? `${rowHeights[rangeIndex]}px` : "81px"
               }}
             >
-              <span className="text-sm font-medium font-mono">{item}</span>
+              <div className="flex flex-col items-center justify-center gap-1">
+                <span className="text-sm font-medium font-mono">{item.label}</span>
+                <span className="text-sm font-medium font-mono">{item.description}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -245,6 +251,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                     <Textarea 
                       {...field} 
                       value={field.value ?? ""}  
+                      className="min-h-25"
                     />
                   </FormControl>
                   <FormMessage />
@@ -262,6 +269,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                     <Textarea 
                       {...field} 
                       value={field.value ?? ""}  
+                      className="min-h-25"
                     />
                   </FormControl>
                   <FormMessage />
@@ -279,6 +287,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                     <Textarea 
                       {...field} 
                       value={field.value ?? ""}  
+                      className="min-h-25"
                     />
                   </FormControl>
                   <FormMessage />
@@ -295,7 +304,8 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                   <FormControl>
                     <Textarea 
                       {...field} 
-                      value={field.value ?? ""}  
+                      value={field.value ?? ""}
+                      className="min-h-25"
                     />
                   </FormControl>
                   <FormMessage />

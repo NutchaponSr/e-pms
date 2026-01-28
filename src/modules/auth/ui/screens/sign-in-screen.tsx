@@ -54,13 +54,10 @@ export const SignInScreen = () => {
           />
         </div>
         <div className="h-4 flex" />
-        <h1 className="text-wrap whitespace-normal [word-break:break-word] text-2xl">Sign In</h1>
-        <h3 className="text-wrap whitespace-normal [word-break:break-word] text-base text-muted-foreground">
-          Welcome back to e-PMS!
-        </h3>
+        <h1 className="text-wrap whitespace-normal [word-break:break-word] text-2xl text-center">Sign In</h1>
       </div>
 
-      <form className="flex flex-col gap-5 order-5" onSubmit={onSubmit}>
+      <form className="flex flex-col gap-5" onSubmit={onSubmit}>
         <div className="flex flex-col gap-2">
           <Label className="text-muted-foreground text-xs font-semibold">Employee ID</Label>
           <Input 
@@ -91,6 +88,11 @@ export const SignInScreen = () => {
           Continue
         </Button>
       </form>
+
+      <h1 className="text-wrap whitespace-normal [word-break:break-word] text-sm text-center">
+        หากพบปัญหาการใช้งานหรือต้องการสอบถามข้อมูลเพิ่มเติมกรุณาติดต่อทีม HRM 
+        ชลธิชา บุญเลี้ยง (Ext.8025 / E-mail: chonthicha.boo@somboon.co.th)
+      </h1>
     </>
   );
 }
