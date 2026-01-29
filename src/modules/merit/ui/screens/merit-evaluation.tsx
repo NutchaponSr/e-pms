@@ -375,7 +375,10 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             taskId={data.tasks.id} 
             period={period} 
             confirmTitle="Confirm Merit Evaluation"
-            onSave={() => evaluateBulkMerit({ ...form.getValues(), saved: false })}
+            onSave={() => {
+              evaluateBulkMerit({ ...form.getValues(), saved: false });
+              return true;
+            }}
           />,
           document.body
         )}

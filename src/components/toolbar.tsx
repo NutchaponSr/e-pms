@@ -22,8 +22,9 @@ interface Props {
     variant: StatusVariant;
   };
   onCreate?: () => void;
-  onWorkflow: () => void;
+  onWorkflow: () => void | Promise<void>;
   onSaveDraft: () => void;
+  onBeforeFinalSubmit?: () => void;
   onUpload?: () => void;
   onExport?: () => void;
   permissions: Record<Action, boolean>;
@@ -34,6 +35,7 @@ export const Toolbar = ({
   onCreate, 
   onWorkflow,
   onSaveDraft,
+  onBeforeFinalSubmit,
   onUpload,
   onExport,
   permissions,
@@ -47,7 +49,7 @@ export const Toolbar = ({
     const ok = await confirm();
 
     if (ok) {
-      onWorkflow();
+      await onWorkflow();
     }
   }
 
@@ -60,39 +62,41 @@ export const Toolbar = ({
             <StatusBadge {...status} />
           </div>
           <div className="relative shrink-0 rounded overflow-hidden h-7 ml-1 flex">
-            <div 
-              data-show={permissions.write}
-              className="data-[show=true]:inline-flex hidden gap-1"
-            >
-              <Button 
-                size="sm"
-                type="submit" 
-                className="rounded gap-1.5"
-                variant="primary"
-              >
-                <BsSave className="stroke-[0.25] size-4" />
-                Final Confirmation
-              </Button>
-              <Button 
-                type="button"
-                variant="primary" 
-                size="sm"
-                onClick={onSaveDraft}
-                className="rounded gap-1.5"
-              >
-                <BsFloppy2Fill className="stroke-[0.25] size-4" />
-                Save Draft
-              </Button>
-              {permissions["start-workflow"] && (
-                <Button
-                  size="sm"
-                  type="button"
-                  variant="primary" 
-                  className="rounded"
-                  onClick={onStartWorkflow}
-                >
-                  Start workflow
-                </Button>
+            <div className="inline-flex gap-1">
+              {permissions.write && (
+                <>
+                  <Button 
+                    type="button"
+                    variant="primary" 
+                    size="sm"
+                    onClick={onSaveDraft}
+                    className="rounded gap-1.5"
+                  >
+                    <BsFloppy2Fill className="stroke-[0.25] size-4" />
+                    Save Draft
+                  </Button>
+                  <Button 
+                    size="sm"
+                    type="submit" 
+                    className="rounded gap-1.5"
+                    variant="primary"
+                    onClick={onBeforeFinalSubmit}
+                  >
+                    <BsSave className="stroke-[0.25] size-4" />
+                    Final Confirmation
+                  </Button>
+                  {permissions["start-workflow"] && (
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="primary" 
+                      className="rounded"
+                      onClick={onStartWorkflow}
+                    >
+                      Start workflow
+                    </Button>
+                  )}
+                </>
               )}
               {onExport && (
                 <Button

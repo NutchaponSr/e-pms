@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckIcon, ChevronDownIcon, FileIcon, Loader2Icon, SearchIcon } from "lucide-react";
 
@@ -15,7 +15,9 @@ import {
   Dialog,
   DialogTrigger,
   DialogContent,
-  DialogHidden
+  DialogHidden,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
@@ -40,6 +42,10 @@ export const SelectCompetencyPopover = ({
   const trpc = useTRPC();
 
   const [search, setSearch] = useState("");
+  const [pendingCompetency, setPendingCompetency] = useState<Competency | null>(null);
+  const [confirmedCompetency, setConfirmedCompetency] = useState<Competency | null>(
+    fallbackCompetency || null
+  );
 
   const debouncedSearchTerm = useDebounce(search, 500);
 
@@ -66,12 +72,28 @@ export const SelectCompetencyPopover = ({
     }
     return fallbackCompetency || null;
   }, [selectedCompetencyId, value, competencies, fallbackCompetency]);
+  
+  useEffect(() => {
+    if (selectedCompetency && selectedCompetency.id !== confirmedCompetency?.id) {
+      setConfirmedCompetency(selectedCompetency);
+    }
+  }, [selectedCompetency, confirmedCompetency?.id]);
 
-  const displayText = selectedCompetency?.name || fallbackCompetency?.name || types.label;
-  const isButtonSelected = !!selectedCompetency;
+  const effectiveSelectedCompetency =
+    pendingCompetency || confirmedCompetency || selectedCompetency || null;
+
+  const displayText = effectiveSelectedCompetency?.name || fallbackCompetency?.name || types.label;
+  const isButtonSelected = !!effectiveSelectedCompetency;
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          setPendingCompetency(null);
+          setSearch("");
+        }
+      }}
+    >
       <DialogTrigger disabled={!perform} asChild>
         <Button 
           type="button" 
@@ -132,7 +154,7 @@ export const SelectCompetencyPopover = ({
                   {competencies && competencies.length > 0 && (
                     <div className="flex flex-col gap-px">
                       {competencies?.map((competency) => {
-                        const isItemSelected = competency.id === selectedCompetency?.id;
+                        const isItemSelected = competency.id === effectiveSelectedCompetency?.id;
                         return (
                           <div 
                             key={competency.id} 
@@ -140,7 +162,7 @@ export const SelectCompetencyPopover = ({
                               "select-none transition cursor-pointer flex w-full rounded-sm hover:bg-[#2a1c0012] overflow-hidden",
                               isItemSelected && "bg-[#2a1c0012]"
                             )}
-                            onClick={() => onSelect(competency)}
+                            onClick={() => setPendingCompetency(competency)}
                           >
                             <div className="flex items-center gap-2 leading-[120%] w-full select-none min-h-9 text-sm p-2 transition-none">
                               <div className="flex items-center justify-center size-5 mt-px self-start">
@@ -179,6 +201,32 @@ export const SelectCompetencyPopover = ({
               </div>
             </div>
           )}
+          <DialogFooter className="flex items-center justify-end gap-2 border-t px-4 py-3">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+              >
+                Cancel
+              </Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!effectiveSelectedCompetency}
+                onClick={() => {
+                  if (effectiveSelectedCompetency) {
+                    setConfirmedCompetency(effectiveSelectedCompetency);
+                    onSelect(effectiveSelectedCompetency);
+                  }
+                }}
+              >
+                Confirm
+              </Button>
+            </DialogClose>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

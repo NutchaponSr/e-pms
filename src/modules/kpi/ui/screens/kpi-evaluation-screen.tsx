@@ -155,7 +155,7 @@ export const KpiEvaluationScreen = ({
               return;
             }
 
-            startWorkflow({ id: form.tasks!.id })
+            startWorkflow({ id: form.tasks!.id });
           }}
           onSaveDraft={() => evaluateKpis({ ...f.getValues(), saved: false })}
           onExport={async () => exportDefinitionKpi({
@@ -197,7 +197,12 @@ export const KpiEvaluationScreen = ({
             taskId={form.tasks.id} 
             period={period} 
             confirmTitle="Confirm KPI Evaluation"
-            onSave={() => evaluateKpis({ ...f.getValues(), saved: false })}
+            onSave={async () => {
+              const ok = await f.trigger();
+              if (!ok) return false;
+              evaluateKpis({ ...f.getValues(), saved: false });
+              return true;
+            }}
           />,
           document.body
         )}

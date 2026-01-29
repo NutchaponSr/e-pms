@@ -7,7 +7,7 @@ export const kpiDefinitionSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   year: z.number(),
   category: z.enum(KpiCategory, "Category is required"),
-  weight: z.coerce.number().min(1).max(100),
+  weight: z.coerce.number().min(0).max(100),
   objective: z.string().trim().nullable().default(null),
   definition: z.string().trim().min(1, "Definition is required"),
   strategy: z.string().trim().nullable().default(null),
@@ -40,6 +40,27 @@ export const kpiDefinitionInputSchema = kpiDefinitionSchema
 
 export const kpiDefinitionsSchema = z.object({
   kpis: z.array(kpiDefinitionSchema),
+  saved: z.boolean().default(false),
+}).superRefine((data, ctx) => {
+  data.kpis.forEach((kpi, index) => {
+    if (data.saved) {
+      if (kpi.weight < 1 || kpi.weight > 100) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Weight must be at least 1 when saved",
+          path: ["kpis", index, "weight"],
+        });
+      }
+    } else {
+      if (kpi.weight < 0 || kpi.weight > 100) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Weight must be at least 0 for draft",
+          path: ["kpis", index, "weight"],
+        });
+      }
+    }
+  });
 });
 
 // Schema for raw input data from database (before validation/transformation)

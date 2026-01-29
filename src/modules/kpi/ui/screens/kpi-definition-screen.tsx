@@ -50,7 +50,7 @@ interface Props {
 
 export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Props) => {
   const createKpi = useCreateKpi();
-  const updateBulkKpis = useUpdateBulkKpis(id, period);
+  const { mutate: updateBulkKpis, mutateAsync: updateBulkKpisAsync } = useUpdateBulkKpis(id, period);
   const startWorkflow = useStartWorkflow(form.id, period);
   const { setWeight } = useWeight();
   const { save } = useSaveForm();
@@ -69,6 +69,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
     resolver: zodResolver(kpiDefinitionsSchema) as Resolver<KpiDefinitions>,
     defaultValues: {
       kpis: kpisMapped || [],
+      saved: false,
     },
   });
 
@@ -150,10 +151,12 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
           period={period} 
           fileRef={fileRef as React.RefObject<HTMLInputElement>} 
         />
+        {f.getValues("saved") ? "Saved" : "Draft"}
         <Toolbar 
           onUpload={() => fileRef.current?.click()}
           permissions={permissions}
           status={STATUS_VARIANTS[form.tasks?.status!]}
+          onBeforeFinalSubmit={() => f.setValue("saved", true)}
           onCreate={() => createKpi({ formId: id, period })} 
           onExport={async () => {
             await exportDefinitionKpi({
@@ -174,9 +177,24 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
               return;
             }
 
-            startWorkflow({ id: form.tasks!.id })
+            (async () => {
+              // If the form isn't saved yet, validate & save (saved=true) first
+              if (!save) {
+                f.setValue("saved", true);
+                const ok = await f.trigger();
+                if (!ok) return;
+
+                const okSave = await updateBulkKpisAsync({ ...f.getValues(), saved: true });
+                if (!okSave) return;
+              }
+
+              startWorkflow({ id: form.tasks!.id });
+            })();
           }}
-          onSaveDraft={() => updateBulkKpis({ ...f.getValues(), saved: false })}
+          onSaveDraft={() => {
+            f.setValue("saved", false);
+            updateBulkKpis({ ...f.getValues(), saved: false });
+          }}
         />
         <div className="px-3 mx-auto w-full flex flex-col justify-start grow pb-45">
           <Empty data-empty={form?.kpis && form?.kpis.length > 0}>
@@ -238,7 +256,12 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
             taskId={form.tasks.id} 
             period={period} 
             confirmTitle="Confirm KPI Bonus"
-            onSave={() => updateBulkKpis({ ...f.getValues(), saved: false })}
+            onSave={async () => {
+              f.setValue("saved", true);
+              const ok = await f.trigger();
+              if (!ok) return false;
+              return await updateBulkKpisAsync({ ...f.getValues(), saved: true });
+            }}
           />,
           document.body
         )}

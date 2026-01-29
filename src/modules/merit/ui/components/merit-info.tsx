@@ -92,7 +92,7 @@ export const MeritInfo = ({ year }: Props) => {
         <div className="basis-0 grow px-9 pt-8 pb-6 border-b border-border">
           <div className="flex flex-col justify-start min-h-full text-tertiary overflow-hidden text-sm">
             <Event
-              title="Merit Definition"
+              title="KPI Setting"
               description="Define behaviors indicators that align with expected competencies and company culture"
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{  
@@ -126,10 +126,10 @@ export const MeritInfo = ({ year }: Props) => {
               description="Mid-year review to assess performance progress and behavioral expectations"
               buttonCtx={{
                 disabled: createMeritTaskCtx.isPending,
-                active: isInRange(year, 6, 7) && data.task.evaluation1st?.status !== Status.COMPLETED,
+                active: (isInRange(year, 6, 7) && data.task.evaluation1st?.status !== Status.COMPLETED),
                 label: !!data.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 6, 7, 2025)) {
+                  if (!isInRange(year, 6, 7, 2025) && process.env.NODE_ENV !== "development") {
                     toast.error(
                       "You can only evaluate Merit from June to July",
                     );
@@ -154,7 +154,7 @@ export const MeritInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.evaluation2nd?.status!]}
               description="Year-end assessment of performance results and behavioral outcomes"
               buttonCtx={{
-                active: isInRange(year, 11, 12) && data.task.evaluation2nd?.status !== Status.COMPLETED,
+                active: (isInRange(year, 11, 12) && data.task.evaluation2nd?.status !== Status.COMPLETED),
                 label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 11, 12, 2025)) {

@@ -18,7 +18,7 @@ export const useUpdateBulkKpis = (id: string, period: Period) => {
 
   const updateBulkKpis = useMutation(trpc.kpi.updateBulk.mutationOptions());
 
-  const mutation = (input: RequestType) => {
+  const mutate = (input: RequestType) => {
     toast.loading("Updating KPIs...", { id: "update-bulk-kpis" });
 
     updateBulkKpis.mutate(input, {
@@ -37,5 +37,25 @@ export const useUpdateBulkKpis = (id: string, period: Period) => {
     });
   };
 
-  return mutation;
+  const mutateAsync = async (input: RequestType) => {
+    toast.loading("Updating KPIs...", { id: "update-bulk-kpis" });
+
+    try {
+      await updateBulkKpis.mutateAsync(input);
+
+      toast.success("KPIs Updated!", { id: "update-bulk-kpis" });
+      queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id, period }));
+
+      if (input.saved) {
+        setSave(true);
+      }
+
+      return true;
+    } catch (err: any) {
+      toast.error(err?.message || "Something went wrong", { id: "update-bulk-kpis" });
+      return false;
+    }
+  };
+
+  return { mutate, mutateAsync };
 };

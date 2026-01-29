@@ -198,7 +198,7 @@ export const taskProcedure = createTRPCRouter({
               id: input.id,
             },
             data: {
-              status: Status.WAITING_APPROVER_1,
+              status: Status.IN_DRAFT,
             },
             include: {
               owner: true,
@@ -231,7 +231,7 @@ export const taskProcedure = createTRPCRouter({
               id: input.id,
             },
             data: {
-              status: Status.WAITING_APPROVER_2,
+              status: Status.IN_DRAFT,
             },
             include: {
               owner: true,

@@ -14,7 +14,7 @@ interface Props {
   period: Period;
   app: string;
   confirmTitle?: string;
-  onSave?: () => void;
+  onSave?: () => boolean | Promise<boolean>;
 }
 
 export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: Props) => {
@@ -60,8 +60,10 @@ export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: 
                 const shouldSave = await confirmSave();
                 
                 if (shouldSave && onSave) {
-                  onSave();
-                  confirmation({ id: taskId, approved: true });
+                  const okSave = await onSave();
+                  if (okSave) {
+                    confirmation({ id: taskId, approved: true });
+                  }
                 }
               } else {
                 const ok = await confirm();

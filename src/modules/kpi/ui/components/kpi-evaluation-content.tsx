@@ -187,7 +187,7 @@ export const KpiEvaluationContent = ({
             form={form}
             variant="bigText"
             disabled={!canPerformOwner}
-            label="Owner"
+            label="พนักงาน (Employee)"
             description="รายละเอียดของผลสำเร็จเพิ่มเติม (Detail of success result)"
             className={{
               ...formRecord.default,
@@ -224,7 +224,7 @@ export const KpiEvaluationContent = ({
             form={form}
             variant="bigText"
             disabled={!canPerformChecker}
-            label="Checker"
+            label="ผู้ประเมินคนที่ 1 (Evaluator 1)"
             description="ความคิดเห็น (Comment)"
             className={{
               ...formRecord.default,
@@ -241,7 +241,7 @@ export const KpiEvaluationContent = ({
             form={form}
             variant="bigText"
             disabled={!canPerformApprover}
-            label="Approver"
+            label="ผู้ประเมินคนที่ 2 (Evaluator 2)"
             description="ความคิดเห็น (Comment)"
             className={{
               ...formRecord.default,

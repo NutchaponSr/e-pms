@@ -143,7 +143,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                     มุมมอง KPI ตาม Balance Scorecard <br /> 
                     (KPI Perspective based on Balance Scorecard)
                   </FormLabel>
-                  <Select>
+                  <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!props.permissions.write}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select an individual KPI" />
@@ -168,7 +168,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                 <FormItem>
                   <FormLabel className="text-xs">ตัวชี้วัดหลัก <br /> (Key Performance Indicator (KPI))</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} disabled={!props.permissions.write} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -181,7 +181,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                 <FormItem>
                   <FormLabel className="text-xs">คำจำกัดความและสูตรคำนวณ <br /> (Definition and Calculation Formula)</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} disabled={!props.permissions.write} />
                   </FormControl>  
                   <FormMessage />
                 </FormItem>
@@ -194,7 +194,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                 <FormItem>
                   <FormLabel className="text-xs">รูปแบบและวิธีการรายงานผลสำเร็จ <br /> (Format/Method of Reporting Achievement)</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} disabled={!props.permissions.write} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,6 +216,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                     min={0}
                     max={100}
                     className="text-xs"
+                    disabled={!props.permissions.write}
                   />
                 </FormControl>
                 <FormMessage />
@@ -252,6 +253,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                       {...field} 
                       value={field.value ?? ""}  
                       className="min-h-25"
+                      disabled={!props.permissions.write}
                     />
                   </FormControl>
                   <FormMessage />
@@ -270,6 +272,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                       {...field} 
                       value={field.value ?? ""}  
                       className="min-h-25"
+                      disabled={!props.permissions.write}
                     />
                   </FormControl>
                   <FormMessage />
@@ -288,6 +291,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                       {...field} 
                       value={field.value ?? ""}  
                       className="min-h-25"
+                      disabled={!props.permissions.write}
                     />
                   </FormControl>
                   <FormMessage />
@@ -306,6 +310,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
                       {...field} 
                       value={field.value ?? ""}
                       className="min-h-25"
+                      disabled={!props.permissions.write}
                     />
                   </FormControl>
                   <FormMessage />

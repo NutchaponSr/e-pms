@@ -70,6 +70,7 @@ export function meritDefinitionMap(data: MeritFormData): MeritDefinition {
   });
 
   return {
+    saved: false,
     competencies,
     cultures,
   };
@@ -884,7 +885,9 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     worksheet.getCell(`C${currentRow}`).border = cellBorder
     worksheet.getCell(`C${currentRow}`).font = { size: 9 }
 
-    worksheet.getCell(`D${currentRow}`).value = Array.isArray(cult.culture.belief) ? cult.culture.belief.map((item) => {`- ${String(item)}`}).join("\n") : ""
+    worksheet.getCell(`D${currentRow}`).value = Array.isArray(cult.culture.belief)
+      ? cult.culture.belief.map((item) => `- ${String(item)}`).join("\n")
+      : ""
     worksheet.getCell(`D${currentRow}`).alignment = { vertical: "top", wrapText: true }
     worksheet.getCell(`D${currentRow}`).border = cellBorder
     worksheet.getCell(`D${currentRow}`).font = { size: 9 }

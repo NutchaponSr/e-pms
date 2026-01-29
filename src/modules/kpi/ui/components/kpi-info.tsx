@@ -107,12 +107,12 @@ export const KpiInfo = ({ year }: Props) => {
               description="Measures achievement based on actual performance results"
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: isInRange(year, 6, 7) && data.task.evaluation?.status !== Status.COMPLETED,
+                active: (isInRange(year, 11, 12) && data.task.evaluation?.status !== Status.COMPLETED),
                 label: !!data.task.evaluation ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, 12, 2025)) {
+                  if (!isInRange(year, 11, 12, 2025) && process.env.NODE_ENV !== "development") {
                     toast.error(
-                      "You can only evaluate KPIs from January to December",
+                      "You can only evaluate KPIs from November to December",
                     );
                     return;
                   }

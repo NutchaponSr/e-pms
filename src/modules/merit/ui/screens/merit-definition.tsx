@@ -57,7 +57,7 @@ export const MeritDefinitionScreen = ({
   const { save } = useSaveForm(); 
 
   const startWorkflow = useStartWorkflow(id, period);
-  const { mutation: definitionBulkMerit } = useDefinitionBulkMerit(id, period);
+  const { mutation: definitionBulkMerit, mutateAsync: definitionBulkMeritAsync } = useDefinitionBulkMerit(id, period);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<MeritDefinition>({
@@ -142,6 +142,19 @@ export const MeritDefinitionScreen = ({
               return;
             }
 
+            (async () => {
+              // If the form isn't saved yet, validate & save (saved=true) first
+              if (!save) {
+                form.setValue("saved", true);
+                const ok = await form.trigger();
+                if (!ok) return;
+
+                const okSave = await definitionBulkMeritAsync({ ...form.getValues(), saved: true });
+                if (!okSave) return;
+              }
+
+              startWorkflow({ id: data.tasks.id });
+            })();
             startWorkflow({ id: data.tasks.id });
           }}
           onExport={async () => {
@@ -153,7 +166,11 @@ export const MeritDefinitionScreen = ({
               task: data.tasks as Task & { checker?: Employee; approver: Employee },
             });
           }}
-          onSaveDraft={() => definitionBulkMerit({ ...form.getValues(), saved: false })}
+          onSaveDraft={() => {
+            form.setValue("saved", false);
+            definitionBulkMerit({ ...form.getValues(), saved: false });
+          }}
+          onBeforeFinalSubmit={() => form.setValue("saved", true)}
           onUpload={() => fileRef.current?.click()}
           permissions={permissions}
           status={STATUS_VARIANTS[data.tasks?.status!]}
@@ -256,7 +273,12 @@ export const MeritDefinitionScreen = ({
             taskId={data.tasks.id} 
             period={period} 
             confirmTitle="Confirm Merit Definition"
-            onSave={() => definitionBulkMerit({ ...form.getValues(), saved: false })}
+            onSave={async () => {
+              form.setValue("saved", true);
+              const ok = await form.trigger();
+              if (!ok) return false;
+              return await definitionBulkMeritAsync({ ...form.getValues(), saved: true });
+            }}
           />,
           document.body
         )}
