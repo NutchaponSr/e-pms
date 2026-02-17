@@ -77,29 +77,29 @@ export const meritProcedure = createTRPCRouter({
         },
         chart: [
           {
-            period: PERIOD_LABELS[Period.EVALUATION_1ST],
+            period: "Mid-year Evaluation",
             competency: {
-              owner: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelOwner"),
-              checker: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelChecker"),
-              approver: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelApprover"),
+              employee: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelOwner"),
+              evaluator1: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelChecker"),
+              evaluator2: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_1ST, "levelApprover"),
             },
             culture: {
-              owner: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorOwner"),
-              checker: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorChecker"),
-              approver: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorApprover"),
+              employee: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorOwner"),
+              evaluator1: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorChecker"),
+              evaluator2: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_1ST, "levelBehaviorApprover"),
             },
           },
           {
-            period: PERIOD_LABELS[Period.EVALUATION_2ND],
+            period: "Year-end Evaluation",
             competency: {
-              owner: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelOwner"),
-              checker: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelChecker"),
-              approver: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelApprover"),
+              employee: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelOwner"),
+              evaluator1: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelChecker"),
+              evaluator2: sumCompetencyByPeriod(form?.competencyRecords ?? [], Period.EVALUATION_2ND, "levelApprover"),
             },
             culture: {
-              owner: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorOwner"),
-              checker: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorChecker"),
-              approver: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorApprover"),
+              employee: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorOwner"),
+              evaluator1: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorChecker"),
+              evaluator2: sumCultureByPeriod(form?.cultureRecords ?? [], Period.EVALUATION_2ND, "levelBehaviorApprover"),
             },
           }
         ]

@@ -85,9 +85,9 @@ export const FormTracker = ({ year }: Props) => {
         <div className="contents">
           <div className="flex items-center text-xs font-medium text-secondary shrink-0 max-w-full">
             <div className="flex items-center justify-center size-4 me-2">
-              <SquareActivityIcon className="size-3.5 shrink-0 block text-secondary" />
+              <SquareActivityIcon className="size-4 shrink-0 block text-secondary" />
             </div>
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis">Form tracker</span>
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm">Form tracker</span>
           </div>
         </div>
       </div>
@@ -95,10 +95,10 @@ export const FormTracker = ({ year }: Props) => {
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-4 gap-4">
           <StatusInfo title="Employee" value={table.getRowModel().rows.length} />
-          <StatusInfo title="Bonus Approved"  
+          <StatusInfo title="KPI Bonus Approved"  
             data={[
               {
-                label: "Definition",
+                label: "KPI Setting",
                 value: kpiBonus.filter((row) =>
                   row.original.form.bonus?.tasks?.some(
                     (task) =>
@@ -111,7 +111,7 @@ export const FormTracker = ({ year }: Props) => {
                 ).length,
               },
               {
-                label: "Evaluation",
+                label: "Year-end Evaluation",
                 value: kpiBonus.filter((row) =>
                   row.original.form.bonus?.tasks?.some(
                     (task) =>
@@ -125,10 +125,10 @@ export const FormTracker = ({ year }: Props) => {
               },
             ]}
           />
-          <StatusInfo title="Merit Approved"  
+          <StatusInfo title="KPI Merit Approved"  
             data={[
               {
-                label: "Definition",
+                label: "KPI Setting",
                 value: merit.filter((row) =>
                   row.original.form.merit?.tasks?.some(
                     (task) =>
@@ -141,7 +141,7 @@ export const FormTracker = ({ year }: Props) => {
                 ).length,
               },
               {
-                label: "Evaluation 1st",
+                label: "Mid-year Evaluation",
                 value: merit.filter((row) =>
                   row.original.form.merit?.tasks?.some(
                     (task) =>
@@ -154,7 +154,7 @@ export const FormTracker = ({ year }: Props) => {
                 ).length,
               },
               {
-                label: "Evaluation 2nd",
+                label: "Year-end Evaluation",
                 value: merit.filter((row) =>
                   row.original.form.merit?.tasks?.some(
                     (task) =>
@@ -175,7 +175,7 @@ export const FormTracker = ({ year }: Props) => {
                 value: kpiBonus.filter((row) => row.original.form.bonus?.tasks?.some((task) => task.status === Status.WAITING_APPROVER_1 || task.status === Status.WAITING_APPROVER_2)).length,
               },
               {
-                label: "Merit",
+                label: "KPI Merit",
                 value: merit.filter((row) => row.original.form.merit?.tasks?.some((task) => task.status === Status.WAITING_APPROVER_1 || task.status === Status.WAITING_APPROVER_2)).length,
               },  
             ]}
@@ -243,7 +243,8 @@ export const FormTracker = ({ year }: Props) => {
                         >
                           <Checkbox checked={isChecked} />
                           <div className={cn("size-2 rounded-full", statusBadgeVariants({ background: status.variant }))} />
-                          <span className="text-xs font-medium text-primary">{status.label}</span>
+                          <span className="text-xs font-medium text-primary">
+                            {status.label === "Not Started" ? "Create" : status.label}</span>
                         </Command.Item>
                       );
                     })}

@@ -380,7 +380,7 @@ export async function exportDefinitionKpi(
   worksheet.getCell(`F${headerRow1}`).value = "คำจำกัดความและสูตรการคำนวณ \n(Definition and Calculation Formula)"
   worksheet.getCell(`G${headerRow1}`).value = "รูปแบบและวิธีการรายงานผลความสำเร็จ \n(Format/Method of Reporting Achievement)"
   worksheet.mergeCells(`H${headerRow1}:J${headerRow1}`)
-  worksheet.getCell(`H${headerRow1}`).value = "การประเมินผลการปฏิบัคิงานปลายปี (JAN - DEC) \n(End-Year Evaluation)"
+  worksheet.getCell(`H${headerRow1}`).value = "การประเมินผลการปฏิบัคิงานปลายปี (JAN - DEC) \n(Year-End Evaluation)"
 
   // Apply header styles
   for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
@@ -423,12 +423,6 @@ export async function exportDefinitionKpi(
   currentRow++;
 
   const targetLevels = [70, 80, 90, 100] as const
-  const levelDescriptions = {
-    70: "(<70%)",
-    80: "(≥70%-80%)",
-    90: "(≥80%-90%)",
-    100: "(≥90%)",
-  }
 
   // Helper function to get target value from level
   const getTargetValue = (kpi: KpiEvaluation, level: typeof targetLevels[number]): string | null => {
@@ -503,7 +497,7 @@ export async function exportDefinitionKpi(
       worksheet.getCell(`E${currentRow}`).font = { size: 9 }
 
       // Achieved level column (checkbox representation)
-      worksheet.getCell(`I${currentRow}`).value = `${level} ${levelDescriptions[level]}`
+      worksheet.getCell(`I${currentRow}`).value = level.toString()
       worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "left", vertical: "middle" }
       worksheet.getCell(`I${currentRow}`).border = cellBorder
       worksheet.getCell(`I${currentRow}`).font = { size: 8 }

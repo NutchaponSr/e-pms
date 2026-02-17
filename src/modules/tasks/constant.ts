@@ -10,8 +10,8 @@ export const routes: Record<FormType, string> = {
 export const STATUSES: Record<Status, string> = {
   [Status.NOT_STARTED]: "Not Started",
   [Status.IN_DRAFT]: "In Draft",
-  [Status.WAITING_APPROVER_1]: "Waiting Approver 1",
-  [Status.WAITING_APPROVER_2]: "Waiting Approver 2",
+  [Status.WAITING_APPROVER_1]: "Waiting Evaluator 1",
+  [Status.WAITING_APPROVER_2]: "Waiting Evaluator 2",
   [Status.COMPLETED]: "Completed",
 };  
 
@@ -21,8 +21,8 @@ export const STATUS_VARIANTS: Record<Status, {
 }> = {
   [Status.NOT_STARTED]: { label: "Not Started", variant: "purple" },
   [Status.IN_DRAFT]: { label: "In Draft", variant: "orange" },
-  [Status.WAITING_APPROVER_1]: { label: "Waiting Approver 1", variant: "default" },
-  [Status.WAITING_APPROVER_2]: { label: "Waiting Approver 2", variant: "default" },
+  [Status.WAITING_APPROVER_1]: { label: "Waiting Evaluator 1", variant: "default" },
+  [Status.WAITING_APPROVER_2]: { label: "Waiting Evaluator 2", variant: "default" },
   [Status.COMPLETED]: { label: "Completed", variant: "green" },
 };
 

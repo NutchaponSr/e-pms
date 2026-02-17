@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { FormType, Period, Status } from "@/generated/prisma/enums";
+import { FormType, Period, Status, UserRole } from "@/generated/prisma/enums";
 
 import {
   ChartContainer,
@@ -30,6 +30,7 @@ import { Select, SelectValue, SelectTrigger, SelectItem, SelectContent } from "@
 import { useExportMerit } from "../../api/use-export-merit";
 import { Button } from "@/components/ui/button";
 import { useCreateMeritTask } from "../../api/use-create-merit-task";
+import { authClient } from "@/lib/auth-client";
 
 const chartConfig = {
   owner: {
@@ -54,6 +55,10 @@ export const MeritInfo = ({ year }: Props) => {
   const trpc = useTRPC();
   const router = useRouter();
 
+  const { data: session } = authClient.useSession();
+
+  const isAdmin = session?.user.role === UserRole.ADMIN;
+
   const [selectedCategory, setSelectedCategory] = useState<"competency" | "culture">("competency");
 
   const { data } = useSuspenseQuery(trpc.merit.getInfo.queryOptions({ year }));
@@ -63,9 +68,9 @@ export const MeritInfo = ({ year }: Props) => {
 
   const chartData = data.chart.map((item) => ({
     period: item.period,
-    owner: item[selectedCategory].owner,
-    checker: item[selectedCategory].checker,
-    approver: item[selectedCategory].approver,
+    employee: item[selectedCategory].employee,
+    evaluator1: item[selectedCategory].evaluator1,
+    evaluator2: item[selectedCategory].evaluator2,
   }));
 
   return (
@@ -74,15 +79,15 @@ export const MeritInfo = ({ year }: Props) => {
         <div className="contents">
           <div className="flex items-center text-xs font-medium text-secondary shrink-0 max-w-full">
             <div className="flex items-center justify-center size-4 me-2">
-              <TargetIcon className="size-3.5 shrink-0 block text-secondary" />
+              <TargetIcon className="size-4 shrink-0 block text-secondary" />
             </div>
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-              Merit
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-sm">
+              KPI Merit
             </span>
           </div>
         </div>
 
-        {!!data.task.draft && (
+        {!!data.task.draft && isAdmin && (
           <Button variant="secondary" size="sm" onClick={() => exportMerit({ id: data.task.draft!.formId })} disabled={exportMeritCtx.isPending}>
             Export
           </Button>
@@ -121,7 +126,7 @@ export const MeritInfo = ({ year }: Props) => {
               }}
             />
             <Event  
-              title="Evaluation 1st"
+              title="Mid-year Evaluation"
               status={STATUS_VARIANTS[data.task.evaluation1st?.status!]}
               description="Mid-year review to assess performance progress and behavioral expectations"
               buttonCtx={{
@@ -150,7 +155,7 @@ export const MeritInfo = ({ year }: Props) => {
               }}
             />
             <Event
-              title="Evaluation 2nd"
+              title="Year-end Evaluation"
               status={STATUS_VARIANTS[data.task.evaluation2nd?.status!]}
               description="Year-end assessment of performance results and behavioral outcomes"
               buttonCtx={{

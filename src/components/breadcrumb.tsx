@@ -18,9 +18,9 @@ const PATH_LABELS: Record<string, string> = {
   "/performance/kpi": "KPI Bonus",
   "/performance/kpi/*/definition": "KPI Setting",
   "/performance/merit": "KPI Merit",
-  "/performance/merit/*/definition": "Merit Setting",
-  "/performance/merit/*/evaluation1st": "Evaluation 1st",
-  "/performance/merit/*/evaluation2nd": "Evaluation 2nd",
+  "/performance/merit/*/definition": "KPI Setting",
+  "/performance/merit/*/evaluation1st": "Mid-Year Evaluation",
+  "/performance/merit/*/evaluation2nd": "Year-End Evaluation",
 };
 
 // ใช้ regex เพื่อซ่อน path ตาม pattern ได้

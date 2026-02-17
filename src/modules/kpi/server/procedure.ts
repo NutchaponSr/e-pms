@@ -60,21 +60,21 @@ export const kpiProcedure = createTRPCRouter({
         },
         chart: [
           {
-            label: "Owner",
+            label: "Employee",
             score: formatDecimal(calculateSumAchievement(
               form?.kpis.map((kpi) => kpi.achievementOwner ?? 0) ?? [], 
               form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
             )),
           },
           {
-            label: "Checker",
+            label: "Evaluator 1",
             score: formatDecimal(calculateSumAchievement(
               form?.kpis.map((kpi) => kpi.achievementChecker ?? 0) ?? [], 
               form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
             )),
           },
           {
-            label: "Approver",
+            label: "Evaluator 2",
             score: formatDecimal(calculateSumAchievement(
               form?.kpis.map((kpi) => kpi.achievementApprover ?? 0) ?? [], 
               form?.kpis.map((kpi) => Number(kpi.weight)) ?? []

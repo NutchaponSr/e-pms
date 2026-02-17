@@ -151,7 +151,6 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
           period={period} 
           fileRef={fileRef as React.RefObject<HTMLInputElement>} 
         />
-        {f.getValues("saved") ? "Saved" : "Draft"}
         <Toolbar 
           onUpload={() => fileRef.current?.click()}
           permissions={permissions}

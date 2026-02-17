@@ -52,11 +52,11 @@ export const columns: ColumnDef<TrackerColumn>[] = [
   },
   {
     id: "bonus",
-    header: "Bonus",
+    header: "KPI Bonus",
     columns: [
       {
         id: "definition_bonus",
-        header: "Definition",
+        header: "KPI Setting",
         cell: ({ row }) => (
           <>
             {row.original.form.bonus?.tasks[0] && row.original.form.bonus?.tasks[0]?.status !== Status.NOT_STARTED && ( 
@@ -81,7 +81,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
       },
       {
         id: "evaluation",
-        header: "Evaluation",
+        header: "Year-End Evaluation",
         cell: ({ row }) => (
           <>
             {row.original.form.bonus?.tasks[1] && row.original.form.bonus?.tasks[1]?.status !== Status.NOT_STARTED && (
@@ -114,11 +114,11 @@ export const columns: ColumnDef<TrackerColumn>[] = [
   },
   {
     id: "merit",
-    header: "Merit",
+    header: "KPI Merit",
     columns: [
       {
         id: "definition_merit",
-        header: "Definition",
+        header: "KPI Setting",
         cell: ({ row }) => (
           <>
             {row.original.form.merit?.tasks[0] && row.original.form.merit?.tasks[0]?.status !== Status.NOT_STARTED && (
@@ -142,7 +142,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
         enableGlobalFilter: false,
       },
       {
-        header: "Evaluation 1st",
+        header: "Mid-Year Evaluation",
         id: "evaluation1st_merit",  
         cell: ({ row }) => (
           <>
@@ -167,7 +167,7 @@ export const columns: ColumnDef<TrackerColumn>[] = [
         enableGlobalFilter: false,
       },
       {
-        header: "Evaluation 2nd",
+        header: "Year-End Evaluation",
         id: "evaluation2nd_merit",
         cell: ({ row }) => (
           <>

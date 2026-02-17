@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 import { useTRPC } from "@/trpc/client";
-import { Period, Status } from "@/generated/prisma/enums";
+import { Period, Status, UserRole } from "@/generated/prisma/enums";
 
 import {
   ChartContainer,
@@ -28,6 +28,7 @@ import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { Button } from "@/components/ui/button";
 import { useExportKpi } from "../../api/use-export-kpi";
 import { useCreateKpiTask } from "../../api/use-create-kpi-task";
+import { authClient } from "@/lib/auth-client";
 
 const chartConfig = {
   approval: {
@@ -44,10 +45,13 @@ export const KpiInfo = ({ year }: Props) => {
   const trpc = useTRPC();
   const router = useRouter();
 
+  const { data: session } = authClient.useSession();
   const { mutation: exportKpi, ctx: exportKpiCtx } = useExportKpi();
   const { mutation: createKpiTask, ctx: createKpiTaskCtx } = useCreateKpiTask();
 
   const { data } = useSuspenseQuery(trpc.kpi.getInfo.queryOptions({ year }));
+
+  const isAdmin = session?.user.role === UserRole.ADMIN;
 
   return (
     <section className="h-full flex flex-col">
@@ -55,15 +59,15 @@ export const KpiInfo = ({ year }: Props) => {
         <div className="contents">
           <div className="flex items-center text-xs font-medium text-secondary shrink-0 max-w-full">
             <div className="flex items-center justify-center size-4 me-2">
-              <TargetIcon className="size-3.5 shrink-0 block text-secondary" />
+              <TargetIcon className="size-4 shrink-0 block text-secondary" />
             </div>
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium">
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-sm">
               KPI Bonus
             </span>
           </div>
         </div>
 
-        {!!data.task.draft && (
+        {!!data.task.draft && isAdmin && (
           <Button variant="secondary" size="sm" onClick={() => exportKpi({ id: data.task.draft!.formId })} disabled={exportKpiCtx.isPending}>
             Export
           </Button>
@@ -102,7 +106,7 @@ export const KpiInfo = ({ year }: Props) => {
               }}
             />
             <Event
-              title="Evaluation"
+              title="Year-end Evaluation"
               status={STATUS_VARIANTS[data.task.evaluation?.status!]}
               description="Measures achievement based on actual performance results"
               buttonCtx={{

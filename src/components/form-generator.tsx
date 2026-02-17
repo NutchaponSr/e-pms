@@ -37,6 +37,7 @@ interface Props<TFieldValues extends FieldValues> {
     form?: string;
     input?: string;
     label?: string;
+    description?: string;
   };
   disabled: boolean;
   style?: CSSProperties;
@@ -103,7 +104,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               {label ? <FormLabel className={cn("whitespace-nowrap text-ellipsis overflow-hidden", className?.label)}>{label}</FormLabel> : null}
-              {description ? <FormDescription className="text-xs text-secondary whitespace-nowrap text-ellipsis overflow-hidden">{description}</FormDescription> : null}
+              {description ? <FormDescription className={cn("text-xs text- whitespace-nowrap text-ellipsis overflow-hidden", className?.description)}>{description}</FormDescription> : null}
             </div>
 
             {children}

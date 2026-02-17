@@ -248,7 +248,7 @@ export const CompetencyDefinitionContent = ({
           disabled={!permissions.write}
           label="การแสดงออกตามพฤติกรรมที่คาดหวัง"
           description="Demonstration of Expected Behavior"
-          className={formRecord.blue}
+          className={{...formRecord.blue, description: "text-marine"}}
           textareaRef={(el) => {
             inputRef.current = el;
             syncTextareaHeights();
@@ -262,7 +262,7 @@ export const CompetencyDefinitionContent = ({
           disabled={!permissions.write}
           label="โครงการ/กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง"
           description="Detail of demonstration of expected behavior"
-          className={formRecord.blue}
+          className={{...formRecord.blue, description: "text-marine"}}
           textareaRef={(el) => {
             outputRef.current = el;
             syncTextareaHeights();

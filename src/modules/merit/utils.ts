@@ -531,13 +531,13 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   let currentRow = 4;
 
   // Header row for info Section
-  worksheet.mergeCells(`A${currentRow}:C${currentRow}`);
+  worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
   worksheet.getCell(`A${currentRow}`).value = "พนักงาน (Employee)";
   worksheet.getCell(`A${currentRow}`).style = blueHeader;
 
-  worksheet.mergeCells(`D${currentRow}:F${currentRow}`);
-  worksheet.getCell(`D${currentRow}`).value = "ข้อมูล (Info)";
-  worksheet.getCell(`D${currentRow}`).style = blueHeader;
+  worksheet.mergeCells(`C${currentRow}:F${currentRow}`);
+  worksheet.getCell(`C${currentRow}`).value = "ข้อมูล (Info)";
+  worksheet.getCell(`C${currentRow}`).style = blueHeader;
 
   worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
   worksheet.getCell(`G${currentRow}`).value = "ผู้ประเมิน (Approver)";
@@ -605,9 +605,9 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     worksheet.getCell(`C${currentRow}`).font = { size: 9 }
 
     worksheet.mergeCells(`G${currentRow}:H${currentRow}`)
-    worksheet.getCell(`F${currentRow}`).value = info.evaluatorLabel
-    worksheet.getCell(`F${currentRow}`).border = cellBorder
-    worksheet.getCell(`F${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+    worksheet.getCell(`G${currentRow}`).value = info.evaluatorLabel
+    worksheet.getCell(`G${currentRow}`).border = cellBorder
+    worksheet.getCell(`G${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
 
     worksheet.mergeCells(`I${currentRow}:L${currentRow}`)
     worksheet.getCell(`I${currentRow}`).value = info.evaluatorValue
@@ -769,6 +769,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   worksheet.getCell(`C${currentRow}`).border = cellBorder
   worksheet.getCell(`C${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
 
+  worksheet.mergeCells(`H${currentRow}:I${currentRow}`)
   worksheet.getCell(`H${currentRow}`).value = "คะแนนที่ได้ (Score Achieved)"
   worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
   worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
@@ -948,6 +949,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   worksheet.getCell(`C${currentRow}`).border = cellBorder
   worksheet.getCell(`C${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
 
+  worksheet.mergeCells(`E${currentRow}:F${currentRow}`)
   worksheet.getCell(`H${currentRow}`).value = "คะแนนที่ได้ (Score Achieved)"
   worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
   worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
@@ -998,7 +1000,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
 
   const link = document.createElement("a");
   link.href = url;
-  link.download = `Merit_Bonus_${meritForm.year}_${meritForm.employee.name}.xlsx`;
+  link.download = `KPI_Merit_${meritForm.year}_${meritForm.employee.name}.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

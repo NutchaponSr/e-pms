@@ -17,9 +17,9 @@ export const TaskSection = () => {
         <div className="contents">
           <div className="flex items-center text-xs font-medium text-secondary shrink-0 max-w-full">
             <div className="flex items-center justify-center size-4 me-2">
-              <SquareCheckIcon className="size-3.5 shrink-0 block text-secondary" />
+              <SquareCheckIcon className="size-4 shrink-0 block text-secondary" />
             </div>
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis">My tasks</span>
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm">My tasks</span>
           </div>
         </div>
       </div>

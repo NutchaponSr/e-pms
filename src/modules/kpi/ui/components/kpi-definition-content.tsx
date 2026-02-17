@@ -39,12 +39,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
   const { mutation: deleteKpi } = useDeleteKpi(props.formId, props.period);
 
   const [rowHeights, setRowHeights] = useState<number[]>([]);
-  const targetRanges = [
-    { label: "70%", description: "(≤ 70%)" },
-    { label: "80%", description: "(≥70% - 80%)" },
-    { label: "90%", description: "(≥80% - 90%)" },
-    { label: "100%", description: "(≥90% - 100%)" },
-  ];
+  const targetRanges = ["70%", "80%", "90%", "100%"];
 
   const detailRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -235,8 +230,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
               }}
             >
               <div className="flex flex-col items-center justify-center gap-1">
-                <span className="text-sm font-medium font-mono">{item.label}</span>
-                <span className="text-sm font-medium font-mono">{item.description}</span>
+                <span className="text-sm font-medium font-mono">{item}</span>
               </div>
             </div>
           ))}

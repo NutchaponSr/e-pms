@@ -40,7 +40,7 @@ export const Event = ({
               <div className="flex flex-col grow shrink ps-2.5 overflow-hidden gap-1">
                 <div className="flex items-center gap-2 h-[22px] overflow-hidden min-w-0">
                   <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis text-secondary">{title}</span>
-                  <StatusBadge {...status} />
+                  {!!buttonCtx.active && <StatusBadge {...status} />}
                 </div>
                 <span className="text-xs leading-4">{description}</span>
               </div>

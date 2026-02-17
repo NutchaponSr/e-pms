@@ -90,8 +90,9 @@ export const SignInScreen = () => {
       </form>
 
       <h1 className="text-wrap whitespace-normal [word-break:break-word] text-sm text-center">
-        หากพบปัญหาการใช้งานหรือต้องการสอบถามข้อมูลเพิ่มเติมกรุณาติดต่อทีม HRM 
-        ชลธิชา บุญเลี้ยง (Ext.8025 / E-mail: chonthicha.boo@somboon.co.th)
+        หากพบปัญหาการใช้งานหรือต้องการสอบถามข้อมูลเพิ่มเติมกรุณาติดต่อทีม HRM <br />
+        ชลธิชา บุญเลี้ยง (Ext.8025 / E-mail: chonthicha.boo@somboon.co.th) <br />
+        สินีนาฏ คุลี (Ext.8207 / E-mail: sineenard.k@somboon.co.th)
       </h1>
     </>
   );
