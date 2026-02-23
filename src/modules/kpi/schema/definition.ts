@@ -6,7 +6,7 @@ export const kpiDefinitionSchema = z.object({
   id: z.string(),
   name: z.string().trim().min(1, "Name is required"),
   year: z.number(),
-  category: z.enum(KpiCategory, "Category is required"),
+  category: z.enum(["CS1", "CS2", "CS3", "CS4", "CS5"], "Category is required"),
   weight: z.coerce.number().min(0).max(100),
   objective: z.string().trim().nullable().default(null),
   definition: z.string().trim().min(1, "Definition is required"),
@@ -25,7 +25,7 @@ export const kpiDefinitionInputSchema = kpiDefinitionSchema
   .omit({ year: true })
   .extend({
     name: z.string().trim().nullable(),
-    category: z.enum(KpiCategory).nullable(),
+    category: z.enum(["CS1", "CS2", "CS3", "CS4", "CS5"]).nullable(),
     definition: z.string().trim().nullable(),
     method: z.string().trim().nullable(),
   });
@@ -51,6 +51,13 @@ export const kpiDefinitionsSchema = z.object({
           path: ["kpis", index, "weight"],
         });
       }
+      if (kpi.target70 === null || kpi.target70 === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Target 70 is required",
+          path: ["kpis", index, "target70"],
+        });
+      }
     } else {
       if (kpi.weight < 0 || kpi.weight > 100) {
         ctx.addIssue({
@@ -67,7 +74,7 @@ export const kpiDefinitionsSchema = z.object({
 // Adapted from kpiDefinitionBaseSchema with nullable fields and unknown weight
 export const rawKpiForMappingSchema = kpiDefinitionSchema.extend({
   name: z.string().nullable(),
-  category: z.enum(KpiCategory).nullable(),
+  category: z.nativeEnum(KpiCategory).nullable(),
   weight: z.unknown(), // Accepts Decimal, number, string, or null
   objective: z.string().nullable(),
   definition: z.string().nullable(),

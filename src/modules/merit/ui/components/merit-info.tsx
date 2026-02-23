@@ -102,7 +102,7 @@ export const MeritInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{  
                 disabled: createMeritTaskCtx.isPending,
-                active: isInRange(year, 1, 3) && data.task.draft?.status !== Status.COMPLETED,
+                active: isInRange(year, 1, 3),
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
                   if (!isInRange(year, 1, 3, 2025)) {

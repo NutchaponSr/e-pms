@@ -7,12 +7,15 @@ import { inferProcedureInput } from "@trpc/server";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { periodRoutes } from "../constant";
+import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 
 type RequestType = inferProcedureInput<AppRouter["task"]["startWorkflow"]>; 
 
 export const useStartWorkflow = (id: string, period: Period) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+
+  const { setSave } = useSaveForm();
 
   const startWorkflow = useMutation(trpc.task.startWorkflow.mutationOptions());
 
@@ -26,21 +29,25 @@ export const useStartWorkflow = (id: string, period: Period) => {
         queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id, period }));
         queryClient.invalidateQueries(trpc.merit.getOne.queryOptions({ id, period }));
 
+        const app = data.app === FormType.KPI ? "KPI Bonus" : "KPI Merit";
+
         if (data.toEmail && data.fromEmail) {
           await sendStart({
             to: process.env.NODE_ENV === "production" ? data.toEmail : "pondpopza5@gmail.com",
             cc: process.env.NODE_ENV === "production" ? [data.fromEmail] : [],
-            subject: `[E-PMS] Action Required: ตรวจสอบและอนุมัติเอกสารจากระบบประเมินการปฏิบัติงาน - ${data.ownerName}`,
+            subject: `[E-PMS] Action Required: ตรวจสอบและอนุมัติเอกสาร ${app} - ${data.ownerName}`,
             body: `มีเอกสารจากระบบประเมินผลการปฏิบัติงาน เข้ามาในระบบเพื่อรอการตรวจสอบและพิจารณา อนุมัติจากท่าน โดยมีรายละเอียดดังนี้:`,
             checkerName: data.checkerName,
             employeeName: data.ownerName,
-            documentType: data.app,
+            documentType: app,
             submitDate: format(new Date(), "yyyy-MM-dd"),
             status: data.status,
             url: data.app === FormType.KPI
               ? `${process.env.NEXT_PUBLIC_APP_URL}/performance/kpi/${id}/${periodRoutes[data.period]}`
               : `${process.env.NEXT_PUBLIC_APP_URL}/performance/merit/${id}/${periodRoutes[data.period]}`,
           });
+
+          setSave(false);
         }
       },
       onError: (ctx) => {

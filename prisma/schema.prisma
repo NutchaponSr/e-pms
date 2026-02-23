@@ -179,10 +179,11 @@ model Comment {
 
 
 enum KpiCategory {
-  FP
-  CP
-  IP
-  L_G
+  CS1
+  CS2 
+  CS3
+  CS4
+  CS5
 }
 
 model KpiEvaluation {

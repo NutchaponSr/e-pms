@@ -41,6 +41,6 @@ export const PERIOD_LABELS: Record<Period, string> = {
 };
 
 export const formType: Record<FormType, string> = {
-  [FormType.MERIT]: "Merit",
-  [FormType.KPI]: "KPI",
+  [FormType.MERIT]: "KPI Merit",
+  [FormType.KPI]: "KPI Bonus",
 };

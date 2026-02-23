@@ -19,7 +19,6 @@ import { useCallback, useEffect, useMemo } from "react";
 import { Employee, KpiEvaluation, Task, Period } from "@/generated/prisma/client";
 import { formatDecimal } from "@/lib/utils";
 import { useWeight } from "../../stores/use-weight";
-import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { toast } from "sonner";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { useEvaluateKpis } from "../../api/use-evaluate-kpis";
@@ -43,7 +42,6 @@ export const KpiEvaluationScreen = ({
   period,
   ...props
 }: Props) => {
-  const { save } = useSaveForm();
   const { setWeight } = useWeight();
 
   const evaluateKpis = useEvaluateKpis(id, period);
@@ -149,12 +147,14 @@ export const KpiEvaluationScreen = ({
         <Toolbar
           {...props}
           status={STATUS_VARIANTS[form.tasks?.status]}
-          onWorkflow={() => {
-            if (!save) {
-              toast.error("Please confirm the form before starting the workflow");
+          onWorkflow={async () => {
+            const ok = await f.trigger();
+            if (!ok) {
+              toast.error("Please fix validation errors before starting the workflow");
               return;
             }
 
+            evaluateKpis({ ...f.getValues(), saved: true });
             startWorkflow({ id: form.tasks!.id });
           }}
           onSaveDraft={() => evaluateKpis({ ...f.getValues(), saved: false })}

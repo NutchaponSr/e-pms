@@ -23,7 +23,6 @@ import { CompetencyEvaluationContent } from "../components/competency-evaluation
 import { Card } from "@/components/card";
 import { CultureEvaluationContent } from "../components/culture-evaluation-content";
 import { useEvaluateBulkMerit } from "../../api/use-evaluation-bulk-merit";
-import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { toast } from "sonner";
 import { competencyLevels, cultureLevels } from "../../constant";
@@ -43,7 +42,6 @@ interface Props {
 export const MeritEvaluationScreen = ({ id, period, data, permissions, role, hasChecker }: Props) => {
   const evaluations = meritEvaluationsMap(data, period, role);
   
-  const { save } = useSaveForm();
   const startWorkflow = useStartWorkflow(id, period);
   const { mutation: evaluateBulkMerit } = useEvaluateBulkMerit(id, period);
 
@@ -163,12 +161,14 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
         </div>
 
         <Toolbar 
-          onWorkflow={() => {
-            if (!save) {
-              toast.error("Please confirm the form before starting the workflow");
+          onWorkflow={async () => {
+            const ok = await form.trigger();
+            if (!ok) {
+              toast.error("Please fix validation errors before starting the workflow");
               return;
             }
 
+            evaluateBulkMerit({ ...form.getValues(), saved: true });
             startWorkflow({ id: data.tasks.id });
           }}
           onExport={async () => {

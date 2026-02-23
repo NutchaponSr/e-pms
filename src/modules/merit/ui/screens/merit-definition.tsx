@@ -28,7 +28,6 @@ import { Rank } from "@/types/employees";
 import { CultureDefinitionContent } from "../components/culture-definition-content";
 import { Period } from "@/generated/prisma/enums";
 import { useDefinitionBulkMerit } from "../../api/use-definition-bulk-merit";
-import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { toast } from "sonner";
 import { EmployeeInfo } from "@/components/employee-info";
@@ -53,8 +52,6 @@ export const MeritDefinitionScreen = ({
   permissions 
 }: Props) => {
   const mappedData = meritDefinitionMap(data);
-
-  const { save } = useSaveForm(); 
 
   const startWorkflow = useStartWorkflow(id, period);
   const { mutation: definitionBulkMerit, mutateAsync: definitionBulkMeritAsync } = useDefinitionBulkMerit(id, period);
@@ -131,30 +128,22 @@ export const MeritDefinitionScreen = ({
           cultureRecords={data.cultureRecords}
         />
         <Toolbar 
-          onWorkflow={() => {
-            if (!save) {
-              toast.error("Please confirm the form before starting the workflow");
-              return;
-            }
-
+          onWorkflow={async () => {
             if (totalWeightCompetency !== 30) {
               toast.error("The total weight of the KPI Bonus is not equal to the owner's rank weight");
               return;
             }
 
-            (async () => {
-              // If the form isn't saved yet, validate & save (saved=true) first
-              if (!save) {
-                form.setValue("saved", true);
-                const ok = await form.trigger();
-                if (!ok) return;
+            form.setValue("saved", true);
+            const ok = await form.trigger();
+            if (!ok) {
+              toast.error("Please fix validation errors before starting the workflow");
+              return;
+            }
 
-                const okSave = await definitionBulkMeritAsync({ ...form.getValues(), saved: true });
-                if (!okSave) return;
-              }
+            const okSave = await definitionBulkMeritAsync({ ...form.getValues(), saved: true });
+            if (!okSave) return;
 
-              startWorkflow({ id: data.tasks.id });
-            })();
             startWorkflow({ id: data.tasks.id });
           }}
           onExport={async () => {
@@ -170,7 +159,6 @@ export const MeritDefinitionScreen = ({
             form.setValue("saved", false);
             definitionBulkMerit({ ...form.getValues(), saved: false });
           }}
-          onBeforeFinalSubmit={() => form.setValue("saved", true)}
           onUpload={() => fileRef.current?.click()}
           permissions={permissions}
           status={STATUS_VARIANTS[data.tasks?.status!]}

@@ -155,7 +155,6 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
           onUpload={() => fileRef.current?.click()}
           permissions={permissions}
           status={STATUS_VARIANTS[form.tasks?.status!]}
-          onBeforeFinalSubmit={() => f.setValue("saved", true)}
           onCreate={() => createKpi({ formId: id, period })} 
           onExport={async () => {
             await exportDefinitionKpi({
@@ -165,30 +164,45 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
               task: form.tasks as Task & { checker?: Employee; approver: Employee },
             });
           }}
-          onWorkflow={() => {
-            if (!save) {
-              toast.error("Please confirm the form before starting the workflow");
+          onWorkflow={async () => {
+            // Set saved=true for validation
+            f.setValue("saved", true);
+            
+            // Validate form schema - trigger all fields
+            const isValid = await f.trigger();
+            if (!isValid) {
+              toast.error("Please fix validation errors before starting the workflow");
               return;
             }
             
+            // Also validate using schema directly to ensure all rules are checked
+            const formValues = f.getValues();
+            const schemaResult = kpiDefinitionsSchema.safeParse(formValues);
+            if (!schemaResult.success) {
+              toast.error("Please fix validation errors before starting the workflow");
+              // Set form errors from schema validation
+              schemaResult.error.issues.forEach((issue) => {
+                // Convert path array to react-hook-form path format
+                const path = issue.path as (string | number)[];
+                f.setError(path as any, { 
+                  type: "validation",
+                  message: issue.message 
+                });
+              });
+              return;
+            }
+            
+            // Validate weight
             if (validateWeight(form.tasks?.owner.rank as Rank) !== totalWeight) {
               toast.error("The total weight of the KPI Bonus is not equal to the owner's rank weight");
               return;
             }
 
-            (async () => {
-              // If the form isn't saved yet, validate & save (saved=true) first
-              if (!save) {
-                f.setValue("saved", true);
-                const ok = await f.trigger();
-                if (!ok) return;
+            // Save form with saved=true before starting workflow
+            const okSave = await updateBulkKpisAsync({ ...formValues, saved: true });
+            if (!okSave) return;
 
-                const okSave = await updateBulkKpisAsync({ ...f.getValues(), saved: true });
-                if (!okSave) return;
-              }
-
-              startWorkflow({ id: form.tasks!.id });
-            })();
+            startWorkflow({ id: form.tasks!.id });
           }}
           onSaveDraft={() => {
             f.setValue("saved", false);

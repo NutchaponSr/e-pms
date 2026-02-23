@@ -35,16 +35,18 @@ export const useConfirmation = (id: string, period: Period) => {
 
         setSave(false);
 
+        const app = data.app === FormType.KPI ? "KPI Bonus" : "KPI Merit";
+
         if (!!data.owner.email && !!data.approver.email) {
           if (data.isApproved) {
             await sendDone({
               to: process.env.NODE_ENV === "production" ? data.owner.email : "pondpopza5@gmail.com",
               cc: process.env.NODE_ENV === "production" ? [data.checker.email || "", data.approver.email] : [],
-              subject: `[E-PMS] Completed: แจ้งผลการอนุมัติเอกสาร ${data.app} - ${data.owner.name}`,
+              subject: `[E-PMS] Completed: แจ้งผลการอนุมัติเอกสาร ${app} - ${data.owner.name}`,
               checkerName: data.checker.name,
               employeeName: data.owner.name,
               approverName: data.approver.name, 
-              documentType: data.app,
+              documentType: app,
               checkedAt: data.checkedAt ? format(data.checkedAt, "yyyy-MM-dd") : undefined,
               approvedAt: data.approvedAt ? format(data.approvedAt, "yyyy-MM-dd") : undefined,
               url: data.app === FormType.KPI
@@ -56,11 +58,11 @@ export const useConfirmation = (id: string, period: Period) => {
               await sendPending({
                 to: process.env.NODE_ENV === "production" ? data.approver.email : "pondpopza5@gmail.com",
                 cc: process.env.NODE_ENV === "production" ? [data.checker.email || "", data.owner.email] : [],
-                subject: `[E-PMS] Action Required: ตรวจสอบและอนุมัติเอกสารจากระบบประเมินการปฏิบัติงาน (Final Approve) - ${data.owner.name}`,
+                subject: `[E-PMS] Action Required: ตรวจสอบและอนุมัติเอกสาร ${app} (Final Evaluation) - ${data.owner.name}`,
                 checkerName: data.checker.name,
                 employeeName: data.owner.name,
                 approverName: data.approver.name,
-                documentType: data.app,
+                documentType: app,
                 checkedAt: data.checkedAt ? format(data.checkedAt, "yyyy-MM-dd") : undefined,
                 status: data.status,
                 url: data.app === FormType.KPI
@@ -71,11 +73,11 @@ export const useConfirmation = (id: string, period: Period) => {
               await sendReject({
                 to: process.env.NODE_ENV === "production" ? data.owner.email : "pondpopza5@gmail.com",
                 cc: process.env.NODE_ENV === "production" ? [data.checker.email || data.approver.email] : [],
-                subject: `[E-PMS] Action Required: แจ้งแก้ไขข้อมูล (Declined by Checker) - ${data.app}`,
+                subject: `[E-PMS] Action Required: แจ้งแก้ไขข้อมูล (Declined by Checker) - ${app}`,
                 checkerName: data.checker.name,
                 employeeName: data.owner.name,
                 approverName: data.approver.name,
-                documentType: data.app,
+                documentType: app,
                 checkedAt: data.checkedAt ? format(data.checkedAt, "yyyy-MM-dd") : undefined,
                 status: data.status,
                 checkedBy: data.checkedBy,

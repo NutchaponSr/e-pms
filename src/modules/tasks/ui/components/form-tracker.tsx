@@ -243,8 +243,7 @@ export const FormTracker = ({ year }: Props) => {
                         >
                           <Checkbox checked={isChecked} />
                           <div className={cn("size-2 rounded-full", statusBadgeVariants({ background: status.variant }))} />
-                          <span className="text-xs font-medium text-primary">
-                            {status.label === "Not Started" ? "Create" : status.label}</span>
+                          <span className="text-xs font-medium text-primary">{status.label}</span>
                         </Command.Item>
                       );
                     })}

@@ -769,7 +769,6 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   worksheet.getCell(`C${currentRow}`).border = cellBorder
   worksheet.getCell(`C${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
 
-  worksheet.mergeCells(`H${currentRow}:I${currentRow}`)
   worksheet.getCell(`H${currentRow}`).value = "คะแนนที่ได้ (Score Achieved)"
   worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
   worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
@@ -826,7 +825,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   worksheet.getCell(`B${cultHeaderRow1}`).value = "วัฒนธรรม \n(Culture)"
   worksheet.getCell(`C${cultHeaderRow1}`).value = "น้ำหนัก \n(Weight)"
   worksheet.getCell(`D${cultHeaderRow1}`).value = "พฤติกรรมที่คาดหวัง \n(Expected Behavior)"
-  worksheet.getCell(`E${cultHeaderRow1}`).value = "การแสดงออกตามพฤติกรรมที่คาดหวัง \n(Demonstration of Expected Behavior)"
+  worksheet.getCell(`E${cultHeaderRow1}`).value = "แนวทางในการประเมิน \n(Key Evidence Guideline)"
   worksheet.mergeCells(`G${cultHeaderRow1}:I${cultHeaderRow1}`)
   worksheet.getCell(`G${cultHeaderRow1}`).value = "การทบทวนผลการปฏิบัติงานกลางปี (JAN - JUN) \n(Mid-Year Review)"
   worksheet.mergeCells(`J${cultHeaderRow1}:L${cultHeaderRow1}`)

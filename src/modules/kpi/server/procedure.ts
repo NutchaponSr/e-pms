@@ -351,9 +351,16 @@ export const kpiProcedure = createTRPCRouter({
       await db.$transaction(
         input.kpis.map((kpi) => {
           const { id, ...data } = kpi;
+          const normalizedData = normalizeEmptyStringToNull(data);
+          
+          // Ensure category is properly typed as KpiCategory if present
+          if (normalizedData.category !== null && normalizedData.category !== undefined) {
+            normalizedData.category = normalizedData.category as KpiCategory;
+          }
+          
           return db.kpiEvaluation.update({
             where: { id },
-            data: normalizeEmptyStringToNull(data),
+            data: normalizedData,
           });
         }),
       );

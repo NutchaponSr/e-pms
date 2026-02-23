@@ -35,7 +35,6 @@ export const Toolbar = ({
   onCreate, 
   onWorkflow,
   onSaveDraft,
-  onBeforeFinalSubmit,
   onUpload,
   onExport,
   permissions,
@@ -74,16 +73,6 @@ export const Toolbar = ({
                   >
                     <BsFloppy2Fill className="stroke-[0.25] size-4" />
                     Save Draft
-                  </Button>
-                  <Button 
-                    size="sm"
-                    type="submit" 
-                    className="rounded gap-1.5"
-                    variant="primary"
-                    onClick={onBeforeFinalSubmit}
-                  >
-                    <BsSave className="stroke-[0.25] size-4" />
-                    Final Confirmation
                   </Button>
                   {permissions["start-workflow"] && (
                     <Button

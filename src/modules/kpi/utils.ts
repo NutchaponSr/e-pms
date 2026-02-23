@@ -21,7 +21,7 @@ export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
     year: kpi.year,
     name: kpi.name ?? "",
     weight: Number.isNaN(Number(weightStr)) ? 0 : Number(weightStr),
-    category: kpi.category ?? KpiCategory.FP,
+    category: kpi.category ?? KpiCategory.CS1,
     objective: kpi.objective ?? "",
     definition: kpi.definition ?? "",
     strategy: kpi.strategy ?? "",
@@ -497,8 +497,8 @@ export async function exportDefinitionKpi(
       worksheet.getCell(`E${currentRow}`).font = { size: 9 }
 
       // Achieved level column (checkbox representation)
-      worksheet.getCell(`I${currentRow}`).value = level.toString()
-      worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "left", vertical: "middle" }
+      worksheet.getCell(`I${currentRow}`).value = `${level}%`
+      worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
       worksheet.getCell(`I${currentRow}`).border = cellBorder
       worksheet.getCell(`I${currentRow}`).font = { size: 8 }
 

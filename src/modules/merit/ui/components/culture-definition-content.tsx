@@ -81,7 +81,7 @@ export const CultureDefinitionContent = ({
           form={form}
           variant="bigText"
           disabled={!permissions.write}
-          label="การแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expected Behavior)"
+          label="แนวทางในการประเมิน (Key Evidence Guideline)"
           className={{
             ...formRecord.blue,
             form: "col-span-2 grow-0 shrink-0 basis-auto p-2 box-content h-max bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2",

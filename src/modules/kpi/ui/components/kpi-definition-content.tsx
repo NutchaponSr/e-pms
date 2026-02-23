@@ -115,7 +115,7 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
         <div className={cn(header())}>
           <div className="flex items-center h-full">
             <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-              เป้าหมาย (Target Range)
+              เป้าหมาย (Target)
             </div>
           </div>
         </div>
@@ -135,8 +135,8 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs">
-                    มุมมอง KPI ตาม Balance Scorecard <br /> 
-                    (KPI Perspective based on Balance Scorecard)
+                    มุมมอง KPI ตามกลยุทธ์องค์กร<br /> 
+                    (Link to Strategy)
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!props.permissions.write}>
                     <FormControl>
