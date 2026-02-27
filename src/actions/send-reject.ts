@@ -49,11 +49,7 @@ export const sendReject = async ({
 
           <!-- Body -->
           <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">
-            เอกสาร ${documentType} ของท่าน ถูกส่งคืน (Declined) เพื่อให้แก้ไขข้อมูล โดยผู้พิจารณา: ${checkedBy || `-`}
-          </p>
-
-          <p style="margin: 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">
-            เหตุผลการส่งคืน (Reason / Comment): ข้อมูลไม่ถูกต้องหรือไม่ครบถ้วน
+            เอกสาร ${documentType} ของท่าน ถูกส่งคืน (Declined) เพื่อให้แก้ไขข้อมูล
           </p>
 
           <!-- Call to Action -->

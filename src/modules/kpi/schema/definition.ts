@@ -54,8 +54,29 @@ export const kpiDefinitionsSchema = z.object({
       if (kpi.target70 === null || kpi.target70 === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Target 70 is required",
+          message: "Target 70 % is required",
           path: ["kpis", index, "target70"],
+        });
+      }
+      if (kpi.target80 === null || kpi.target80 === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Target 80 % is required",
+          path: ["kpis", index, "target80"],
+        });
+      }
+      if (kpi.target90 === null || kpi.target90 === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Target 90 % is required",
+          path: ["kpis", index, "target90"],
+        });
+      }
+      if (kpi.target100 === null || kpi.target100 === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Target 100 % is required",
+          path: ["kpis", index, "target100"],
         });
       }
     } else {

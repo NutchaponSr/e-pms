@@ -5,7 +5,7 @@ import { GoProject } from "react-icons/go";
 
 import { inferProcedureOutput } from "@trpc/server";
 import { AppRouter } from "@/trpc/routers/_app";
-import { periodRoutes, STATUS_VARIANTS } from "../../constant";
+import { formType, periodRoutes, STATUS_VARIANTS } from "../../constant";
 import { StatusBadge } from "@/components/status-badge";
 import { FormType } from "@/generated/prisma/enums";
 
@@ -52,7 +52,7 @@ export const TaskItem = ({ task }: Props) => {
               <GoProject className="size-4" />
             </div>
             <div className="leading-1 font-medium whitespace-nowrap underline underline-offset-2 decoration-primary/16">
-              {task.formType}
+              {formType[task.formType]}
             </div>
           </div>
         </div>

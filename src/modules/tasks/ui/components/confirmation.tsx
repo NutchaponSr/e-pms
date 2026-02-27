@@ -18,7 +18,6 @@ interface Props {
 }
 
 export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: Props) => {
-  const { save } = useSaveForm();
   const { mutation: confirmation, ctx } = useConfirmation(id, period);
 
   const [ConfirmationDialog, confirm] = useConfirm({
@@ -27,11 +26,17 @@ export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: 
     confirmVariant: "primary"
   });
 
-  const [SaveWarningDialog, confirmSave] = useConfirm({
-    title: "Form Not Saved",
-    description: "Please save the form before confirming. Do you want to save now?",
-    confirmLabel: "Save and Continue",
-    cancelLabel: "Cancel",
+  // const [SaveWarningDialog, confirmSave] = useConfirm({
+  //   title: "Form Not Saved",
+  //   description: "Please save the form before confirming. Do you want to save now?",
+  //   confirmLabel: "Save and Continue",
+  //   cancelLabel: "Cancel",
+  //   confirmVariant: "primary"
+  // });
+
+  const [ConfirmDeclineDialog, confirmDecline] = useConfirm({
+    title: "Confirm Decline",
+    description: "Are you sure you want to decline this task?",
     confirmVariant: "primary"
   });
 
@@ -51,37 +56,12 @@ export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: 
 
         <div className="flex items-center gap-2">
           <ConfirmationDialog />
-          <SaveWarningDialog />
-          <Button 
-            type="button"
-            variant="primary"
-            onClick={async () => {
-              if (!save) {
-                const shouldSave = await confirmSave();
-                
-                if (shouldSave && onSave) {
-                  const okSave = await onSave();
-                  if (okSave) {
-                    confirmation({ id: taskId, approved: true });
-                  }
-                }
-              } else {
-                const ok = await confirm();
-
-                if (ok) {
-                  confirmation({ id: taskId, approved: true });
-                }
-              }
-            }}
-            disabled={ctx.isPending}
-          >
-            Confirm
-          </Button>
+          <ConfirmDeclineDialog />
           <Button 
             type="button" 
             variant="destructive" 
             onClick={async () => {
-              const ok = await confirm();
+              const ok = await confirmDecline();
 
               if (ok) {
                 confirmation({ id: taskId, approved: false });
@@ -89,7 +69,21 @@ export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: 
             }}
             disabled={ctx.isPending}
           >
-            Cancel
+            Decline
+          </Button>
+          <Button 
+            type="button"
+            variant="primary"
+            onClick={async () => {
+              const ok = await confirm();
+
+              if (ok) {
+                confirmation({ id: taskId, approved: true });
+              }
+            }}
+            disabled={ctx.isPending}
+          >
+            Confirm
           </Button>
         </div>
       </div>

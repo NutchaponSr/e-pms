@@ -30,14 +30,14 @@ const permissions: Record<Status, Record<Approval, Action[]>> = {
     approver: ["read"],
   },
   [Status.WAITING_APPROVER_2]: {
-    owner: ["write", "read"],
+    owner: ["read"],
     checker: ["read"],
-    approver: ["read"],
+    approver: ["write", "read", "approve"],
   },
   [Status.COMPLETED]: {
     owner: ["read"],
     checker: ["read"],
-    approver: ["write", "read", "approve"],
+    approver: ["read"],
   },
 } 
 

@@ -264,6 +264,7 @@ export const taskProcedure = createTRPCRouter({
           email: res.approver?.email,
           name: res.approver?.name,
         },
+        declinedBy: role === "checker" ? "Evaluator 1" : "Evaluator 2",
         status: STATUSES[res.status],
         app: res.form.type,
         approvedAt: res.approvedAt,

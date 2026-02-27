@@ -73,7 +73,7 @@ export const useConfirmation = (id: string, period: Period) => {
               await sendReject({
                 to: process.env.NODE_ENV === "production" ? data.owner.email : "pondpopza5@gmail.com",
                 cc: process.env.NODE_ENV === "production" ? [data.checker.email || data.approver.email] : [],
-                subject: `[E-PMS] Action Required: แจ้งแก้ไขข้อมูล (Declined by Checker) - ${app}`,
+                subject: `[E-PMS] Action Required: แจ้งแก้ไขข้อมูล (Declined by ${data.declinedBy}) - ${app}`,
                 checkerName: data.checker.name,
                 employeeName: data.owner.name,
                 approverName: data.approver.name,
