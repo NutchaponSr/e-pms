@@ -1,12 +1,12 @@
+import { toast } from "sonner";
+import { format } from "date-fns";
 import { sendStart } from "@/actions/send-start";
 import { FormType, Period } from "@/generated/prisma/enums";
 import { useTRPC } from "@/trpc/client";
 import { AppRouter } from "@/trpc/routers/_app";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { inferProcedureInput } from "@trpc/server";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { periodRoutes } from "../constant";
+import { formType, periodRoutes } from "../constant";
 import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 
 type RequestType = inferProcedureInput<AppRouter["task"]["startWorkflow"]>; 
@@ -29,7 +29,7 @@ export const useStartWorkflow = (id: string, period: Period) => {
         queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id, period }));
         queryClient.invalidateQueries(trpc.merit.getOne.queryOptions({ id, period }));
 
-        const app = data.app === FormType.KPI ? "KPI Bonus" : "KPI Merit";
+        const app = formType[data.app];
 
         if (data.toEmail && data.fromEmail) {
           await sendStart({

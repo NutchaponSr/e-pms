@@ -6,10 +6,10 @@ import { readCSV } from "@/seeds/lib/utils";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { FormType, Period, Status } from "@/generated/prisma/enums";
 
-import { generateTaskId } from "@/modules/tasks/utils";
 import { TRPCError } from "@trpc/server";
-import { buildPermissionContext, getUserRole } from "../permissions";
-import { formType, STATUSES } from "../constant";
+
+import {  STATUSES } from "@/modules/tasks/constant";
+import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 
 interface ApprovalCSVProps {
   employeeId: string;
@@ -145,7 +145,7 @@ export const taskProcedure = createTRPCRouter({
         checkerName: res.checker?.name || res.approver?.name,
         ownerName: res.owner?.name,
         status: STATUSES[res.status],
-        app: formType[res.form.type],
+        app: res.form.type,
         period: (res.context as { period: Period })?.period,
       };
     }),
@@ -265,7 +265,7 @@ export const taskProcedure = createTRPCRouter({
           name: res.approver?.name,
         },
         status: STATUSES[res.status],
-        app: formType[res.form.type],
+        app: res.form.type,
         approvedAt: res.approvedAt,
         checkedAt: res.checkedAt,
         isApproved: res.status === Status.COMPLETED,

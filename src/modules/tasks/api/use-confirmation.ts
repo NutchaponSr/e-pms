@@ -9,7 +9,7 @@ import { FormType, Period } from "@/generated/prisma/enums";
 import { useSaveForm } from "../stores/use-save-form";
 import { sendDone } from "@/actions/send-done";
 import { format } from "date-fns";
-import { periodRoutes } from "../constant";
+import { formType, periodRoutes } from "../constant";
 import { sendPending } from "@/actions/send-pending";
 import { sendReject } from "@/actions/send-reject";
 
@@ -34,8 +34,8 @@ export const useConfirmation = (id: string, period: Period) => {
         queryClient.invalidateQueries(trpc.merit.getOne.queryOptions({ id, period }));
 
         setSave(false);
-
-        const app = data.app === FormType.KPI ? "KPI Bonus" : "KPI Merit";
+        
+        const app = formType[data.app];
 
         if (!!data.owner.email && !!data.approver.email) {
           if (data.isApproved) {

@@ -234,7 +234,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
 
           <div
             data-empty={fields.length === 0}
-            className="grid grid-cols-1 gap-y-6 data-[empty=true]:hidden"
+            className="grid grid-cols-1 gap-y-2 data-[empty=true]:hidden"
           >
             {fields.map((field, index) => (
               <KpiDefinitionContent 
