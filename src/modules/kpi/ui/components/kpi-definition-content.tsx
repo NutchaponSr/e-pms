@@ -105,9 +105,11 @@ export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: P
               <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis text-start grow">
                 Individual KPI
               </div>
-              <Button type="button" variant="dangerOutline" size="xxs" onClick={onDelete}>
-                Delete
-              </Button>
+              {props.permissions.delete && (
+                <Button type="button" variant="dangerOutline" size="xxs" onClick={onDelete}>
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
           <div className={cn(header())}>

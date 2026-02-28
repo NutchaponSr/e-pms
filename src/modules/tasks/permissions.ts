@@ -11,7 +11,7 @@ export interface PermissionContext {
 
 
 export type Approval = "owner" | "checker" | "approver";
-export type Action = "write" | "read" | "start-workflow" | "approve";
+export type Action = "write" | "read" | "start-workflow" | "approve" | "delete";
 
 const permissions: Record<Status, Record<Approval, Action[]>> = {
   [Status.NOT_STARTED]: {
@@ -20,7 +20,7 @@ const permissions: Record<Status, Record<Approval, Action[]>> = {
     approver: ["read"],
   },
   [Status.IN_DRAFT]: {
-    owner: ["write", "read", "start-workflow"],
+    owner: ["write", "read", "start-workflow", "delete"],
     checker: ["read"],
     approver: ["read"],
   },

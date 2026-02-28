@@ -22,7 +22,7 @@ export const KpiView = ({
 
   const { data } = useSuspenseQuery(trpc.kpi.getOne.queryOptions({ id, period }));
 
-  const permissions = canPerforms(data.permission.role as Approval, ["write", "read", "start-workflow", "approve"], data.permission.status);
+  const permissions = canPerforms(data.permission.role as Approval, ["write", "read", "start-workflow", "approve", "delete"], data.permission.status);
 
   if (period === Period.IN_DRAFT) {
     return (
