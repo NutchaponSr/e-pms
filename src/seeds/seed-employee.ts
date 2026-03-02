@@ -30,7 +30,9 @@ export const seedEmployee = async () => {
       return str.padStart(5, "0");
     }
 
-    if (["id", "order"].includes(String(context.column))) return Number(value);
+    // id เก็บเป็น string เพื่อรักษา leading zero (เช่น 0001)
+    if (context.column === "order") return Number(value);
+    if (context.column === "id") return String(value).trim();
 
     return value;
   });
