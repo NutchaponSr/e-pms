@@ -253,6 +253,7 @@ export const CompetencyDefinitionContent = ({
             inputRef.current = el;
             syncTextareaHeights();
           }}
+          isError={!!form.formState.errors.competencies?.[index]?.input}
           onInput={() => syncTextareaHeights()}
         />
         <FormGenerator 
@@ -263,6 +264,7 @@ export const CompetencyDefinitionContent = ({
           label="โครงการ/กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง"
           description="Detail of demonstration of expected behavior"
           className={{...formRecord.blue, description: "text-marine"}}
+          isError={!!form.formState.errors.competencies?.[index]?.output}
           textareaRef={(el) => {
             outputRef.current = el;
             syncTextareaHeights();

@@ -129,18 +129,17 @@ export const MeritDefinitionScreen = ({
         />
         <Toolbar 
           onWorkflow={async () => {
-            if (totalWeightCompetency !== 30) {
-              toast.error("The total weight of the KPI Bonus is not equal to the owner's rank weight");
-              return;
-            }
-
             form.setValue("saved", true);
             const ok = await form.trigger();
             if (!ok) {
               toast.error("Please fix validation errors before starting the workflow");
               return;
             }
-
+            
+            if (totalWeightCompetency !== 30) {
+              toast.error("The total weight of the KPI Merit is not equal to the owner's rank weight");
+              return;
+            }
             const okSave = await definitionBulkMeritAsync({ ...form.getValues(), saved: true });
             if (!okSave) return;
 

@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 type TextareaRefCallback = (element: HTMLTextAreaElement | null) => void;
 
 interface Props<TFieldValues extends FieldValues> {
+  isError?: boolean;
   name: FieldPath<TFieldValues>;
   label?: string;
   form: UseFormReturn<TFieldValues>;
@@ -69,6 +70,7 @@ type InputRenderer<TFieldValues extends FieldValues> = (
 ) => React.ReactElement;
 
 export const FormGenerator = <TFieldValues extends FieldValues>({
+  isError,
   name,
   form,
   label,
@@ -104,7 +106,14 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               {label ? <FormLabel className={cn("whitespace-nowrap text-ellipsis overflow-hidden", className?.label)}>{label}</FormLabel> : null}
-              {description ? <FormDescription className={cn("text-xs text- whitespace-nowrap text-ellipsis overflow-hidden", className?.description)}>{description}</FormDescription> : null}
+              {description ? <FormDescription className={cn(
+                  "text-xs text- whitespace-nowrap text-ellipsis overflow-hidden", className?.description,
+                  isError && "text-destructive"
+                )}
+              >
+                {description}
+              </FormDescription> : null
+              }
             </div>
 
             {children}

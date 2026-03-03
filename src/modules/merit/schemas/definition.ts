@@ -51,7 +51,7 @@ export const meritDefinitionSchema = z.object({
           path: ["competencies", index, "weight"],
         });
       }
-      if (comp.expectedLevel == null) {
+      if (comp.expectedLevel == null || comp.expectedLevel === 0) {
         ctx.addIssue({
           code: "custom",
           message: "Expected level is required",
