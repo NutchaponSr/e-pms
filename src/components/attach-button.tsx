@@ -33,6 +33,13 @@ export const AttachButton = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE_BYTES) {
+      toast.error("File size must not exceed 5MB.");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
     setIsUploading(true);
     
     try {
