@@ -27,7 +27,7 @@ export const sendDone = async ({
   url: string,
 }) => {
   await transporter.sendMail({
-    from: process.env.NODEMAILER_USER,
+    from: process.env.NODEMAILER_USER_PROD,
     to,
     cc: cc || undefined,
     subject,

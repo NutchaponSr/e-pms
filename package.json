@@ -10,6 +10,7 @@
     "format": "biome format --write",
     "db:studio": "npx prisma studio",
     "db:seed": "tsx src/seeds/index.ts",
+    "db:export": "tsx src/seeds/export.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
