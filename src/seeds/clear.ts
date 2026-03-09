@@ -6,7 +6,8 @@ export const clear = async () => {
   await db.$transaction([
     db.user.deleteMany(),
     db.employee.deleteMany(), 
-    // db.competency.deleteMany(),
+    db.competency.deleteMany(),
+    db.culture.deleteMany(),
   ]);
 
   console.log("Database cleared successfully");
