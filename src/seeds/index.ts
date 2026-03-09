@@ -9,8 +9,8 @@ async function seed() {
   await clear();
   await seedEmployee();
 
-  // await seedCompetencies();
-  // await seedCulture();
+  await seedCompetencies();
+  await seedCulture();
 }
 
 (async () => {
