@@ -5,16 +5,16 @@ import { AuthGuard } from "@/modules/auth/ui/components/auth-guard";
 
 const Layout = (props: LayoutProps<"/">) => {
   return (
-    <div className="h-full">
-      <SidebarProvider>
-        <div className="w-screen h-full relative flex bg-background">
-          <AuthGuard>
+    <AuthGuard>
+      <div className="h-full">
+        <SidebarProvider>
+          <div className="w-screen h-full relative flex bg-background">
             <Sidebar />
             {props.children}
-          </AuthGuard>
-        </div>
-      </SidebarProvider>
-    </div>
+          </div>
+        </SidebarProvider>
+      </div>
+    </AuthGuard>
   );
 }
 

@@ -8,7 +8,11 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { ac, roles } from "@/lib/permission";
 import { UserRole } from "@/generated/prisma/enums";
 
+const baseURL = process.env.NEXT_PUBLIC_APP_URL!;
+
 export const auth = betterAuth({
+  baseURL,
+  trustedOrigins: [baseURL, "http://127.0.0.1:3000"],
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
@@ -68,4 +72,7 @@ export const auth = betterAuth({
       adminRoles: [UserRole.ADMIN],
     })
   ],
+  advanced: {
+    disableOriginCheck: true,
+  }
 });

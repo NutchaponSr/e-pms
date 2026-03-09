@@ -1,25 +1,24 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 import { authClient } from "@/lib/auth-client";
 
-export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
-  const { data: session, isPending } = authClient.useSession();
+import { Loader } from "@/components/loader";
 
+export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter(); 
+  const { isPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (!isPending) {
+      router.push("/");
+    }
+  }, [isPending]);
 
   if (isPending) {
-    return (
-      <>
-        Loading...
-      </>
-    );
-  }
-
-  if (!session) {
-    return (
-      <>
-        Unauthorized
-      </>
-    );
+    return <Loader />
   }
 
   return children;

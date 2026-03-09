@@ -71,24 +71,24 @@ export const seedEmployee = async () => {
   }));
 
   // Admin account 
-  await db.employee.create({
-    data: {
-      id: "admin",
-      name: "Admin",
-      position: "admin",
-      division: "SAT",
-      level: "MGR",
-      rank: "MGR",
-      department: "สำนักรองกรรมการผู้อำนวยการ - สายงานทรัพยากรบุคคล",
-    },
-  });
+  // await db.employee.create({
+  //   data: {
+  //     id: "admin",
+  //     name: "Admin",
+  //     position: "admin",
+  //     division: "SAT",
+  //     level: "MGR",
+  //     rank: "MGR",
+  //     department: "สำนักรองกรรมการผู้อำนวยการ - สายงานทรัพยากรบุคคล",
+  //   },
+  // });
 
-  await authClient.signUp.email({
-    email: "t@somboon.co.th",
-    name: "Admin",
-    password: "admin12345",
-    username: "admin",
-  });
+  // await authClient.signUp.email({
+  //   email: "t@somboon.co.th",
+  //   name: "Admin",
+  //   password: "admin12345",
+  //   username: "admin",
+  // });
 
   console.log("Employee seeded successfully");
 }

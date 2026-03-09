@@ -1,9 +1,13 @@
 import { getSessionCookie } from "better-auth/cookies";
 
 import { NextRequest, NextResponse } from "next/server";
-const protectedRoutes = [
-  "/",
-];
+
+const PROTECTED_ROUTES = ["/", "/performance"]
+const PUBLIC_PREFIX = ["/auth"];
+
+function matchPrefix(pathname: string, prefixes: string[]) {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
 
 export async function proxy(req: NextRequest) {
   const { nextUrl } = req;
@@ -11,8 +15,12 @@ export async function proxy(req: NextRequest) {
   const sessionCookie = getSessionCookie(req);
 
   const isSignnedIn = !!sessionCookie;
-  const isProtectedRoute = protectedRoutes.includes(nextUrl.pathname);
-  const isAuthRoute = nextUrl.pathname.startsWith("/auth");
+  const isProtectedRoute = matchPrefix(nextUrl.pathname, PROTECTED_ROUTES);
+  const isAuthRoute = matchPrefix(nextUrl.pathname, PUBLIC_PREFIX);
+
+  if (!isAuthRoute && !isProtectedRoute) {
+    return NextResponse.next();
+  }
 
   if (isProtectedRoute && !isSignnedIn) {
     const callbackUrl = encodeURIComponent(nextUrl.pathname + nextUrl.search);
