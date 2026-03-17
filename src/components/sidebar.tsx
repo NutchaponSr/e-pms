@@ -11,10 +11,10 @@ import { APP_CATEGORIES } from "@/constants";
 import { UserButton } from "@/modules/auth/ui/components/user-button";
 
 export const Sidebar = () => {
-  const { sidebarRef, width, handleMouseDown } = useSidebar();
+  const { sidebarRef, width, handleMouseDown, isMobile } = useSidebar();
 
   return (
-    <aside 
+    <aside
       ref={sidebarRef}
       aria-label="Sidebar"
       className="order-1 grow-0 shrink-0 relative z-111 bg-sidebar shadow-[inset_-1.25px_0_0_0_rgb(238,238,236)] w-60 hover:shadow-[inset_-2.5px_0_0_0_rgba(0,0,0,0.1)] dark:shadow-[inset_-1.25px_0_0_0_rgb(42,42,42)] dark:hover:shadow-[inset_-2.5px_0_0_0_rgba(255,255,255,0.1)] group"
@@ -33,11 +33,11 @@ export const Sidebar = () => {
                     <SidebarGroup>
                       <SidebarLabel>Application</SidebarLabel>
                       <div className="flex flex-col gap-px">
-                        {APP_CATEGORIES.flatMap((cat) => 
+                        {APP_CATEGORIES.flatMap((cat) =>
                           cat.items.map((item) => (
-                            <Link 
-                              key={item.href} 
-                              href={item.href} 
+                            <Link
+                              key={item.href}
+                              href={item.href}
                               className="flex transition hover:bg-primary/6 rounded w-full"
                             >
                               <div className="flex items-center text-sm min-h-7 h-[30px] px-2 py-1 rounded text-secondary">
@@ -51,7 +51,7 @@ export const Sidebar = () => {
                                 </div>
                               </div>
                             </Link>
-                        )))}
+                          )))}
                       </div>
                     </SidebarGroup>
                   </div>
@@ -60,8 +60,8 @@ export const Sidebar = () => {
               </div>
             </div>
           </div>
-          <div 
-            onMouseDown={handleMouseDown} 
+          <div
+            onMouseDown={handleMouseDown}
             className="absolute end-0 w-[1.25px] z-1 grow-0 top-0 bottom-0"
           >
             <div className="cursor-col-resize h-full w-3" />
@@ -72,13 +72,13 @@ export const Sidebar = () => {
   );
 }
 
-const SidebarGroup = ({ children}: { children: React.ReactNode }) => {
+const SidebarGroup = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-px mb-3">
         {children}
       </div>
-    </div>  
+    </div>
   );
 }
 

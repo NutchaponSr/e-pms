@@ -29,8 +29,12 @@ export const PerformanceView = ({ year }: Props) => {
   const years = [nextYear, ...Array.from({ length: 5 }, (_, index) => currentYear - index)];
 
   return (
-    <div className="z-1 w-full h-full cursor-default bg-background overflow-x-hidden overflow-y-auto">
-      <Tabs defaultValue={searchParams.year?.toString()} onValueChange={(value) => setSearchParams({ year: parseInt(value) })} className="grid grid-cols-[minmax(0,56px)_minmax(auto,1fr)_minmax(0,56px)] pb-40 relative gap-10">
+    <div className="z-1 w-full h-full cursor-default bg-background overflow-y-auto">
+      <Tabs
+        defaultValue={searchParams.year?.toString()}
+        onValueChange={(value) => setSearchParams({ year: parseInt(value) })}
+        className="grid md:grid-cols-[minmax(0,56px)_minmax(0,1fr)_minmax(0,56px)] grid-cols-[minmax(0,16px)_minmax(0,1fr)_minmax(0,16px)] pb-40 relative lg:gap-10 gap-4"
+      >
         <div className="sticky top-0 col-span-full z-100 bg-background after:absolute after:-bottom-[2.75px] after:left-0 after:z-50 after:w-full after:h-[1.25px] after:bg-border after:block">
           <div className="flex items-center px-3">
             <TabsList>
@@ -47,20 +51,20 @@ export const PerformanceView = ({ year }: Props) => {
             </Button>
           </div>
         </div>
-        <div className="col-start-2 select-none">
+        <div className="col-start-2 select-none min-w-0">
           <div className="grid lg:grid-cols-2 grid-cols-1 gap-4 items-stretch">
             <div className="h-full">
               <KpiInfo year={year} />
             </div>
             <div className="h-full">
-              <MeritInfo year={year} /> 
+              <MeritInfo year={year} />
             </div>
           </div>
         </div>
-        <div className="col-start-2 select-none">
+        <div className="col-start-2 select-none min-w-0">
           <TaskSection />
         </div>
-        <div className="col-start-2 select-none">
+        <div className="col-start-2 select-none min-w-0">
           <FormTracker year={year} />
         </div>
       </Tabs>

@@ -2,15 +2,19 @@
 
 import {
   createContext,
+  useCallback,
+  useEffect,
   useRef,
   useState
 } from "react";
+import { usePathname } from "next/navigation";
 
 type SidebarType = {
   width: number;
   isDragging: boolean;
   isCollapsed: boolean;
   isResetting: boolean;
+  isMobile: boolean;
   sidebarRef: React.RefObject<HTMLElement | null>;
   setIsDragging: (value: boolean) => void;
   setIsCollapsed: (value: boolean) => void;
@@ -27,13 +31,24 @@ interface Props {
 }
 
 export const SidebarProvider = ({ children }: Props) => {
+  const pathname = usePathname();
+
   const [width, setWidth] = useState(240);
   const [isDragging, setIsDragging] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const isResizingRef = useRef(false);
   const sidebarRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizingRef.current) return;
@@ -62,10 +77,7 @@ export const SidebarProvider = ({ children }: Props) => {
     document.addEventListener("mouseup", handleMouseUp);
   };
 
-
-  const resetWidth = () => {
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
+  const resetWidth = useCallback(() => {
     if (sidebarRef.current) {
       setIsCollapsed(false);
       setIsResetting(true);
@@ -75,18 +87,32 @@ export const SidebarProvider = ({ children }: Props) => {
 
       setTimeout(() => setIsResetting(false), 300);
     }
-  }
+  }, [isMobile]);
 
-  const collapse = () => {
+  const collapse = useCallback(() => {
     if (sidebarRef.current) {
       setIsCollapsed(true);
       setIsResetting(true);
       setWidth(0);
-      
+
       sidebarRef.current.style.width = "0";
       setTimeout(() => setIsResetting(false), 300);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      collapse();
+    } else {
+      resetWidth();
+    }
+  }, [isMobile, collapse, resetWidth]);
+
+  useEffect(() => {
+    if (isMobile) {
+      collapse();
+    }
+  }, [pathname, isMobile, collapse]);
 
   const value = {
     width,
@@ -94,6 +120,7 @@ export const SidebarProvider = ({ children }: Props) => {
     isCollapsed,
     isDragging,
     isResetting,
+    isMobile,
     setIsCollapsed,
     setIsDragging,
     setIsResetting,

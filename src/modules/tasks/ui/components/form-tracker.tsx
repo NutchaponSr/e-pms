@@ -93,9 +93,9 @@ export const FormTracker = ({ year }: Props) => {
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatusInfo title="Employee" value={table.getRowModel().rows.length} />
-          <StatusInfo title="KPI Bonus Approved"  
+          <StatusInfo title="KPI Bonus Approved"
             data={[
               {
                 label: "KPI Setting",
@@ -125,7 +125,7 @@ export const FormTracker = ({ year }: Props) => {
               },
             ]}
           />
-          <StatusInfo title="KPI Merit Approved"  
+          <StatusInfo title="KPI Merit Approved"
             data={[
               {
                 label: "KPI Setting",
@@ -177,15 +177,15 @@ export const FormTracker = ({ year }: Props) => {
               {
                 label: "KPI Merit",
                 value: merit.filter((row) => row.original.form.merit?.tasks?.some((task) => task.status === Status.WAITING_APPROVER_1 || task.status === Status.WAITING_APPROVER_2)).length,
-              },  
+              },
             ]}
-          />  
+          />
         </div>
 
         <div className="flex items-center flex-wrap gap-y-4 gap-x-1">
           <div className="flex items-center w-full text-xs leading-4 relative rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.08)] bg-accent cursor-text px-2.5 py-1 max-w-[250px] me-auto">
             <SearchIcon className="size-4 mr-1.5" />
-            <input 
+            <input
               type="text"
               placeholder="Search..."
               className="w-full text-primary border-none bg-none resize-none focus-visible:outline-none font-normal placeholder:text-tertiary"
@@ -204,7 +204,7 @@ export const FormTracker = ({ year }: Props) => {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="text-sm font-normal">
                   <CircleDashedIcon />
-                  {globalFilter.status.length > 0 
+                  {globalFilter.status.length > 0
                     ? globalFilter.status.length === 1
                       ? STATUS_VARIANTS[globalFilter.status[0] as Status].label
                       : `${globalFilter.status.length} labels`
@@ -218,13 +218,13 @@ export const FormTracker = ({ year }: Props) => {
                     <div className="flex items-center gap-2 px-3 py-2.5">
                       <div className="flex items-center w-full text-sm leading-5 relative rounded-sm shadow-[0_0_0_1.25px_#0f0f0f1a] dark:shadow-[0_0_0_1.25px_#ffffff13] bg-input cursor-text px-3 h-7 py-0.5 transition-all duration-200 focus-within:shadow-[0_0_0_1.5px_#ffffff20]">
                         <SearchIcon className="absolute left-2 h-4 w-4 pointer-events-none" />
-                        <Command.Input 
+                        <Command.Input
                           placeholder="Search..."
                           className="w-full block resize-none p-0 pl-5 bg-transparent focus-visible:outline-none focus-visible:ring-0 text-sm placeholder:text-tertiary"
                         />
                       </div>
                     </div>
-                  </div>  
+                  </div>
                   <Command.List className="p-1">
                     {Object.entries(STATUS_VARIANTS).map(([statusKey, status]) => {
                       const statusKeyString = String(statusKey);
@@ -254,42 +254,43 @@ export const FormTracker = ({ year }: Props) => {
           </div>
         </div>
 
-        <table className="w-full border-collapse overflow-hidden">
-          <thead className="border-y border-description bg-accent">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    style={{ width: header.column.columnDef.meta?.width }}
-                    className={cn(
-                      headerGroup.id === "0" && "border-r border-description border-b",
-                      "border-r border-description first:border-b-0 last:border-r-0",
-                    )}
-                  >
-                    <div className="flex items-center text-xs text-secondary font-normal h-8 px-2">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
+        <div className="w-full overflow-x-auto pb-4">
+          <table className="w-full border-collapse min-w-[800px]">
+            <thead className="border-y border-description bg-accent">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      style={{ width: header.column.columnDef.meta?.width }}
+                      className={cn(
+                        headerGroup.id === "0" && "border-r border-description border-b",
+                        "border-r border-description first:border-b-0 last:border-r-0",
+                      )}
+                    >
+                      <div className="flex items-center text-xs text-secondary font-normal h-8 px-2">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
                             header.column.columnDef.header,
                             header.getContext(),
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-start text-sm text-secondary font-normal h-10 px-2 border-b border-description">
-                  No data found
-                </td>
-              </tr>
-            ) : (
-              table.getRowModel().rows.map((row) => (
+                          )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-start text-sm text-secondary font-normal h-10 px-2 border-b border-description">
+                    No data found
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="border-b border-description relative group/row">
                     {row.getVisibleCells().map((cell) => (
                       <td
@@ -304,11 +305,12 @@ export const FormTracker = ({ year }: Props) => {
                         </div>
                       </td>
                     ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
