@@ -29,5 +29,8 @@ export const useDeleteKpiFile = (formId: string, period: Period) => {
     });
   };
 
-  return mutation;
+  return {
+    mutation,
+    ctx: deleteKpiFile,
+  };
 };

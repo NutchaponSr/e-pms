@@ -19,7 +19,8 @@ import { Badge } from "@/components/badge";
 import { TargetTable } from "./target-table";
 import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
 import { formatDecimal } from "@/lib/utils";
-import { KpiAttachButton } from "./kpi-attach-button";
+import { AttachButton } from "@/components/attach-button";
+import { useDeleteKpiFile } from "../../api/use-delete-kpi-file";
 
 interface Props {
   id: string;
@@ -47,6 +48,8 @@ export const KpiEvaluationContent = ({
   role,
   finalSumWeight,
 }: Props) => {
+  const { mutation: deleteKpiFile } = useDeleteKpiFile(id, period);
+
   const targetPopulated = useMemo(() => {
     const targets = [
       {
@@ -202,16 +205,14 @@ export const KpiEvaluationContent = ({
               <FormField 
                 control={form.control}
                 name={`kpis.${index}.fileUrl`}
-                render={() => (
+                render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <KpiAttachButton
-                        id={kpi.id}
-                        formId={id}
-                        period={period}
-                        value={values.fileUrl}
+                      <AttachButton
+                        value={field.value as string | null}
                         canPerform={canPerformOwner}
-                        onChange={(url) => form.setValue(`kpis.${index}.fileUrl`, url)}
+                        onChange={field.onChange}
+                        onRemove={() => deleteKpiFile({ id: kpi.id })}
                       />
                     </FormControl>
                   </FormItem>

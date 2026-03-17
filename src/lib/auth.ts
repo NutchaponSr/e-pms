@@ -12,7 +12,7 @@ const baseURL = process.env.NEXT_PUBLIC_APP_URL!;
 
 export const auth = betterAuth({
   baseURL,
-  trustedOrigins: [baseURL, "http://127.0.0.1:3000"],
+  trustedOrigins: [baseURL],
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
@@ -57,7 +57,7 @@ export const auth = betterAuth({
     }
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 30, // 30 days
+    expiresIn: 60 * 60 * 24, // 1 day
     cookieCache: {
       enabled: true,
       maxAge: 5 * 10,

@@ -7,7 +7,7 @@ interface Props {
 export const Loader = ({ label }: Props) => {
   return (
     <div className="flex items-center justify-center h-screen space-x-2">
-      <Spinner className="size-5 text-foreground" />
+      <Spinner className="size-5 text-foreground dark:text-primary" />
       {label && <span className="text-sm font-medium">{label}</span>}
     </div>
   );

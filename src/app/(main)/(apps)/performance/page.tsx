@@ -4,6 +4,8 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { getQueryClient, trpc } from "@/trpc/server";
 import { loadSearchParams } from "@/stores/search-params";
 
+import { Loader } from "@/components/loader";
+
 import { PerformanceView } from "@/modules/performance/ui/views/performance-view";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,7 @@ const Page = async (props: PageProps<"/performance">) => {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loader />}>
         <PerformanceView year={year} />
       </Suspense>
     </HydrationBoundary>
