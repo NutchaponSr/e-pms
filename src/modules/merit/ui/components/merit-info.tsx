@@ -102,10 +102,10 @@ export const MeritInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{  
                 disabled: createMeritTaskCtx.isPending,
-                active: isInRange(year, 1, dayOfYear(year, 3, 31)),
+                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2025),
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, dayOfYear(year, 3, 31), 2025)) {
+                  if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2025)) {
                     toast.error(
                       "You can only define Merit from January to March",
                     );
