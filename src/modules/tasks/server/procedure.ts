@@ -8,7 +8,7 @@ import { FormType, Period, Status } from "@/generated/prisma/enums";
 
 import { TRPCError } from "@trpc/server";
 
-import {  STATUSES } from "@/modules/tasks/constant";
+import { STATUSES } from "@/modules/tasks/constant";
 import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
 
 interface ApprovalCSVProps {
@@ -158,8 +158,8 @@ export const taskProcedure = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const task = await db.task.findUnique({
-        where: { 
-          id: input.id 
+        where: {
+          id: input.id
         },
       });
 
@@ -221,7 +221,7 @@ export const taskProcedure = createTRPCRouter({
             include: {
               checker: true,
               approver: true,
-              owner: true,  
+              owner: true,
               form: true,
             },
           });
@@ -355,8 +355,8 @@ export const taskProcedure = createTRPCRouter({
           !kpiFormsByEmployee[emp.id]?.length &&
           !meritFormsByEmployee[emp.id]?.length,
       );
-      
-      
+
+
       const kpiPending = forms.filter((f) => f.type === FormType.KPI)
         .flatMap((k) => k.tasks)
         .filter((t) => t.status === Status.WAITING_APPROVER_1 || t.status === Status.WAITING_APPROVER_2)
@@ -387,7 +387,7 @@ export const taskProcedure = createTRPCRouter({
         employees: employees.map((employee) => {
           const employeeKpiForms = kpiFormsByEmployee[employee.id] || [];
           const employeeMeritForms = meritFormsByEmployee[employee.id] || [];
-  
+
           // หา form ที่ตรงกับปีที่ต้องการ (prioritize current year)
           const kpiForm =
             employeeKpiForms.find((f) => f.year === input.year) ||
@@ -397,25 +397,25 @@ export const taskProcedure = createTRPCRouter({
             employeeMeritForms.find((f) => f.year === input.year) ||
             employeeMeritForms[0] ||
             null;
-  
+
           // รวม tasks จาก form ทั้งหมด
           const allKpiTasks = employeeKpiForms.flatMap((f) => f.tasks);
           const allMeritTasks = employeeMeritForms.flatMap((f) => f.tasks);
-  
+
           return {
             employee,
             form: {
               bonus: kpiForm
                 ? {
-                    ...kpiForm,
-                    tasks: allKpiTasks,
-                  }
+                  ...kpiForm,
+                  tasks: allKpiTasks,
+                }
                 : null,
               merit: meritForm
                 ? {
-                    ...meritForm,
-                    tasks: allMeritTasks,
-                  }
+                  ...meritForm,
+                  tasks: allMeritTasks,
+                }
                 : null,
             },
           };
