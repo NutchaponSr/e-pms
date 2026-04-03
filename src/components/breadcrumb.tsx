@@ -68,11 +68,11 @@ export const Breadcrumb = () => {
 
       const regex = new RegExp(
         "^" +
-          pattern
-            .split("*")
-            .map((part) => escapeRegex(part))
-            .join("[^/]+") +
-          "$",
+        pattern
+          .split("*")
+          .map((part) => escapeRegex(part))
+          .join("[^/]+") +
+        "$",
       );
 
       if (regex.test(path)) return label;
@@ -100,7 +100,7 @@ export const Breadcrumb = () => {
       };
     })
     .filter((item): item is BreadcrumbItem => item !== null);
-  
+
   // Show breadcrumb even if no segments (but we have Home link)
   if (breadcrumbs.length === 0 && pathname !== "/") {
     return (

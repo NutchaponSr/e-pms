@@ -23,7 +23,7 @@ import {
 
 import { Event } from "@/components/event";
 
-import { isInRange } from "@/modules/tasks/utils";
+import { dayOfYear, isInRange } from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { Button } from "@/components/ui/button";
 import { useExportKpi } from "../../api/use-export-kpi";
@@ -82,10 +82,10 @@ export const KpiInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: isInRange(year, 1, 3, 2025),
+                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2025),
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, 3, 2025)) {
+                  if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2025)) {
                     toast.error(
                       "You can only define KPIs from January to March",
                     );
@@ -111,10 +111,14 @@ export const KpiInfo = ({ year }: Props) => {
               description="Measures achievement based on actual performance results"
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: (isInRange(year, 11, 12) && data.task.evaluation?.status !== Status.COMPLETED),
+                active: (isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)) &&
+                  data.task.evaluation?.status !== Status.COMPLETED),
                 label: !!data.task.evaluation ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 11, 12, 2025) && process.env.NODE_ENV !== "development") {
+                  if (
+                    !isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31), 2025) &&
+                    process.env.NODE_ENV !== "development"
+                  ) {
                     toast.error(
                       "You can only evaluate KPIs from November to December",
                     );
