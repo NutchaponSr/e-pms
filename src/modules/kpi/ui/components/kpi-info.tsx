@@ -53,7 +53,7 @@ export const KpiInfo = ({ year }: Props) => {
 
   const isAdmin = session?.user.role === UserRole.ADMIN;
 
-  const isDev = process.env.NODE_ENV === "development";
+  const draftCompleted = data.task.draft?.status === Status.COMPLETED;
 
   return (
     <section className="h-full flex flex-col">
@@ -84,15 +84,15 @@ export const KpiInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2025) || true,
+                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2026),
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
-                  // if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2025)) {
-                  //   toast.error(
-                  //     "You can only define KPIs from January to March",
-                  //   );
-                  //   return;
-                  // }
+                  if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2026)) {
+                    toast.error(
+                      "You can only define KPIs from January to March",
+                    );
+                    return;
+                  }
 
                   if (!!data.task.draft) {
                     router.push(
@@ -113,8 +113,10 @@ export const KpiInfo = ({ year }: Props) => {
               description="Measures achievement based on actual performance results"
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: (isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)) &&
-                  data.task.evaluation?.status !== Status.COMPLETED),
+                active:
+                  draftCompleted &&
+                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)) &&
+                  data.task.evaluation?.status !== Status.COMPLETED,
                 label: !!data.task.evaluation ? "Evaluate" : "Create",
                 onClick: () => {
                   if (
@@ -123,6 +125,13 @@ export const KpiInfo = ({ year }: Props) => {
                   ) {
                     toast.error(
                       "You can only evaluate KPIs from November to December",
+                    );
+                    return;
+                  }
+
+                  if (!draftCompleted) {
+                    toast.error(
+                      "Complete KPI Setting before starting Year-end Evaluation",
                     );
                     return;
                   }

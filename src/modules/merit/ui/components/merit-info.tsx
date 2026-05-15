@@ -66,6 +66,10 @@ export const MeritInfo = ({ year }: Props) => {
   const { mutation: exportMerit, ctx: exportMeritCtx } = useExportMerit();
   const { mutation: createTask, ctx: createMeritTaskCtx } = useCreateMeritTask();
 
+  const draftCompleted = data.task.draft?.status === Status.COMPLETED;
+  const evaluation1stCompleted =
+    data.task.evaluation1st?.status === Status.COMPLETED;
+
   const chartData = data.chart.map((item) => ({
     period: item.period,
     employee: item[selectedCategory].employee,
@@ -102,10 +106,10 @@ export const MeritInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{  
                 disabled: createMeritTaskCtx.isPending,
-                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2025),
+                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2026),
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2025)) {
+                  if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2026)) {
                     toast.error(
                       "You can only define Merit from January to March",
                     );
@@ -131,16 +135,25 @@ export const MeritInfo = ({ year }: Props) => {
               description="Mid-year review to assess performance progress and behavioral expectations"
               buttonCtx={{
                 disabled: createMeritTaskCtx.isPending,
-                active: (isInRange(year, dayOfYear(year, 6, 1), dayOfYear(year, 7, 31)) &&
-                  data.task.evaluation1st?.status !== Status.COMPLETED),
+                active:
+                  draftCompleted &&
+                  isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)) &&
+                  data.task.evaluation1st?.status !== Status.COMPLETED,
                 label: !!data.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
                   if (
-                    !isInRange(year, dayOfYear(year, 6, 1), dayOfYear(year, 7, 31), 2025) &&
+                    !isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)) &&
                     process.env.NODE_ENV !== "development"
                   ) {
                     toast.error(
                       "You can only evaluate Merit from June to July",
+                    );
+                    return;
+                  }
+
+                  if (!draftCompleted) {
+                    toast.error(
+                      "Complete KPI Setting before starting Mid-year Evaluation",
                     );
                     return;
                   }
@@ -163,13 +176,22 @@ export const MeritInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.evaluation2nd?.status!]}
               description="Year-end assessment of performance results and behavioral outcomes"
               buttonCtx={{
-                active: (isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)) &&
-                  data.task.evaluation2nd?.status !== Status.COMPLETED),
+                active:
+                  evaluation1stCompleted &&
+                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)) &&
+                  data.task.evaluation2nd?.status !== Status.COMPLETED,
                 label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31), 2025)) {
+                  if (!isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31))) {
                     toast.error(
                       "You can only evaluate Merit from November to December",
+                    );
+                    return;
+                  }
+
+                  if (!evaluation1stCompleted) {
+                    toast.error(
+                      "Complete Mid-year Evaluation before starting Year-end Evaluation",
                     );
                     return;
                   }
