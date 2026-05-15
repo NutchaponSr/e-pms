@@ -53,6 +53,8 @@ export const KpiInfo = ({ year }: Props) => {
 
   const isAdmin = session?.user.role === UserRole.ADMIN;
 
+  const isDev = process.env.NODE_ENV === "development";
+
   return (
     <section className="h-full flex flex-col">
       <div className="shrink-0 flex justify-between items-center h-8 pb-3.5 mx-2">
@@ -82,15 +84,15 @@ export const KpiInfo = ({ year }: Props) => {
               status={STATUS_VARIANTS[data.task.draft?.status!]}
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
-                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2025),
+                active: isInRange(year, 1, dayOfYear(year, 4, 3), 2025) || true,
                 label: !!data.task.draft ? "View" : "Create",
                 onClick: () => {
-                  if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2025)) {
-                    toast.error(
-                      "You can only define KPIs from January to March",
-                    );
-                    return;
-                  }
+                  // if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2025)) {
+                  //   toast.error(
+                  //     "You can only define KPIs from January to March",
+                  //   );
+                  //   return;
+                  // }
 
                   if (!!data.task.draft) {
                     router.push(

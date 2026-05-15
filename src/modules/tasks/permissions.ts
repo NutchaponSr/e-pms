@@ -47,17 +47,27 @@ export function canPerform(role: Approval, action: Action[], status: Status): bo
 }
 
 export function getUserRole(context: PermissionContext): Approval | null {
-  const { employeeId, ownerId, checkerId, approverId } = context;
+  const { employeeId, ownerId, checkerId, approverId, status } = context;
 
   if (employeeId === ownerId) {
     return "owner";
   }
 
-  if (checkerId && employeeId === checkerId) {
+  const isChecker = Boolean(checkerId && employeeId === checkerId);
+  const isApprover = employeeId === approverId;
+
+  if (isChecker && isApprover && checkerId === approverId) {
+    if (status === Status.WAITING_APPROVER_2) {
+      return "approver";
+    }
     return "checker";
   }
 
-  if (employeeId === approverId) {
+  if (isChecker) {
+    return "checker";
+  }
+
+  if (isApprover) {
     return "approver";
   }
 
