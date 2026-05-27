@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { BsPersonFill } from "react-icons/bs";
 import { FaWeightHanging } from "react-icons/fa";
 
@@ -9,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/modules/auth/ui/components/user-avatar";
 import { UserProfile } from "@/modules/auth/ui/components/user-profile";
 
+export const EMPLOYEE_INFO_HEIGHT_VAR = "--employee-info-height";
+
 interface Props {
   owner?: Employee;
   checker?: Employee | null;
@@ -16,112 +19,111 @@ interface Props {
   children: React.ReactNode;
 }
 
+interface InfoFieldProps {
+  label: string;
+  value?: string | null;
+}
+
+const InfoField = ({ label, value }: InfoFieldProps) => (
+  <div className="grid min-w-0 grid-rows-[auto_auto] gap-0.5 overflow-hidden">
+    <span className="text-[11px] font-medium text-secondary">{label}</span>
+    <span className="truncate text-xs text-primary">{value || "-"}</span>
+  </div>
+);
+
+interface RoleCellProps {
+  label: string;
+  employee?: Employee;
+}
+
+const RoleCell = ({ label, employee }: RoleCellProps) => (
+  <div className="grid min-w-0 grid-rows-[auto_auto] gap-0.5">
+    <div className="grid grid-cols-[auto_1fr] items-center gap-1 min-w-0 text-[11px] leading-4 text-secondary">
+      <BsPersonFill className="size-3 shrink-0" />
+      <span className="truncate">{label}</span>
+    </div>
+    <UserProfile employee={employee} />
+  </div>
+);
+
 export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const roleColumns = checker
+    ? "grid-cols-[repeat(3,minmax(72px,max-content))]"
+    : "grid-cols-[repeat(2,minmax(72px,max-content))]";
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const parent = section?.parentElement;
+    if (!section || !parent) return;
+
+    const syncHeight = () => {
+      parent.style.setProperty(EMPLOYEE_INFO_HEIGHT_VAR, `${section.offsetHeight}px`);
+    };
+
+    syncHeight();
+
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
+      parent.style.removeProperty(EMPLOYEE_INFO_HEIGHT_VAR);
+    };
+  }, [checker, owner?.id, approver?.id]);
 
   return (
-    <section className="grid grid-cols-6 bg-background border-y border-border sticky top-0 min-h-[136px] h-[136px] z-100">
-      <div className="col-span-5 relative py-2 flex flex-col h-full">
-        <div className="h-full flex justify-stretch gap-3 px-3">
-          <div className="flex flex-row gap-2.5 items-center">
+    <section
+      ref={sectionRef}
+      className="sticky top-0 z-100 grid grid-cols-[1fr_auto] border-y border-border bg-background"
+    >
+      <div className="grid min-w-0 grid-rows-[auto_auto] gap-0 py-1.5 pl-3 pr-2">
+        <div className="grid grid-cols-[auto_1px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2.5">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2">
             <UserAvatar
               name={owner?.name || ""}
               className={{
                 container:
-                  "shrink-0 grow-0 rounded size-7 flex items-center justify-center dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f]",
-                fallback: "bg-marine! rounded text-white! text-lg",
+                  "shrink-0 rounded size-6 flex items-center justify-center dark:shadow-[0_0_0_1.25px_#383836,0px_14px_28px_-6px_#0003,0px_2px_4px_-1px_#0000001f]",
+                fallback: "bg-marine! rounded text-white! text-sm",
               }}
             />
-            <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis">
-              <div className="text-sm leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-                {owner?.name}
-              </div>
-              <div className="text-xs leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
+            <div className="grid min-w-0 grid-rows-[auto_auto] leading-tight">
+              <span className="truncate text-xs font-medium">{owner?.name}</span>
+              <span className="truncate text-[11px] leading-3.5 text-secondary">
                 {owner?.email || "-"}
-              </div>
+              </span>
             </div>
           </div>
 
-          <Separator orientation="vertical" className="h-full w-[1.25px]! rounded-md" />
+          <Separator orientation="vertical" className="h-full w-px! self-stretch rounded-md" />
 
-          <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis px-2">
-            <div className="text-xs leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-              Position
-            </div>
-            <div className="text-xs leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
-              {owner?.position || "-"}
-            </div>
-          </div>
-          <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis px-2">
-            <div className="text-xs leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-              Company/Division
-            </div>
-            <div className="text-xs leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
-              {owner?.division || "-"}
-            </div>
-          </div>
-          <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis px-2">
-            <div className="text-xs leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-              Department/Section
-            </div>
-            <div className="text-xs leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
-              {owner?.department || "-"}
-            </div>
-          </div>
+          <InfoField label="Position" value={owner?.position} />
+          <InfoField label="Company/Division" value={owner?.division} />
+          <InfoField label="Department/Section" value={owner?.department} />
         </div>
 
-        <div className="px-3 relative">
-          <div className="h-full flex items-center gap-3 mt-3 border-t-2 border-dotted border-border">
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(80px,max-content))] gap-x-4 my-2 max-w-full">
-              <div className="flex flex-col gap-0.5">
-                <div className="flex flex-row">
-                  <div className="flex items-center leading-4.5 min-w-0 text-xs text-secondary">
-                    <BsPersonFill className="size-3.5 me-1" />
-                    <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                      พนักงาน (Employee)
-                    </div>
-                  </div>
-                </div>
-                <UserProfile employee={owner}/>
-              </div>
-              {checker && (
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex flex-row">
-                    <div className="flex items-center leading-4.5 min-w-0 text-xs text-secondary">
-                      <BsPersonFill className="size-3.5 me-1" />
-                      <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                        ผู้ประเมินลำดับที่ 1 (Evaluator 1)
-                      </div>
-                    </div>
-                  </div>
-                  <UserProfile employee={checker}/>
-                </div>
-              )}
-              <div className="flex flex-col gap-0.5">
-                <div className="flex flex-row">
-                  <div className="flex items-center leading-4.5 min-w-0 text-xs text-secondary">
-                    <BsPersonFill className="size-3.5 me-1" />
-                    <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                      ผู้ประเมินลำดับที่ 2 (Evaluator 2)
-                    </div>
-                  </div>
-                </div>
-                <UserProfile employee={approver}/>
-              </div>
-            </div>
-          </div>
+        <div
+          className={`mt-1.5 grid ${roleColumns} gap-x-3 border-t border-dotted border-border pt-1.5`}
+        >
+          <RoleCell label="พนักงาน (Employee)" employee={owner} />
+          {checker && (
+            <RoleCell label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)" employee={checker} />
+          )}
+          <RoleCell label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)" employee={approver} />
         </div>
       </div>
-      <div className="col-span-1 border-l-[1.5px] border-border">
-        <div className="flex flex-col p-3 h-full grow-0 justify-between">
-          <div className="flex items-center gap-1.5 mb-1">
-            <div className="p-1 rounded-sm bg-marine">
-              <FaWeightHanging className="size-3.5 text-white" />
-            </div>
-            <p className="text-sm font-medium max-w-full whitespace-nowrap overflow-hidden text-ellipsis">Weight</p>
+
+      <div className="grid grid-rows-[auto_1fr] content-start gap-1 border-l border-border px-2 py-1.5">
+        <div className="grid grid-cols-[auto_1fr] items-center gap-1">
+          <div className="rounded-sm bg-marine p-0.5">
+            <FaWeightHanging className="size-3 text-white" />
           </div>
-          {children}
+          <p className="text-xs font-semibold text-marine">Weight</p>
         </div>
+        {children}
       </div>
     </section>
-  );  
+  );
 };

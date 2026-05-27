@@ -104,7 +104,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
       render={({ field }) => (
         <FormItem className={className?.form}>
           <div className="flex items-center justify-between">
-            <div className="flex flex-col">
+            <div className="flex flex-col overflow-hidden">
               {label ? <FormLabel className={cn("whitespace-nowrap text-ellipsis overflow-hidden", className?.label)}>{label}</FormLabel> : null}
               {description ? <FormDescription className={cn(
                   "text-xs text- whitespace-nowrap text-ellipsis overflow-hidden", className?.description,

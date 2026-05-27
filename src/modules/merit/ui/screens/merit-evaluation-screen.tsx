@@ -11,8 +11,6 @@ import { Resolver, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { EmployeeInfo } from "@/components/employee-info";
-import { NumberTicker } from "@/components/number-ticker";
-import { ScoreBoard } from "../components/score-board";
 import { Toolbar } from "@/components/toolbar";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { Button } from "@/components/ui/button";
@@ -25,10 +23,14 @@ import { CultureEvaluationContent } from "../components/culture-evaluation-conte
 import { useEvaluateBulkMerit } from "../../api/use-evaluation-bulk-merit";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { toast } from "sonner";
-import { competencyLevels, cultureLevels } from "../../constant";
+import { competencyLevels, cultureLevels, MERIT_EVALUATION_PERIOD_LABELS } from "../../constant";
+import { FormGenerator } from "@/components/form-generator";
+import { cn } from "@/lib/utils";
+import { formRecord } from "@/types/form";
 import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
 import { createPortal } from "react-dom";
 import { Employee, Task } from "@/generated/prisma/client";
+import { MeritEvaluationSummaryTable } from "../components/merit-evaluation-summary-table";
 
 interface Props {
   id: string;
@@ -48,7 +50,16 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
   const form = useForm<MeritEvaluation>({
     resolver: zodResolver(meritEvaluationsSchema) as Resolver<MeritEvaluation>,
     defaultValues: evaluations,
+    reValidateMode: "onChange",
   });
+
+  const revalidateOverallComments = () => {
+    void form.trigger([
+      "overallComments.commentOwner",
+      "overallComments.commentChecker",
+      "overallComments.commentApprover",
+    ]);
+  };
 
   useEffect(() => {
     if (!data) return;
@@ -59,9 +70,30 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     });
   }, [data, form, period, role]);
 
-  const onSubmit = (data: MeritEvaluation) => {
-    evaluateBulkMerit({ ...data, saved: true });
+  const submitEvaluation = (values: MeritEvaluation, saved: boolean) => {
+    evaluateBulkMerit({
+      formId: id,
+      period,
+      ...values,
+      saved,
+    });
   };
+
+  const onSubmit = (data: MeritEvaluation) => {
+    submitEvaluation(data, true);
+  };
+
+  const blueFormClass = {
+    input: formRecord.blue.input,
+    label: formRecord.blue.label,
+    description: "text-xs text-secondary",
+    form: "flex flex-col gap-2 flex-1 min-h-0 bg-transparent p-0 h-auto",
+  };
+
+  const evaluationColumnClass =
+    "flex flex-col gap-2 min-h-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+
+  const periodLabel = MERIT_EVALUATION_PERIOD_LABELS[period];
 
   // useWatch find total competency and culture achievement for each role
   const competencies = useWatch({
@@ -111,64 +143,56 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
       return acc + (achievement / 5) * cultureWeight;
     }, 0) ?? 0;
 
-    // Calculate total for each role
-    const totalOwner = data.kpi + competencyOwner + cultureOwner;
-    const totalChecker = data.kpi + competencyChecker + cultureChecker;
-    const totalApprover = data.kpi + competencyApprover + cultureApprover;
+    const competencyFull = data.competencyRecords.reduce(
+      (acc, record) => acc + Number(record.weight ?? 0),
+      0,
+    );
+    const cultureFull = 30;
 
     return {
+      competencyFull,
+      cultureFull,
       owner: {
         competency: competencyOwner,
         culture: cultureOwner,
-        total: totalOwner,
       },
       checker: {
         competency: competencyChecker,
         culture: cultureChecker,
-        total: totalChecker,
       },
       approver: {
         competency: competencyApprover,
         culture: cultureApprover,
-        total: totalApprover,
       },
     };
-  }, [competencies, cultures, data.competencyRecords, data.cultureRecords.length, data.kpi]);
+  }, [competencies, cultures, data.competencyRecords, data.cultureRecords.length]);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <EmployeeInfo owner={data.tasks?.owner} checker={data.tasks?.checker} approver={data.tasks?.approver}>
-          <div className="flex items-start justify-between">
-            <div className="flex items-start flex-col text-secondary">
-              <span className="text-xs font-medium uppercase tracking-wide">
-                Full
-              </span>
-            </div>
-            <div className="flex flex-col items-start p-3">
-              <NumberTicker
-                value={100}
-                className="text-3xl font-semibold tracking-tighter whitespace-pre-wrap text-primary"
-              />
-            </div>
-          </div>
+          <MeritEvaluationSummaryTable
+            hasChecker={hasChecker}
+            competencyFull={scores.competencyFull}
+            cultureFull={scores.cultureFull}
+            scores={{
+              owner: scores.owner,
+              checker: scores.checker,
+              approver: scores.approver,
+            }}
+          />
         </EmployeeInfo>
-
-        <div className="px-3 pt-3 w-full grid grid-cols-3 gap-2">
-          <ScoreBoard title="Owner" kpi={data.kpi} competency={scores.owner.competency} culture={scores.owner.culture} total={scores.owner.total} />
-          <ScoreBoard title="Checker" kpi={data.kpi} competency={scores.checker.competency} culture={scores.checker.culture} total={scores.checker.total} />
-          <ScoreBoard title="Approver" kpi={data.kpi} competency={scores.approver.competency} culture={scores.approver.culture} total={scores.approver.total} />
-        </div>
 
         <Toolbar 
           onWorkflow={async () => {
             const ok = await form.trigger();
+            
             if (!ok) {
               toast.error("Please fix validation errors before starting the workflow");
               return;
             }
 
-            evaluateBulkMerit({ ...form.getValues(), saved: true });
+            submitEvaluation(form.getValues(), true);
             startWorkflow({ id: data.tasks.id });
           }}
           onExport={async () => {
@@ -180,14 +204,14 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               task: data.tasks as Task & { checker?: Employee; approver: Employee },
             });
           }}
-          onSaveDraft={() => evaluateBulkMerit({ ...form.getValues(), saved: false })}
+          onSaveDraft={() => submitEvaluation(form.getValues(), false)}
           permissions={permissions}
           status={STATUS_VARIANTS[data.tasks?.status!]}
         />
 
         <div className="px-3 mx-auto w-full flex flex-col justify-start grow pb-45">
           <Accordion
-            defaultValue={["competency", "culture"]}
+            defaultValue={["competency", "culture", "overall-comments"]}
             type="multiple"
             className="space-y-4"
           >
@@ -365,6 +389,76 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                 </div>
               </AccordionContent>
             </AccordionItem>
+            <AccordionItem value="overall-comments">
+              <div className="h-[42px] z-87 relative text-sm">
+                <div className="flex items-center h-full pt-0 mb-2">
+                  <div className="flex items-center h-full overflow-hidden gap-1">
+                    <AccordionTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xsIcon"
+                        className="group rounded"
+                      >
+                        <BsTriangleFill className="text-primary rotate-90 size-3 transition-transform group-data-[state=open]:rotate-180" />
+                      </Button>
+                    </AccordionTrigger>
+                    <h2 className="text-primary text-lg font-semibold">
+                      ข้อคิดเห็น/ข้อเสนอแนะภาพรวม (Overall Comments / Recommendations)
+                    </h2>
+                  </div>
+                </div>
+              </div>
+              <AccordionContent>
+                {periodLabel && (
+                  <p className="text-primary text-sm font-medium mb-4">
+                    {periodLabel}
+                  </p>
+                )}
+                <div
+                  className={cn(
+                    "grid gap-4",
+                    hasChecker ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2",
+                  )}
+                >
+                  <div className={evaluationColumnClass}>
+                    <FormGenerator
+                      name="overallComments.commentOwner"
+                      form={form}
+                      variant="bigText"
+                      label="พนักงาน (Employee)"
+                      disabled={!(permissions.write && role === "owner")}
+                      className={blueFormClass}
+                      onInput={revalidateOverallComments}
+                    />
+                  </div>
+                  {hasChecker && (
+                    <div className={evaluationColumnClass}>
+                      <FormGenerator
+                        name="overallComments.commentChecker"
+                        form={form}
+                        variant="bigText"
+                        label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
+                        disabled={!(permissions.write && role === "checker")}
+                        className={blueFormClass}
+                        onInput={revalidateOverallComments}
+                      />
+                    </div>
+                  )}
+                  <div className={evaluationColumnClass}>
+                    <FormGenerator
+                      name="overallComments.commentApprover"
+                      form={form}
+                      variant="bigText"
+                      label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
+                      disabled={!(permissions.write && role === "approver")}
+                      className={blueFormClass}
+                      onInput={revalidateOverallComments}
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
 
@@ -375,8 +469,15 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             taskId={data.tasks.id} 
             period={period} 
             confirmTitle="Confirm Merit Evaluation"
-            onSave={() => {
-              evaluateBulkMerit({ ...form.getValues(), saved: false });
+            onSave={async () => {
+              const ok = await form.trigger();
+
+              if (!ok) {
+                toast.error("Please fix validation errors before confirming");
+                return false;
+              }
+
+              submitEvaluation(form.getValues(), false);
               return true;
             }}
           />,

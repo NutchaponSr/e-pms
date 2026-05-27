@@ -1,4 +1,10 @@
+import { Period } from "@/generated/prisma/enums";
 import { ExportColumn } from "@/lib/utils";
+
+export const MERIT_EVALUATION_PERIOD_LABELS: Partial<Record<Period, string>> = {
+  [Period.EVALUATION_1ST]: "Mid-year Evaluation",
+  [Period.EVALUATION_2ND]: "Year-end Evaluation",
+};
 
 export const competencyLevels = [
   {

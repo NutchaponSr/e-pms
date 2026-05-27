@@ -7,6 +7,7 @@ import {
   CultureRecord, 
   Employee, 
   Form, 
+  MeritOverallComment,
   Task
 } from "@/generated/prisma/client";
 
@@ -27,4 +28,5 @@ export interface MeritDefinitionWithTasks extends MeritFormWithInfo {
     checker?: Employee;
     approver: Employee;
   };
+  overallComments?: MeritOverallComment[];
 }

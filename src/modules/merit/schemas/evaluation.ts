@@ -14,30 +14,26 @@ export const comepetencyEvaluationSchema = z.object({
 }).superRefine((data, ctx) => {
   switch (data.role) {
     case "owner":
-      if (!data.result) {
-        ctx.addIssue({ code: "custom", message: "Result is required", path: ["result"] });
-      }
-
-      if (!data.actualOwner) {
+      if (!data.actualOwner?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual owner is required", path: ["actualOwner"] });
       }
-      if (!data.achievementOwner) {
+      if (data.achievementOwner == null) {
         ctx.addIssue({ code: "custom", message: "Achievement owner is required", path: ["achievementOwner"] });
       }
       break;
     case "checker":
-      if (!data.actualChecker) {
+      if (!data.actualChecker?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual checker is required", path: ["actualChecker"] });
       }
-      if (!data.achievementChecker) {
+      if (data.achievementChecker == null) {
         ctx.addIssue({ code: "custom", message: "Achievement checker is required", path: ["achievementChecker"] });
       }
       break;
     case "approver":
-      if (!data.actualApprover) {
+      if (!data.actualApprover?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual approver is required", path: ["actualApprover"] });
       }
-      if (!data.achievementApprover) {
+      if (data.achievementApprover == null) {
         ctx.addIssue({ code: "custom", message: "Achievement approver is required", path: ["achievementApprover"] });
       }
       break;
@@ -58,35 +54,31 @@ export const cultureEvaluationSchema = z.object({
 }).superRefine((data, ctx) => {
   switch (data.role) {
     case "owner":
-      if (!data.result) {
-        ctx.addIssue({ code: "custom", message: "Result is required", path: ["result"] });
-      }
-
-      if (!data.actualOwner) {
+      if (!data.actualOwner?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual owner is required", path: ["actualOwner"] });
       }
 
-      if (!data.levelBehaviorOwner) {
+      if (data.levelBehaviorOwner == null) {
         ctx.addIssue({ code: "custom", message: "Level behavior owner is required", path: ["levelBehaviorOwner"] });
       }
 
       break;
     case "checker":
-      if (!data.actualChecker) {
+      if (!data.actualChecker?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual checker is required", path: ["actualChecker"] });
       }
 
-      if (!data.levelBehaviorChecker) {
+      if (data.levelBehaviorChecker == null) {
         ctx.addIssue({ code: "custom", message: "Level behavior checker is required", path: ["levelBehaviorChecker"] });
       }
 
       break;
     case "approver":
-      if (!data.actualApprover) {
+      if (!data.actualApprover?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual approver is required", path: ["actualApprover"] });
       }
 
-      if (!data.levelBehaviorApprover) {
+      if (data.levelBehaviorApprover == null) {
         ctx.addIssue({ code: "custom", message: "Level behavior approver is required", path: ["levelBehaviorApprover"] });
       }
 
@@ -94,11 +86,53 @@ export const cultureEvaluationSchema = z.object({
   }
 });
 
+export const overallCommentFieldsSchema = z.object({
+  commentOwner: z.string().nullable(),
+  commentChecker: z.string().nullable(),
+  commentApprover: z.string().nullable(),
+});
+
+const overallCommentWithRoleSchema = overallCommentFieldsSchema.extend({
+  role: z.enum(["owner", "checker", "approver"]),
+});
+
 export const meritEvaluationsSchema = z.object({
   cultures: z.array(cultureEvaluationSchema),
   competencies: z.array(comepetencyEvaluationSchema),
+  overallComments: overallCommentWithRoleSchema,
+}).superRefine((data, ctx) => {
+  switch (data.overallComments.role) {
+    case "owner":
+      if (!data.overallComments.commentOwner?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Overall comment is required",
+          path: ["overallComments", "commentOwner"],
+        });
+      }
+      break;
+    case "checker":
+      if (!data.overallComments.commentChecker?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Overall comment is required",
+          path: ["overallComments", "commentChecker"],
+        });
+      }
+      break;
+    case "approver":
+      if (!data.overallComments.commentApprover?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Overall comment is required",
+          path: ["overallComments", "commentApprover"],
+        });
+      }
+      break;
+  }
 });
 
 export type MeritEvaluation = z.infer<typeof meritEvaluationsSchema>;
+export type OverallComment = z.infer<typeof overallCommentWithRoleSchema>;
 export type CultureEvaluation = z.infer<typeof cultureEvaluationSchema>;
 export type CompetencyEvaluation = z.infer<typeof comepetencyEvaluationSchema>;

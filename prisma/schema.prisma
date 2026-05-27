@@ -160,6 +160,21 @@ model Form {
   kpis KpiEvaluation[] @relation("KpiForm")
   cultureRecords CultureRecord[] @relation("CultureForm")
   competencyRecords CompetencyRecord[] @relation("CompetencyForm")
+  overallComments MeritOverallComment[]
+}
+
+model MeritOverallComment {
+  id              String  @id @default(cuid())
+  formId          String
+  period          Period
+  commentOwner    String? @db.Text
+  commentChecker  String? @db.Text
+  commentApprover String? @db.Text
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, period])
+  @@map("meritOverallComment")
 }
 
 model Comment {

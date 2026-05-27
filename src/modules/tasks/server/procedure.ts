@@ -17,6 +17,28 @@ interface ApprovalCSVProps {
   approver: string;
 }
 
+function emptyTrackerResult() {
+  return {
+    info: {
+      total: 0,
+      done: { bonus: 0, merit: 0 },
+      notDone: { bonus: 0, merit: 0 },
+      pending: 0,
+    },
+    employees: [],
+  };
+}
+
+let approvalRecordsCache: ApprovalCSVProps[] | null = null;
+
+function getApprovalRecords() {
+  if (!approvalRecordsCache) {
+    const approvalFile = path.join(process.cwd(), "src/data", "approval.csv");
+    approvalRecordsCache = readCSV<ApprovalCSVProps>(approvalFile);
+  }
+  return approvalRecordsCache;
+}
+
 export const taskProcedure = createTRPCRouter({
   getOne: protectedProcedure
     .input(
@@ -281,16 +303,21 @@ export const taskProcedure = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const approvalFile = path.join(process.cwd(), "src/data", "approval.csv");
-      const approvalRecords = readCSV<ApprovalCSVProps>(approvalFile);
+      const employee = ctx.user.employee;
+      if (!employee) {
+        return emptyTrackerResult();
+      }
 
-      const targetApproval = approvalRecords
+      const targetApproval = getApprovalRecords()
         .filter(
           (f) =>
-            f.checker === ctx.user.employee.id ||
-            f.approver === ctx.user.employee.id,
+            f.checker === employee.id || f.approver === employee.id,
         )
         .map((record) => record.employeeId);
+
+      if (targetApproval.length === 0) {
+        return emptyTrackerResult();
+      }
 
       const [forms, employees] = await Promise.all([
         db.form.findMany({
@@ -333,21 +360,18 @@ export const taskProcedure = createTRPCRouter({
         }),
       ]);
 
-      const kpiFormsByEmployee = forms.filter((f) => f.type === FormType.KPI).reduce<
-        Record<string, (typeof forms)[0][]>
-      >((acc, form) => {
-        acc[form.tasks[0].ownerId] ??= [];
-        acc[form.tasks[0].ownerId].push(form);
-        return acc;
-      }, {});
+      const groupFormsByOwner = (type: FormType) =>
+        forms
+          .filter((f) => f.type === type && f.tasks.length > 0)
+          .reduce<Record<string, (typeof forms)[0][]>>((acc, form) => {
+            const ownerId = form.tasks[0].ownerId;
+            acc[ownerId] ??= [];
+            acc[ownerId].push(form);
+            return acc;
+          }, {});
 
-      const meritFormsByEmployee = forms.filter((f) => f.type === FormType.MERIT).reduce<
-        Record<string, (typeof forms)[0][]>
-      >((acc, form) => {
-        acc[form.tasks[0].ownerId] ??= [];
-        acc[form.tasks[0].ownerId].push(form);
-        return acc;
-      }, {});
+      const kpiFormsByEmployee = groupFormsByOwner(FormType.KPI);
+      const meritFormsByEmployee = groupFormsByOwner(FormType.MERIT);
 
       // หา employee ที่ไม่มี form ใดๆ
       const employeesWithNoForm = employees.filter(

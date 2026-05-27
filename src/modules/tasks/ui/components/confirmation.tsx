@@ -1,11 +1,9 @@
-import { useEffect, useRef } from "react";
 import { useConfirm } from "@/hooks/use-confirm";
 
 import { Period } from "@/generated/prisma/enums";
 
 import { Button } from "@/components/ui/button";
 
-import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 import { useConfirmation } from "@/modules/tasks/api/use-confirmation";
 
 interface Props {
@@ -75,6 +73,11 @@ export const Confirmation = ({ id, taskId, period, confirmTitle, onSave, app }: 
             type="button"
             variant="primary"
             onClick={async () => {
+              if (onSave) {
+                const okSave = await onSave();
+                if (!okSave) return;
+              }
+
               const ok = await confirm();
 
               if (ok) {

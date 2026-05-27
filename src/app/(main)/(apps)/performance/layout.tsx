@@ -1,18 +1,16 @@
 import { Header } from "@/components/header";
 import { loadSearchParams } from "@/stores/search-params";
-import { getQueryClient, trpc } from "@/trpc/server";
+import { getQueryClient } from "@/trpc/server";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
+import { prefetchPerformancePage } from "@/modules/performance/server/prefetch-performance";
 
 const Layout = async (props: LayoutProps<"/performance">) => {
   const { year } = await loadSearchParams(props.params);
 
-  const queryClient = getQueryClient();
+  await prefetchPerformancePage(year);
 
-  void queryClient.prefetchQuery(trpc.task.todo.queryOptions());
-  void queryClient.prefetchQuery(trpc.kpi.getInfo.queryOptions({ year }));
-  void queryClient.prefetchQuery(trpc.merit.getInfo.queryOptions({ year }));
-  void queryClient.prefetchQuery(trpc.task.getManyByYear.queryOptions({ year }));
+  const queryClient = getQueryClient();
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

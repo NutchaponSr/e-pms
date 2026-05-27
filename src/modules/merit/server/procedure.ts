@@ -11,7 +11,7 @@ import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions
 import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/merit/schemas/definition";
 import { formatMeritExport, sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
-import { comepetencyEvaluationSchema, cultureEvaluationSchema } from "../schemas/evaluation";
+import { comepetencyEvaluationSchema, cultureEvaluationSchema, overallCommentFieldsSchema } from "../schemas/evaluation";
 import { competencyUploadSchema, cultureUploadSchema } from "../schemas/upload";
 import { PERIOD_LABELS } from "@/modules/tasks/constant";
 import { exportExcel } from "@/lib/utils";
@@ -159,6 +159,7 @@ export const meritProcedure = createTRPCRouter({
               order: "asc",
             },
           },
+          overallComments: true,
         },
       });
 
@@ -250,11 +251,16 @@ export const meritProcedure = createTRPCRouter({
       const permission = buildPermissionContext(ctx.user.username, task);
       const portion = validateWeight(task.owner.rank as Rank);
 
+      const overallComment = plain.overallComments.find(
+        (c) => c.period === input.period,
+      ) ?? null;
+
       return { 
         form: {
           ...plain,
           competencyRecords: competencyRecordsWithComments,
           cultureRecords: cultureRecordsWithComments,
+          overallComment,
           tasks: task,
           kpi:  (task.context as { period: Period })?.period === Period.EVALUATION_2ND 
             ? (() => {
@@ -388,6 +394,19 @@ export const meritProcedure = createTRPCRouter({
               period: input.period,
             })),
           })
+          await tx.meritOverallComment.upsert({
+            where: {
+              formId_period: {
+                formId: existingForm.id,
+                period: input.period,
+              },
+            },
+            create: {
+              formId: existingForm.id,
+              period: input.period,
+            },
+            update: {},
+          });
         });
 
         return { id: existingForm.id };
@@ -424,7 +443,34 @@ export const meritProcedure = createTRPCRouter({
                 })),
               },
             },
+            overallComments: {
+              create: {
+                period: input.period,
+              },
+            },
           },
+        });
+
+        await db.$transaction(async (tx) => {
+          const createdForm = await tx.form.findUnique({
+            where: { id: form!.id },
+            include: { competencyRecords: true, cultureRecords: true },
+          });
+
+          if (!createdForm) return;
+
+          await tx.competencyEvaluation.createMany({
+            data: createdForm.competencyRecords.map((record) => ({
+              competencyRecordId: record.id,
+              period: input.period,
+            })),
+          });
+          await tx.cultureEvaluation.createMany({
+            data: createdForm.cultureRecords.map((record) => ({
+              cultureRecordId: record.id,
+              period: input.period,
+            })),
+          });
         });
       }
 
@@ -471,12 +517,58 @@ export const meritProcedure = createTRPCRouter({
   evaluateBulk: protectedProcedure
     .input(
       z.object({
+        formId: z.string(),
+        period: z.enum(Period),
         competencies: z.array(comepetencyEvaluationSchema.omit({ role: true })),
         cultures: z.array(cultureEvaluationSchema.omit({ role: true })),
+        overallComments: overallCommentFieldsSchema,
       }),
     )
     .mutation(async ({ input }) => {
-      if (input.competencies.length === 0 && input.cultures.length === 0) return { success: true };
+      if (input.competencies.length === 0 && input.cultures.length === 0) {
+        await db.meritOverallComment.upsert({
+          where: {
+            formId_period: {
+              formId: input.formId,
+              period: input.period,
+            },
+          },
+          create: {
+            formId: input.formId,
+            period: input.period,
+            commentOwner: input.overallComments.commentOwner,
+            commentChecker: input.overallComments.commentChecker,
+            commentApprover: input.overallComments.commentApprover,
+          },
+          update: {
+            commentOwner: input.overallComments.commentOwner,
+            commentChecker: input.overallComments.commentChecker,
+            commentApprover: input.overallComments.commentApprover,
+          },
+        });
+        return { success: true };
+      }
+
+      await db.meritOverallComment.upsert({
+        where: {
+          formId_period: {
+            formId: input.formId,
+            period: input.period,
+          },
+        },
+        create: {
+          formId: input.formId,
+          period: input.period,
+          commentOwner: input.overallComments.commentOwner,
+          commentChecker: input.overallComments.commentChecker,
+          commentApprover: input.overallComments.commentApprover,
+        },
+        update: {
+          commentOwner: input.overallComments.commentOwner,
+          commentChecker: input.overallComments.commentChecker,
+          commentApprover: input.overallComments.commentApprover,
+        },
+      });
 
       await Promise.all(
         input.competencies.map((competency) => {
