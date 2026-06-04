@@ -119,7 +119,7 @@ export const AttachButton = ({
               <>
                 <BsFileText className="size-4 me-1.5 text-secondary" />
                 <div data-active={!!value} className="whitespace-nowrap overflow-hidden text-ellipsis text-sm text-primary data-[active=true]:text-marine">
-                  {value ? "แทนที่" : "อัพโหลด (.pdf)"}
+                  {value ? "แทนที่" : "อัพโหลด (.pdf ไม่เกิน 15MB)"}
                 </div>
               </>
             )}

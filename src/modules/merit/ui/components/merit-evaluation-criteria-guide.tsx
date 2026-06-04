@@ -18,7 +18,7 @@ export const MeritEvaluationCriteriaGuide = ({
     <div className="pb-4">
       <div className="overflow-hidden text-xs bg-sidebar shadow-[0_12px_32px_0_rgba(0,0,0,0.02),0_0_0_1.25px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_32px_0_rgba(0,0,0,0.02),0_0_0_1.25px_rgba(0,0,0,0.086)] dark:shadow-[inset_0_0_0_1.25px_#ffffff0d] dark:hover:shadow-[inset_0_0_0_1.25px_#ffffff1a] rounded-sm h-full">
         <div className="flex items-center gap-2 bg-marine py-1 px-2">
-          <h3 className="text-white text-lg font-semibold">{title}</h3>
+          <h3 className="text-white text-lg font-semibold">หลักเกณฑ์การประเมิน (Evaluation Criteria)</h3>
         </div>
         <div className="grid grid-cols-3">
           <div className="flex items-center px-2.5 py-2 border-e dark:border-white/10">

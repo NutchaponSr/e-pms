@@ -174,7 +174,7 @@ export const CompetencyEvaluationContent = ({
                   name={`competencies.${index}.fileUrl`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-marine">
+                      <FormLabel className="text-xs text-secondary">
                         ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)
                       </FormLabel>
                       <FormControl>

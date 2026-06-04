@@ -267,7 +267,6 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               </div>
               <AccordionContent>
                 <MeritEvaluationCriteriaGuide 
-                  title="เกณฑ์การประเมิน Competency"
                   description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expectation Behavior) กับผลลัพธ์ของโครงการ กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง (Project/Activities Demonstrating Expected Behavior)"
                   levels={competencyAchievementLevels}
                 />
@@ -316,7 +315,6 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               </div>
               <AccordionContent>
                 <MeritEvaluationCriteriaGuide 
-                  title="เกณฑ์การประเมิน Culture"
                   description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง ตามแนวทางในการประเมิน (Key Evidence Guideline) ที่กาหนดโดย N 1 ของแต่ละสายงาน"
                   levels={cultureLevels}
                 />
