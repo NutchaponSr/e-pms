@@ -12,6 +12,7 @@ import { PERIOD_LABELS } from "../tasks/constant";
 import { Employee, Form, KpiEvaluation, Task } from "@/generated/prisma/client";
 import { formatDecimal } from "@/lib/utils";
 import { kpiCategoies } from "./constants";
+import { RANK_LABELS } from "@/constants";
 
 export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
   const weightStr = kpi.weight == null ? "0" : String(kpi.weight);
@@ -61,22 +62,198 @@ export function validateWeight(rank: Rank) {
   return 40;
 }
 
-function getManagerLevelLabel(rank: Rank | string): string {
-  const r = rank as Rank;
+const KPI_EXPORT_COLS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
+type KpiExportCol = (typeof KPI_EXPORT_COLS)[number];
 
-  if (r === Rank.MGR) {
-    return "Manager";
+const KPI_EXPORT_COLUMN_WIDTHS: Record<KpiExportCol, number> = {
+  A: 5,
+  B: 25,
+  C: 10,
+  D: 8,
+  E: 30,
+  F: 30,
+  G: 30,
+  H: 25,
+  I: 15,
+  J: 10,
+};
+
+const KPI_EXPORT_CELL_PADDING_X_CHARS = 0;
+const KPI_EXPORT_CELL_PADDING_Y_PX = 3;
+const KPI_EXPORT_PX_TO_PT = 72 / 96;
+const KPI_EXPORT_CELL_PADDING_X_INDENT = 0;
+const KPI_EXPORT_CELL_PADDING_Y_PT =
+  KPI_EXPORT_CELL_PADDING_Y_PX * 2 * KPI_EXPORT_PX_TO_PT;
+
+type KpiExportBodyCellVariant = "wrap" | "center";
+
+const kpiExportBodyAlignmentWrap: Partial<ExcelJS.Alignment> = {
+  vertical: "top",
+  horizontal: "left",
+  wrapText: true,
+  indent: KPI_EXPORT_CELL_PADDING_X_INDENT,
+};
+
+const kpiExportBodyAlignmentCenter: Partial<ExcelJS.Alignment> = {
+  vertical: "middle",
+  horizontal: "center",
+};
+
+type KpiExportCellBorder = {
+  top: { style: "thin"; color: { argb: string } };
+  left: { style: "thin"; color: { argb: string } };
+  bottom: { style: "thin"; color: { argb: string } };
+  right: { style: "thin"; color: { argb: string } };
+};
+
+function kpiExportBodyCellValue(
+  value: string | number | null | undefined,
+  variant: KpiExportBodyCellVariant,
+): string | number {
+  if (value == null || value === "") return "";
+
+  if (variant === "center") {
+    return typeof value === "number" ? value : String(value);
   }
 
-  if (r === Rank.GM || r === Rank.AGM) {
-    return "GM/AGM";
+  if (typeof value === "number") return value;
+
+  return String(value);
+}
+
+function setKpiExportBodyCell(
+  cell: ExcelJS.Cell,
+  value: string | number | null | undefined,
+  variant: KpiExportBodyCellVariant,
+  border: KpiExportCellBorder,
+  fontSize = 9,
+) {
+  cell.value = kpiExportBodyCellValue(value, variant);
+  cell.alignment =
+    variant === "wrap" ? kpiExportBodyAlignmentWrap : kpiExportBodyAlignmentCenter;
+  cell.border = border;
+  cell.font = { size: fontSize };
+}
+
+function getKpiExportColumnWidthChars(col: KpiExportCol): number {
+  return KPI_EXPORT_COLUMN_WIDTHS[col];
+}
+
+function kpiExportTextWidthUnits(text: string): number {
+  return [...text].reduce(
+    (sum, ch) => sum + (ch.charCodeAt(0) > 255 ? 1 : 0.6),
+    0,
+  );
+}
+
+function countKpiExportWrappedLines(
+  text: string | null | undefined,
+  columnWidthChars: number,
+): number {
+  if (!text?.trim()) return 1;
+
+  const usableWidth = Math.max(
+    1,
+    columnWidthChars - KPI_EXPORT_CELL_PADDING_X_CHARS * 2,
+  );
+
+  return String(text)
+    .split(/\r?\n/)
+    .reduce((total, paragraph) => {
+      const units = kpiExportTextWidthUnits(paragraph);
+      return total + Math.max(1, Math.ceil(units / usableWidth));
+    }, 0);
+}
+
+function kpiExportLineHeightPt(fontSize: number): number {
+  return fontSize * (4 / 3);
+}
+
+function calcKpiExportRowHeight(
+  cells: Array<{ text: string | number | null | undefined; widthChars: number }>,
+  fontSize = 9,
+  minHeight = 15,
+): number {
+  const lineHeight = kpiExportLineHeightPt(fontSize);
+  let maxLines = 1;
+
+  for (const { text, widthChars } of cells) {
+    const content = text == null ? "" : String(text);
+    maxLines = Math.max(maxLines, countKpiExportWrappedLines(content, widthChars));
   }
 
-  if (r === Rank.MD || r === Rank.VP) {
-    return "MD/VP";
-  }
+  return Math.max(minHeight, maxLines * lineHeight + KPI_EXPORT_CELL_PADDING_Y_PT);
+}
 
-  return "-";
+type KpiExportRowHeightCell =
+  | { text: string | number | null | undefined; col: KpiExportCol }
+  | { text: string | number | null | undefined; cols: readonly string[] };
+
+function setKpiExportRowHeight(
+  worksheet: ExcelJS.Worksheet,
+  row: number,
+  cells: KpiExportRowHeightCell[],
+  options?: { fontSize?: number; minHeight?: number },
+) {
+  worksheet.getRow(row).height = calcKpiExportRowHeight(
+    resolveKpiExportRowHeightCells(cells),
+    options?.fontSize ?? 9,
+    options?.minHeight,
+  );
+}
+
+function resolveKpiExportRowHeightCells(cells: KpiExportRowHeightCell[]) {
+  return cells.map((cell) => {
+    if ("cols" in cell) {
+      const widthChars = cell.cols.reduce(
+        (sum, col) => sum + getKpiExportColumnWidthChars(col as KpiExportCol),
+        0,
+      );
+      return { text: cell.text, widthChars };
+    }
+
+    return {
+      text: cell.text,
+      widthChars: getKpiExportColumnWidthChars(cell.col),
+    };
+  });
+}
+
+function setKpiExportMergedBlockRowHeights(
+  worksheet: ExcelJS.Worksheet,
+  startRow: number,
+  endRow: number,
+  mergedCells: KpiExportRowHeightCell[],
+  perRowCells: KpiExportRowHeightCell[][] = [],
+  options?: { fontSize?: number; minHeight?: number },
+) {
+  const fontSize = options?.fontSize ?? 9;
+  const minHeight = options?.minHeight ?? 22;
+
+  const mergedHeight = calcKpiExportRowHeight(
+    resolveKpiExportRowHeightCells(mergedCells),
+    fontSize,
+    minHeight,
+  );
+
+  const stackedHeight = perRowCells.reduce(
+    (sum, rowCells) =>
+      sum +
+      calcKpiExportRowHeight(
+        resolveKpiExportRowHeightCells(rowCells),
+        fontSize,
+        16,
+      ),
+    0,
+  );
+
+  const totalHeight = Math.max(mergedHeight, stackedHeight);
+  const rowCount = endRow - startRow + 1;
+  const perRowHeight = Math.max(16, totalHeight / rowCount);
+
+  for (let row = startRow; row <= endRow; row++) {
+    worksheet.getRow(row).height = perRowHeight;
+  }
 }
 
 export function isBlankRow(row: Record<string, any>): boolean {
@@ -202,18 +379,9 @@ export async function exportDefinitionKpi(
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("KPI Bonus");
 
-  worksheet.columns = [
-    { width: 5 }, // A - No.
-    { width: 25 }, // B - Individual KPIs
-    { width: 10 }, // C - Weight
-    { width: 8 }, // D - Target Level
-    { width: 30 }, // E - Target Value
-    { width: 30 }, // F - Definition
-    { width: 30 }, // G - Reporting Method
-    { width: 25 }, // H - Achievement Evident
-    { width: 15 }, // I - Achieved Level
-    { width: 10 }, // J - Score
-  ];
+  worksheet.columns = KPI_EXPORT_COLS.map((col) => ({
+    width: KPI_EXPORT_COLUMN_WIDTHS[col],
+  }));
 
   const blueHeader = {
     fill: {
@@ -265,7 +433,7 @@ export async function exportDefinitionKpi(
 
   // have 3 levels are Manager, GM/AGM และ MD/VP else "-"
   const managerCell = worksheet.getCell("J3");
-  managerCell.value = getManagerLevelLabel(kpiForm.employee.rank as Rank);
+  managerCell.value = RANK_LABELS[kpiForm.employee.rank as Rank];
   managerCell.fill = {
     type: "pattern",
     pattern: "solid",
@@ -383,10 +551,18 @@ export async function exportDefinitionKpi(
   worksheet.getCell(`H${headerRow1}`).value = "การประเมินผลการปฏิบัคิงานปลายปี (JAN - DEC) \n(Year-End Evaluation)"
 
   // Apply header styles
-  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
+  for (const col of KPI_EXPORT_COLS) {
     worksheet.getCell(`${col}${headerRow1}`).style = blueHeader
   }
-  worksheet.getRow(headerRow1).height = 30;
+  setKpiExportRowHeight(worksheet, headerRow1, [
+    { text: worksheet.getCell(`A${headerRow1}`).value as string, col: "A" },
+    { text: worksheet.getCell(`B${headerRow1}`).value as string, col: "B" },
+    { text: worksheet.getCell(`C${headerRow1}`).value as string, col: "C" },
+    { text: worksheet.getCell(`D${headerRow1}`).value as string, cols: ["D", "E"] },
+    { text: worksheet.getCell(`F${headerRow1}`).value as string, col: "F" },
+    { text: worksheet.getCell(`G${headerRow1}`).value as string, col: "G" },
+    { text: worksheet.getCell(`H${headerRow1}`).value as string, cols: ["H", "I", "J"] },
+  ], { minHeight: 24 })
   worksheet.getRow(headerRow1).font = { size: 9, color: { argb: "FF1E40AF" } }
 
 
@@ -407,10 +583,14 @@ export async function exportDefinitionKpi(
   // Merge เป้าหมาย (Target) ให้เป็นบล็อกเดียวครอบ D:E ทั้งสองแถว
   worksheet.mergeCells(`D${headerRow1}:E${headerRow2}`)
 
-  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
+  for (const col of KPI_EXPORT_COLS) {
     worksheet.getCell(`${col}${headerRow2}`).style = blueHeader
   }
-  worksheet.getRow(headerRow2).height = 28;
+  setKpiExportRowHeight(worksheet, headerRow2, [
+    { text: worksheet.getCell(`H${headerRow2}`).value as string, col: "H" },
+    { text: worksheet.getCell(`I${headerRow2}`).value as string, col: "I" },
+    { text: worksheet.getCell(`J${headerRow2}`).value as string, col: "J" },
+  ], { minHeight: 22 })
   worksheet.getRow(headerRow2).font = { size: 9, color: { argb: "FF1E40AF" } }
 
   // Merge header cells that span two rows
@@ -443,68 +623,33 @@ export async function exportDefinitionKpi(
   for (let kpiIndex = 0; kpiIndex < kpiForm.kpis.length; kpiIndex++) {
     const kpi = kpiForm.kpis[kpiIndex]
     const startRow = currentRow
+    const kpiTitle = `${kpi.name} \n${kpiCategoies[kpi.category!] ?? ""}`
 
     for (let levelIndex = 0; levelIndex < targetLevels.length; levelIndex++) {
       const level = targetLevels[levelIndex];
 
       if (levelIndex === 0) {
-        // First row of each KPI - set values that will be merged
-        worksheet.getCell(`A${currentRow}`).value = kpiIndex + 1
-        worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
-        worksheet.getCell(`A${currentRow}`).border = cellBorder
-        worksheet.getCell(`A${currentRow}`).font = { size: 9 }
-
-        worksheet.getCell(`B${currentRow}`).value = `${kpi.name} \n${kpiCategoies[kpi.category!] ?? ""}`
-        worksheet.getCell(`B${currentRow}`).alignment = { vertical: "top", wrapText: true }
-        worksheet.getCell(`B${currentRow}`).border = cellBorder
-        worksheet.getCell(`B${currentRow}`).font = { size: 9 }
-
-        worksheet.getCell(`C${currentRow}`).value = Number(kpi.weight)
-        worksheet.getCell(`C${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
-        worksheet.getCell(`C${currentRow}`).border = cellBorder
-        worksheet.getCell(`C${currentRow}`).font = { size: 9 }
-
-        worksheet.getCell(`F${currentRow}`).value = kpi.definition
-        worksheet.getCell(`F${currentRow}`).alignment = { vertical: "top", wrapText: true }
-        worksheet.getCell(`F${currentRow}`).border = cellBorder
-        worksheet.getCell(`F${currentRow}`).font = { size: 9 }
-
-        worksheet.getCell(`G${currentRow}`).value = kpi.method
-        worksheet.getCell(`G${currentRow}`).alignment = { vertical: "top", wrapText: true }
-        worksheet.getCell(`G${currentRow}`).border = cellBorder
-        worksheet.getCell(`G${currentRow}`).font = { size: 9 }
-
-        worksheet.getCell(`H${currentRow}`).value = kpi.achievementApprover
-        worksheet.getCell(`H${currentRow}`).alignment = { vertical: "top", wrapText: true }
-        worksheet.getCell(`H${currentRow}`).border = cellBorder
-        worksheet.getCell(`H${currentRow}`).font = { size: 9 }
-
-        worksheet.getCell(`J${currentRow}`).value = 0;
-        worksheet.getCell(`J${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
-        worksheet.getCell(`J${currentRow}`).border = cellBorder
-        worksheet.getCell(`J${currentRow}`).font = { size: 9 }
+        setKpiExportBodyCell(worksheet.getCell(`A${currentRow}`), kpiIndex + 1, "center", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`B${currentRow}`), kpiTitle, "wrap", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`C${currentRow}`), Number(kpi.weight), "center", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`F${currentRow}`), kpi.definition, "wrap", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`G${currentRow}`), kpi.method, "wrap", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`H${currentRow}`), kpi.achievementApprover, "wrap", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`J${currentRow}`), 0, "center", cellBorder)
       }
 
-      // Target level column
-      worksheet.getCell(`D${currentRow}`).value = `${level}%`
-      worksheet.getCell(`D${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
-      worksheet.getCell(`D${currentRow}`).border = cellBorder
-      worksheet.getCell(`D${currentRow}`).font = { size: 9 }
-
-      // Target value column
-      worksheet.getCell(`E${currentRow}`).value = getTargetValue(kpi, level)
-      worksheet.getCell(`E${currentRow}`).border = cellBorder
-      worksheet.getCell(`E${currentRow}`).font = { size: 9 }
-
-      // Achieved level column (checkbox representation)
-      worksheet.getCell(`I${currentRow}`).value = `${level}%`
-      worksheet.getCell(`I${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
-      worksheet.getCell(`I${currentRow}`).border = cellBorder
-      worksheet.getCell(`I${currentRow}`).font = { size: 8 }
+      setKpiExportBodyCell(worksheet.getCell(`D${currentRow}`), `${level}%`, "center", cellBorder)
+      setKpiExportBodyCell(worksheet.getCell(`E${currentRow}`), getTargetValue(kpi, level), "wrap", cellBorder)
+      setKpiExportBodyCell(
+        worksheet.getCell(`I${currentRow}`),
+        `${level}%`,
+        "center",
+        cellBorder,
+        8,
+      )
 
       if (levelIndex > 0) {
-        // Set borders for merged cells on subsequent rows
-        for (const col of ["A", "B", "C", "F", "G", "H", "J"]) {
+        for (const col of ["A", "B", "C", "F", "G", "H", "J"] as const) {
           worksheet.getCell(`${col}${currentRow}`).border = cellBorder
         }
       }
@@ -512,7 +657,6 @@ export async function exportDefinitionKpi(
       currentRow++
     }
 
-    // Merge cells for columns that span all 4 target levels
     const endRow = currentRow - 1
     worksheet.mergeCells(`A${startRow}:A${endRow}`)
     worksheet.mergeCells(`B${startRow}:B${endRow}`)
@@ -521,6 +665,20 @@ export async function exportDefinitionKpi(
     worksheet.mergeCells(`G${startRow}:G${endRow}`)
     worksheet.mergeCells(`H${startRow}:H${endRow}`)
     worksheet.mergeCells(`J${startRow}:J${endRow}`)
+
+    setKpiExportMergedBlockRowHeights(
+      worksheet,
+      startRow,
+      endRow,
+      [
+        { text: kpiTitle, col: "B" },
+        { text: kpi.definition, col: "F" },
+        { text: kpi.method, col: "G" },
+        { text: kpi.achievementApprover, col: "H" },
+      ],
+      targetLevels.map((level) => [{ text: getTargetValue(kpi, level), col: "E" }]),
+      { minHeight: 22 },
+    )
   }
 
   // Calculate total score from achievementApprover and weights

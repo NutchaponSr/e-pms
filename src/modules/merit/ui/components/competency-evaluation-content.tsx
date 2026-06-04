@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/badge";
 import { AttachButton } from "@/components/attach-button";
 import { useDeleteCompetencyFile } from "../../api/use-delete-competency-file";
+import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../../constant";
 import { HistoryActualPopover } from "./history-actual-popover";
 import { HistoryResultPopover } from "./history-result-popover";
 
@@ -57,16 +58,8 @@ export const CompetencyEvaluationContent = ({
   const eva2nd = competencyRecord.competencyEvaluations.find((evaluation) => evaluation.period === Period.EVALUATION_2ND); 
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
-  const checkerActualRef = useRef<HTMLTextAreaElement | null>(null);
-  const approverActualRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const textareaRefs = useMemo(
-    () =>
-      hasChecker
-        ? [ownerActualRef, checkerActualRef, approverActualRef]
-        : [ownerActualRef, approverActualRef],
-    [hasChecker],
-  );
+  const textareaRefs = useMemo(() => [ownerActualRef], []);
 
   const { groupSyncFunctions } = useSyncTextareaHeights([
     {
@@ -82,7 +75,7 @@ export const CompetencyEvaluationContent = ({
 
   const evaluationGridClass = cn(
     "grid grid-cols-1 gap-2",
-    hasChecker ? "lg:grid-cols-3" : "lg:grid-cols-2",
+    hasChecker ? "lg:grid-cols-3 lg:items-stretch" : "lg:grid-cols-2 lg:items-stretch",
   );
 
   const blueFormClass = {
@@ -90,6 +83,12 @@ export const CompetencyEvaluationContent = ({
     label: formRecord.blue.label,
     description: "text-xs text-secondary",
     form: "flex flex-col gap-2 flex-1 min-h-0 bg-transparent p-0 h-auto",
+  };
+
+  const fillHeightFormClass = {
+    ...blueFormClass,
+    form: cn(blueFormClass.form, "lg:flex-1 lg:min-h-0"),
+    input: cn(blueFormClass.input, "lg:min-h-10"),
   };
 
   const evaluationColumnClass =
@@ -121,24 +120,31 @@ export const CompetencyEvaluationContent = ({
       </div>
 
       <div className="grid grid-cols-6 gap-2">
-        <CardInfo label="แผนงาน/โครงการ ที่จะพัฒนา" variant="default" className="col-span-2">
+        <CardInfo label="พฤติกรรมที่คาดหวัง (Expected Level)" variant="default" className="col-span-2">
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-              {competencyRecord.input}
+            {competencyRecord.competency?.[`t${competencyRecord.expectedLevel}` as 't1' | 't2' | 't3' | 't4' | 't5'] as string | null}
             </p>
           </div>
         </CardInfo>
-        <CardInfo label="เป้าหมายที่จะพัฒนา" variant="default" className="col-span-2">
+        <CardInfo 
+          label="การแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expected Behavior)" 
+          variant="default" 
+          className="col-span-2"
+        >
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
               {competencyRecord.output}
             </p>
           </div>
         </CardInfo>
-        <CardInfo label="ระดับพฤติกรรมของ Competency" variant="default" className="col-span-2">
+        <CardInfo 
+          label="โครงการ/กิจกรรมที่ใช้เป็นตัวแสดงออกตามพฤติกรรมที่คาดหวัง (Projects / Activities Demonstrating Expected Behavior)" variant="default" 
+          className="col-span-2"
+        >
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-            {competencyRecord.competency?.[`t${competencyRecord.expectedLevel}` as 't1' | 't2' | 't3' | 't4' | 't5'] as string | null}
+              {competencyRecord.input}
             </p>
           </div>
         </CardInfo>
@@ -154,7 +160,8 @@ export const CompetencyEvaluationContent = ({
               variant="bigText"
               label="พนักงาน (Employee)"
               disabled={!permissions.canPerformOwner}
-              description="ผลลัพธ์ (Result) การแสดงออกตามพฤติกรรมที่คาดหวัง"
+              description="ผลลัพธ์การแสดงออกตามพฤติกรรมที่คาดหวัง (Result)"
+              maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
               className={blueFormClass}
               textareaRef={(el) => {
                 ownerActualRef.current = el;
@@ -203,12 +210,9 @@ export const CompetencyEvaluationContent = ({
                 label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
                 disabled={!permissions.canPerformChecker}
                 description="ความคิดเห็น (Comment)"
-                className={blueFormClass}
-                textareaRef={(el) => {
-                  checkerActualRef.current = el;
-                  syncTextareaHeights();
-                }}
-                onInput={() => syncTextareaHeights()}
+                maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+                fillHeight
+                className={fillHeightFormClass}
               >
                 <HistoryActualPopover period={period} actual={eva1st?.actualChecker} />
               </FormGenerator>
@@ -230,12 +234,9 @@ export const CompetencyEvaluationContent = ({
               label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
               disabled={!permissions.canPerformApprover}
               description="ความคิดเห็น (Comment)"
-              className={blueFormClass}
-              textareaRef={(el) => {
-                approverActualRef.current = el;
-                syncTextareaHeights();
-              }}
-              onInput={() => syncTextareaHeights()}
+              maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+              fillHeight
+              className={fillHeightFormClass}
             >
               <HistoryActualPopover period={period} actual={eva1st?.actualApprover} />
             </FormGenerator>
@@ -264,6 +265,8 @@ interface EvaluationResultFieldProps {
 const formatLevel = (level: number | null | undefined) =>
   level != null ? `Level ${level}` : "-";
 
+const CLEAR_LEVEL_VALUE = "__none__";
+
 const EvaluationResultField = ({
   form,
   period,
@@ -277,7 +280,7 @@ const EvaluationResultField = ({
     <div className="flex flex-col gap-2 mt-auto pt-1">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium text-marine shrink-0">
-          ผลการประเมิน (Evaluation Result)
+          ผลการประเมิน (Evaluation)
         </span>
         {isYearEnd && (
           <HistoryResultPopover
@@ -306,18 +309,21 @@ const EvaluationResultField = ({
                 </p>
               ) : (
                 <Select
-                  value={field.value != null ? String(field.value) : ""}
+                  value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
                   onValueChange={(value) => {
-                    field.onChange(value ? Number(value) : null);
+                    field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
                     void form.trigger(name);
                   }}
                 >
                   <FormControl>
                     <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
-                      <SelectValue placeholder="เลือกระดับพฤติกรรม" />
+                      <SelectValue placeholder="เลือกระดับความสำเร็จ" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
+                      เลือกระดับความสำเร็จ
+                    </SelectItem>
                     <SelectItem value="1">1</SelectItem>
                     <SelectItem value="2">2</SelectItem>
                     <SelectItem value="3">3</SelectItem>
@@ -346,18 +352,21 @@ const EvaluationResultField = ({
                   </p>
                 ) : (
                   <Select
-                    value={field.value != null ? String(field.value) : ""}
+                    value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
                     onValueChange={(value) => {
-                      field.onChange(value ? Number(value) : null);
+                      field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
                       void form.trigger(name);
                     }}
                   >
                   <FormControl>
                     <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
-                      <SelectValue placeholder="เลือกระดับพฤติกรรม" />
+                      <SelectValue placeholder="เลือกระดับความสำเร็จ" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
+                      เลือกระดับความสำเร็จ
+                    </SelectItem>
                     <SelectItem value="1">1</SelectItem>
                     <SelectItem value="2">2</SelectItem>
                     <SelectItem value="3">3</SelectItem>

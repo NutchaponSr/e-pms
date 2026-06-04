@@ -33,7 +33,7 @@ export const AttachButton = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+    const MAX_SIZE_BYTES = 15 * 1024 * 1024; // 5MB
     if (file.size > MAX_SIZE_BYTES) {
       toast.error("File size must not exceed 5MB.");
       if (inputRef.current) inputRef.current.value = "";
@@ -85,7 +85,7 @@ export const AttachButton = ({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,application/pdf"
+        accept="application/pdf"
         className="hidden"
         onChange={handleFileChange}
       />
@@ -112,14 +112,14 @@ export const AttachButton = ({
               <>
                 <Spinner className="size-4 me-1.5 text-tertiary!" />
                 <div className="whitespace-nowrap overflow-hidden text-ellipsis text-sm text-primary">
-                  Uploading...
+                  กำลังอัพโหลด...
                 </div>
               </>
             ) : (
               <>
                 <BsFileText className="size-4 me-1.5 text-secondary" />
                 <div data-active={!!value} className="whitespace-nowrap overflow-hidden text-ellipsis text-sm text-primary data-[active=true]:text-marine">
-                  {value ? "Replace" : "Upload"}
+                  {value ? "แทนที่" : "อัพโหลด (.pdf)"}
                 </div>
               </>
             )}

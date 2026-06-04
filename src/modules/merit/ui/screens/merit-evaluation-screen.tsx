@@ -5,7 +5,7 @@ import { Period } from "@/generated/prisma/enums";
 
 import { Action, Approval } from "@/modules/tasks/permissions";
 import { exportMeritDefinition, meritEvaluationsMap } from "../../utils";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MeritEvaluation, meritEvaluationsSchema } from "../../schemas/evaluation";
 import { Resolver, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +23,13 @@ import { CultureEvaluationContent } from "../components/culture-evaluation-conte
 import { useEvaluateBulkMerit } from "../../api/use-evaluation-bulk-merit";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { toast } from "sonner";
-import { competencyLevels, cultureLevels, MERIT_EVALUATION_PERIOD_LABELS } from "../../constant";
+import {
+  COMPETENCY_ACTUAL_MAX_LENGTH,
+  competencyAchievementLevels,
+  cultureLevels,
+  MERIT_EVALUATION_PERIOD_LABELS,
+} from "../../constant";
+import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
 import { FormGenerator } from "@/components/form-generator";
 import { cn } from "@/lib/utils";
 import { formRecord } from "@/types/form";
@@ -31,6 +37,7 @@ import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
 import { createPortal } from "react-dom";
 import { Employee, Task } from "@/generated/prisma/client";
 import { MeritEvaluationSummaryTable } from "../components/merit-evaluation-summary-table";
+import { MeritEvaluationCriteriaGuide } from "../components/merit-evaluation-criteria-guide";
 
 interface Props {
   id: string;
@@ -71,10 +78,12 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
   }, [data, form, period, role]);
 
   const submitEvaluation = (values: MeritEvaluation, saved: boolean) => {
+    const { requireEvaluationResults: _requireEvaluationResults, ...evaluationValues } = values;
+
     evaluateBulkMerit({
       formId: id,
       period,
-      ...values,
+      ...evaluationValues,
       saved,
     });
   };
@@ -92,6 +101,24 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
 
   const evaluationColumnClass =
     "flex flex-col gap-2 min-h-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+
+  const overallOwnerCommentRef = useRef<HTMLTextAreaElement | null>(null);
+  const overallCheckerCommentRef = useRef<HTMLTextAreaElement | null>(null);
+  const overallApproverCommentRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const overallCommentTextareaRefs = useMemo(
+    () =>
+      hasChecker
+        ? [overallOwnerCommentRef, overallCheckerCommentRef, overallApproverCommentRef]
+        : [overallOwnerCommentRef, overallApproverCommentRef],
+    [hasChecker],
+  );
+
+  const { groupSyncFunctions: overallCommentSyncFunctions } = useSyncTextareaHeights([
+    { refs: overallCommentTextareaRefs, breakpoint: "(min-width: 1024px)" },
+  ]);
+
+  const syncOverallCommentTextareaHeights = overallCommentSyncFunctions[0];
 
   const periodLabel = MERIT_EVALUATION_PERIOD_LABELS[period];
 
@@ -185,8 +212,10 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
 
         <Toolbar 
           onWorkflow={async () => {
+            form.setValue("requireEvaluationResults", true);
             const ok = await form.trigger();
-            
+            form.setValue("requireEvaluationResults", false);
+
             if (!ok) {
               toast.error("Please fix validation errors before starting the workflow");
               return;
@@ -231,55 +260,17 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                     </AccordionTrigger>
 
                     <h2 className="text-primary text-lg font-semibold">
-                      Competency
+                      สมรรถนะ (Competency)  
                     </h2>
                   </div>
                 </div>
               </div>
               <AccordionContent>
-                <div className="grid grid-cols-3 gap-4 pb-4">
-                  <Card className="p-0">
-                    <div className="flex flex-col min-w-0 w-full min-h-8 space-y-1">
-                      <h2 className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-sm font-semibold leading-[1.3] text-primary">
-                        หลักเกณฑ์การประเมิน (Evaluation Score System)
-                      </h2>
-                      <div className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-primary text-xs leading-4.5">
-                        วิเคราะห์ผลการปฏิบัติงาน เปรียบเทียบกับผลงานที่คาดหวัง (Expected Key Result) และการแสดงออกของ Competency
-                      </div>
-                    </div>
-                  </Card>
-                  <div className="flex items-center gap-1 col-span-2">
-                    <div className="flex flex-col shadow-[inset_0_0_0_1px_rgba(0,0,0,0.086)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] rounded">
-                      <div className="flex items-center gap-2 bg-marine py-1 px-2 rounded-t">
-                        <h3 className="text-white text-lg font-semibold">
-                          เกณฑ์การประเมิน Competency
-                        </h3>
-                      </div>
-                      <div className="flex items-center p-2">
-                        {competencyLevels.map((item, index) => (
-                          <div key={index} className="flex flex-col p-1 space-y-2 rounded">
-                            <span className="font-medium leading-normal overflow-hidden pe-1.5">
-                              <div className="inline-flex items-center shrink min-w-0 max-w-full h-5 m-0 rounded-full px-2 text-xs dark:text-blue-neutral text-blue-muted bg-[#0063ae2c] dark:bg-[#3b98ff62]">
-                                <div className="whitespace-nowrap overflow-hidden text-ellipsis inline-flex items-center h-5 leading-5">
-                                  <div className="flex items-center">
-                                    <div className="me-1 rounded-full size-2 bg-marine inline-flex shrink-0" />
-                                  </div>
-                                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                    {item.label}
-                                  </span>
-                                </div>
-                              </div>
-                            </span>
-
-                            <div className="min-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow px-px text-xs text-primary">
-                              {item.content}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <MeritEvaluationCriteriaGuide 
+                  title="เกณฑ์การประเมิน Competency"
+                  description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expectation Behavior) กับผลลัพธ์ของโครงการ กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง (Project/Activities Demonstrating Expected Behavior)"
+                  levels={competencyAchievementLevels}
+                />
                 <div className="grid grid-cols-1 gap-y-6">
                   {data.competencyRecords
                     .sort((a, b) => a.order - b.order)
@@ -317,54 +308,18 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                         <BsTriangleFill className="text-primary rotate-90 size-3 transition-transform group-data-[state=open]:rotate-180" />
                       </Button>
                     </AccordionTrigger>
-                    <h2 className="text-primary text-lg font-semibold">Culture</h2>
+                    <h2 className="text-primary text-lg font-semibold">
+                      วัฒนธรรม (Culture)
+                    </h2>
                   </div>
                 </div>
               </div>
               <AccordionContent>
-                <div className="grid grid-cols-3 gap-4 pb-4">
-                  <Card className="p-0">
-                    <div className="flex flex-col min-w-0 w-full min-h-8 space-y-1">
-                      <h2 className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-sm font-semibold leading-[1.3] text-primary">
-                        หลักเกณฑ์การประเมิน (Evaluation Score System)
-                      </h2>
-                      <div className="max-w-full w-full whitespace-break-spaces [word-break:break-word] text-primary text-xs leading-4.5">
-                        วิเคราะห์ผลการปฏิบัติงาน เปรียบเทียบกับผลงานที่คาดหวัง (Expected Key Result) และการแสดงออกของ Competency
-                      </div>
-                    </div>
-                  </Card>
-                  <div className="flex items-center gap-1 col-span-2">
-                    <div className="flex flex-col shadow-[inset_0_0_0_1px_rgba(0,0,0,0.086)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] rounded">
-                      <div className="flex items-center gap-2 bg-marine py-1 px-2 rounded-t">
-                        <h3 className="text-white text-lg font-semibold">
-                          เกณฑ์การประเมิน Culture
-                        </h3>
-                      </div>
-                      <div className="flex items-center p-2">
-                        {cultureLevels.map((item, index) => (
-                          <div key={index} className="flex flex-col p-1 space-y-2 rounded">
-                            <span className="font-medium leading-normal overflow-hidden pe-1.5">
-                              <div className="inline-flex items-center shrink min-w-0 max-w-full h-5 m-0 rounded-full px-2 text-xs dark:text-blue-neutral text-blue-muted bg-[#0063ae2c] dark:bg-[#3b98ff62]">
-                                <div className="whitespace-nowrap overflow-hidden text-ellipsis inline-flex items-center h-5 leading-5">
-                                  <div className="flex items-center">
-                                    <div className="me-1 rounded-full size-2 bg-blue inline-flex shrink-0" />
-                                  </div>
-                                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                    {item.label}
-                                  </span>
-                                </div>
-                              </div>
-                            </span>
-
-                            <div className="min-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow px-px text-xs text-primary">
-                              {item.content}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <MeritEvaluationCriteriaGuide 
+                  title="เกณฑ์การประเมิน Culture"
+                  description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง ตามแนวทางในการประเมิน (Key Evidence Guideline) ที่กาหนดโดย N 1 ของแต่ละสายงาน"
+                  levels={cultureLevels}
+                />
                 <div className="grid grid-cols-1 gap-y-6">
                   {data.cultureRecords
                   .sort((a, b) => a.order - b.order)
@@ -418,7 +373,9 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                 <div
                   className={cn(
                     "grid gap-4",
-                    hasChecker ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2",
+                    hasChecker
+                      ? "grid-cols-1 lg:grid-cols-3 lg:items-stretch"
+                      : "grid-cols-1 lg:grid-cols-2 lg:items-stretch",
                   )}
                 >
                   <div className={evaluationColumnClass}>
@@ -428,8 +385,16 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                       variant="bigText"
                       label="พนักงาน (Employee)"
                       disabled={!(permissions.write && role === "owner")}
+                      maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
                       className={blueFormClass}
-                      onInput={revalidateOverallComments}
+                      textareaRef={(el) => {
+                        overallOwnerCommentRef.current = el;
+                        syncOverallCommentTextareaHeights();
+                      }}
+                      onInput={() => {
+                        revalidateOverallComments();
+                        syncOverallCommentTextareaHeights();
+                      }}
                     />
                   </div>
                   {hasChecker && (
@@ -440,8 +405,16 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                         variant="bigText"
                         label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
                         disabled={!(permissions.write && role === "checker")}
+                        maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
                         className={blueFormClass}
-                        onInput={revalidateOverallComments}
+                        textareaRef={(el) => {
+                          overallCheckerCommentRef.current = el;
+                          syncOverallCommentTextareaHeights();
+                        }}
+                        onInput={() => {
+                          revalidateOverallComments();
+                          syncOverallCommentTextareaHeights();
+                        }}
                       />
                     </div>
                   )}
@@ -452,8 +425,16 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                       variant="bigText"
                       label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
                       disabled={!(permissions.write && role === "approver")}
+                      maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
                       className={blueFormClass}
-                      onInput={revalidateOverallComments}
+                      textareaRef={(el) => {
+                        overallApproverCommentRef.current = el;
+                        syncOverallCommentTextareaHeights();
+                      }}
+                      onInput={() => {
+                        revalidateOverallComments();
+                        syncOverallCommentTextareaHeights();
+                      }}
                     />
                   </div>
                 </div>

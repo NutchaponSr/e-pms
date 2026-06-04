@@ -47,6 +47,8 @@ interface Props<TFieldValues extends FieldValues> {
   onInput?: () => void;
   fileUpload?: React.ReactNode;
   description?: string;
+  maxLength?: number;
+  fillHeight?: boolean;
   children?: React.ReactNode;
 }
 
@@ -63,6 +65,8 @@ interface RenderProps<TFieldValues extends FieldValues> {
   textareaRef?: TextareaRefCallback;
   onInput?: () => void;
   fileUpload?: React.ReactNode;
+  maxLength?: number;
+  fillHeight?: boolean;
 }
 
 type InputRenderer<TFieldValues extends FieldValues> = (
@@ -84,6 +88,8 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
   onInput,
   fileUpload,
   description,
+  maxLength,
+  fillHeight,
   children,
 }: Props<TFieldValues>) => {
   const INPUT_RENDERERS: Partial<
@@ -102,7 +108,12 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
       control={form.control}
       name={name}
       render={({ field }) => (
-        <FormItem className={className?.form}>
+        <FormItem
+          className={cn(
+            className?.form,
+            fillHeight && "lg:flex lg:flex-1 lg:flex-col lg:min-h-0",
+          )}
+        >
           <div className="flex items-center justify-between">
             <div className="flex flex-col overflow-hidden">
               {label ? <FormLabel className={cn("whitespace-nowrap text-ellipsis overflow-hidden", className?.label)}>{label}</FormLabel> : null}
@@ -119,16 +130,37 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
             {children}
           </div>
           <FormControl>
-            {render({
-              field,
-              disabled,
-              placeholder,
-              selectOptions,
-              className: className?.input,
-              style,
-              textareaRef,
-              onInput,
-            })}
+            <div
+              className={cn(
+                "flex flex-col gap-1",
+                fillHeight && "lg:flex-1 lg:min-h-0",
+              )}
+            >
+              {render({
+                field,
+                disabled,
+                placeholder,
+                selectOptions,
+                className: className?.input,
+                style,
+                textareaRef,
+                onInput,
+                maxLength,
+                fillHeight,
+              })}
+              {maxLength != null && (
+                <p
+                  className={cn(
+                    "text-xs text-end tabular-nums",
+                    String(field.value ?? "").length >= maxLength
+                      ? "text-destructive"
+                      : "text-secondary",
+                  )}
+                >
+                  {String(field.value ?? "").length}/{maxLength}
+                </p>
+              )}
+            </div>
           </FormControl>
           {fileUpload ? fileUpload : null}
           <FormMessage />
@@ -145,10 +177,15 @@ const BigText = <TFieldValues extends FieldValues>({
   disabled,
   textareaRef,
   onInput,
+  maxLength,
+  fillHeight,
 }: RenderProps<TFieldValues>) => {
+  const fillHeightClass = fillHeight ? "lg:h-full lg:min-h-10 lg:flex-1" : undefined;
+  const overflowClass = fillHeight ? "lg:overflow-auto" : "overflow-hidden";
+
   if (disabled) {
     return (
-      <div className={className}>
+      <div className={cn(className, fillHeightClass, fillHeight && "lg:overflow-auto")}>
         {field.value ?? ""}
       </div>
     );
@@ -159,6 +196,9 @@ const BigText = <TFieldValues extends FieldValues>({
       {...field}
       rows={1}
       ref={(el) => {
+        if (fillHeight && el) {
+          el.style.height = "";
+        }
         if (textareaRef) {
           textareaRef(el);
         }
@@ -166,9 +206,18 @@ const BigText = <TFieldValues extends FieldValues>({
       }}
       onInput={onInput}
       value={field.value ?? ""}
-      onChange={(e) => field.onChange(e.target.value)}
+      maxLength={maxLength}
+      onChange={(e) => {
+        const value = maxLength != null ? e.target.value.slice(0, maxLength) : e.target.value;
+        field.onChange(value);
+      }}
       placeholder={placeholder}
-      className={cn(className, "resize-none overflow-hidden whitespace-pre-wrap wrap-break-word")}
+      className={cn(
+        className,
+        fillHeightClass,
+        "resize-none whitespace-pre-wrap wrap-break-word",
+        overflowClass,
+      )}
     />
   );
 };

@@ -1,5 +1,6 @@
 import { cva, VariantProps } from "class-variance-authority";
 import { BriefcaseIcon, Building2Icon, BuildingIcon, LucideIcon, TrendingUpIcon, UserIcon } from "lucide-react";
+import { Rank } from "./types/employees";
 
 export const appVariants = cva("", {
   variants: {
@@ -83,3 +84,69 @@ export const APP_CATEGORIES: AppCategory[] = [
     categoryIcon: Building2Icon
   }
 ];
+
+/** ชื่อแสดงผลต่อ rank (ค่า value ตรงกับคอลัมน์ rank ใน src/data/employee.csv) */
+export const RANK_LABELS: Record<Rank, string> = {
+  [Rank.PRESIDENT]: "President",
+  [Rank.MD]: "MD",
+  [Rank.VP]: "VP",
+  [Rank.GM]: "GM",
+  [Rank.AGM]: "AGM",
+  [Rank.MGR]: "Manager",
+  [Rank.SMGR]: "Senior Manager",
+  [Rank.CHIEF]: "Chief",
+  [Rank.FOREMAN]: "Foreman",
+  [Rank.OFFICER]: "Officer",
+  [Rank.STAFF]: "Staff",
+  [Rank.WORKER]: "Worker",
+};
+
+/** ลำดับ seniority — อ้างอิง rank ที่มีใน employee.csv + SMGR ใน enum */
+export const RANK_ORDER = [
+  Rank.PRESIDENT,
+  Rank.MD,
+  Rank.VP,
+  Rank.GM,
+  Rank.AGM,
+  Rank.MGR,
+  Rank.SMGR,
+  Rank.CHIEF,
+  Rank.FOREMAN,
+  Rank.OFFICER,
+  Rank.STAFF,
+  Rank.WORKER,
+] as const satisfies readonly Rank[];
+
+export type RankRecord = {
+  value: Rank;
+  label: string;
+};
+
+export const RANK_RECORDS: readonly RankRecord[] = RANK_ORDER.map((value) => ({
+  value,
+  label: RANK_LABELS[value],
+}));
+
+/** rank ที่ปรากฏใน employee.csv (ไม่มี SMGR) */
+export const EMPLOYEE_CSV_RANKS = [
+  Rank.PRESIDENT,
+  Rank.MD,
+  Rank.VP,
+  Rank.GM,
+  Rank.AGM,
+  Rank.MGR,
+  Rank.CHIEF,
+  Rank.FOREMAN,
+  Rank.OFFICER,
+  Rank.STAFF,
+  Rank.WORKER,
+] as const satisfies readonly Rank[];
+
+export function isEmployeeCsvRank(rank: string): rank is (typeof EMPLOYEE_CSV_RANKS)[number] {
+  return (EMPLOYEE_CSV_RANKS as readonly string[]).includes(rank);
+}
+
+export function parseRankFromCsv(rank: string): Rank | null {
+  const normalized = rank.trim();
+  return (Object.values(Rank) as string[]).includes(normalized) ? (normalized as Rank) : null;
+}

@@ -13,6 +13,7 @@ import { CompetencyRecord, CompetencyEvaluation, CultureRecord, CultureEvaluatio
 import { MeritDefinitionWithTasks, MeritFormWithInfo } from "./types";
 import { PERIOD_LABELS } from "../tasks/constant";
 import { formatDecimal } from "@/lib/utils";
+import { RANK_LABELS } from "@/constants";
 
 type MeritFormData = inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"];
 
@@ -120,6 +121,7 @@ export function meritEvaluationsMap(
   const overallComment = data.overallComment;
 
   return {
+    requireEvaluationResults: false,
     competencies,
     cultures,
     overallComments: {
@@ -442,28 +444,136 @@ export function formatMeritExport(meritForm: MeritFormWithInfo) {
   return [...inDraft, ...sortedEval1st, ...sortedEval2nd];
 }
 
-function getManagerLevelLabel(rank: Rank | string): string {
-  const r = rank as Rank;
-
-  if (r === Rank.MGR) {
-    return "Manager";
-  }
-
-  if (r === Rank.GM || r === Rank.AGM) {
-    return "GM/AGM";
-  }
-
-  if (r === Rank.MD || r === Rank.VP) {
-    return "MD/VP";
-  }
-
-  return "-";
-}
-
 const MERIT_EXPORT_COLS = [
   "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
 ] as const;
 const MERIT_EXPORT_LAST_COL = "P";
+type MeritExportCol = (typeof MERIT_EXPORT_COLS)[number];
+
+/** ความกว้างคอลัมน์ (หน่วย Excel character width ตาม exceljs column.width) */
+const MERIT_EXPORT_COLUMN_WIDTHS: Record<MeritExportCol, number> = {
+  A: 5,
+  B: 25,
+  C: 10,
+  D: 30,
+  E: 30,
+  F: 30,
+  G: 25,
+  H: 12,
+  I: 12,
+  J: 12,
+  K: 10,
+  L: 25,
+  M: 12,
+  N: 12,
+  O: 12,
+  P: 10,
+};
+
+/**
+ * padding ภายใน cell (Excel ไม่มี API ตรง — ใช้ค่าประมาณจาก margin เริ่มต้น)
+ * - แนวนอน: หักจากความกว้างที่ใช้ wrap (หน่วยตัวอักษร)
+ * - แนวตั้ง: py 6px ต่อด้าน (บน+ล่าง) แปลงเป็น points สำหรับ row.height
+ */
+const MERIT_EXPORT_CELL_PADDING_X_CHARS = 1;
+const MERIT_EXPORT_CELL_PADDING_Y_PX = 6;
+const MERIT_EXPORT_PX_TO_PT = 72 / 96;
+const MERIT_EXPORT_CELL_PADDING_Y_PT =
+  MERIT_EXPORT_CELL_PADDING_Y_PX * 2 * MERIT_EXPORT_PX_TO_PT;
+
+function getMeritExportColumnWidthChars(col: MeritExportCol): number {
+  return MERIT_EXPORT_COLUMN_WIDTHS[col];
+}
+
+/** แปลงความกว้างคอลัมน์เป็นพิกเซลโดยประมาณ (Calibri 11) */
+function meritExportColumnWidthPx(widthChars: number): number {
+  return Math.trunc(widthChars * 7 + 5);
+}
+
+function getMeritExportMergedWidthChars(cols: readonly string[]): number {
+  return cols.reduce(
+    (sum, col) => sum + getMeritExportColumnWidthChars(col as MeritExportCol),
+    0,
+  );
+}
+
+function meritExportTextWidthUnits(text: string): number {
+  return [...text].reduce(
+    (sum, ch) => sum + (ch.charCodeAt(0) > 255 ? 1 : 0.6),
+    0,
+  );
+}
+
+function countMeritExportWrappedLines(
+  text: string | null | undefined,
+  columnWidthChars: number,
+): number {
+  if (!text?.trim()) return 1;
+
+  const usableWidth = Math.max(
+    1,
+    columnWidthChars - MERIT_EXPORT_CELL_PADDING_X_CHARS * 2,
+  );
+
+  return String(text)
+    .split(/\r?\n/)
+    .reduce((total, paragraph) => {
+      const units = meritExportTextWidthUnits(paragraph);
+      return total + Math.max(1, Math.ceil(units / usableWidth));
+    }, 0);
+}
+
+/** ความสูงต่อบรรทัดจาก font size (points) */
+function meritExportLineHeightPt(fontSize: number): number {
+  return fontSize * (4 / 3);
+}
+
+function calcMeritExportRowHeight(
+  cells: Array<{ text: string | number | null | undefined; widthChars: number }>,
+  fontSize = 9,
+  minHeight = 15,
+): number {
+  const lineHeight = meritExportLineHeightPt(fontSize);
+  let maxLines = 1;
+
+  for (const { text, widthChars } of cells) {
+    const content = text == null ? "" : String(text);
+    maxLines = Math.max(maxLines, countMeritExportWrappedLines(content, widthChars));
+  }
+
+  return Math.max(minHeight, maxLines * lineHeight + MERIT_EXPORT_CELL_PADDING_Y_PT);
+}
+
+type MeritExportRowHeightCell =
+  | { text: string | number | null | undefined; col: MeritExportCol }
+  | { text: string | number | null | undefined; cols: readonly string[] };
+
+function setMeritExportRowHeight(
+  worksheet: ExcelJS.Worksheet,
+  row: number,
+  cells: MeritExportRowHeightCell[],
+  options?: { fontSize?: number; minHeight?: number },
+) {
+  const resolved = cells.map((cell) => {
+    if ("cols" in cell) {
+      return {
+        text: cell.text,
+        widthChars: getMeritExportMergedWidthChars(cell.cols),
+      };
+    }
+
+    return {
+      text: cell.text,
+      widthChars: getMeritExportColumnWidthChars(cell.col),
+    };
+  });
+
+  worksheet.getRow(row).height = calcMeritExportRowHeight(
+    resolved,
+    options?.fontSize ?? 9,
+    options?.minHeight,
+  );
+}
 
 const LEVEL_SUB_HEADERS = {
   employee: "พนักงาน \n(Employee)",
@@ -513,24 +623,9 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Merit");
 
-  worksheet.columns = [
-    { width: 5 }, // A - No.
-    { width: 25 }, // B - Name
-    { width: 10 }, // C - Weight
-    { width: 30 }, // D - Expected Behavior
-    { width: 30 }, // E - Input
-    { width: 30 }, // F - Output
-    { width: 25 }, // G - Evidence (Mid-Year)
-    { width: 12 }, // H - Level Employee (Mid-Year)
-    { width: 12 }, // I - Level Evaluator 1 (Mid-Year)
-    { width: 12 }, // J - Level Evaluator 2 (Mid-Year)
-    { width: 10 }, // K - Score (Mid-Year)
-    { width: 25 }, // L - Evidence (End-Year)
-    { width: 12 }, // M - Level Employee (End-Year)
-    { width: 12 }, // N - Level Evaluator 1 (End-Year)
-    { width: 12 }, // O - Level Evaluator 2 (End-Year)
-    { width: 10 }, // P - Score (End-Year)
-  ];  
+  worksheet.columns = MERIT_EXPORT_COLS.map((col) => ({
+    width: MERIT_EXPORT_COLUMN_WIDTHS[col],
+  }));  
 
   const blueHeader = {
     fill: {
@@ -581,7 +676,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
 
   const managerCell = worksheet.getCell(`${MERIT_EXPORT_LAST_COL}3`);
-  managerCell.value = getManagerLevelLabel(meritForm.employee.rank as Rank);
+  managerCell.value = RANK_LABELS[meritForm.employee.rank as Rank];
   managerCell.fill = {
     type: "pattern",
     pattern: "solid",
@@ -711,7 +806,16 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${compHeaderRow1}`).style = blueHeader
   }
-  worksheet.getRow(compHeaderRow1).height = 40
+  setMeritExportRowHeight(worksheet, compHeaderRow1, [
+    { text: worksheet.getCell(`A${compHeaderRow1}`).value as string, col: "A" },
+    { text: worksheet.getCell(`B${compHeaderRow1}`).value as string, col: "B" },
+    { text: worksheet.getCell(`C${compHeaderRow1}`).value as string, col: "C" },
+    { text: worksheet.getCell(`D${compHeaderRow1}`).value as string, col: "D" },
+    { text: worksheet.getCell(`E${compHeaderRow1}`).value as string, col: "E" },
+    { text: worksheet.getCell(`F${compHeaderRow1}`).value as string, col: "F" },
+    { text: worksheet.getCell(`G${compHeaderRow1}`).value as string, cols: ["G", "H", "I", "J", "K"] },
+    { text: worksheet.getCell(`L${compHeaderRow1}`).value as string, cols: ["L", "M", "N", "O", "P"] },
+  ], { minHeight: 28 })
   worksheet.getRow(compHeaderRow1).font = { size: 9, color: { argb: "FF1E40AF" } }
 
   currentRow++
@@ -730,7 +834,14 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${compHeaderRow2}`).style = blueHeader
   }
-  worksheet.getRow(compHeaderRow2).height = 30
+  setMeritExportRowHeight(worksheet, compHeaderRow2, [
+    { text: worksheet.getCell(`G${compHeaderRow2}`).value as string, col: "G" },
+    { text: worksheet.getCell(`H${compHeaderRow2}`).value as string, cols: ["H", "I", "J"] },
+    { text: worksheet.getCell(`K${compHeaderRow2}`).value as string, col: "K" },
+    { text: worksheet.getCell(`L${compHeaderRow2}`).value as string, col: "L" },
+    { text: worksheet.getCell(`M${compHeaderRow2}`).value as string, cols: ["M", "N", "O"] },
+    { text: worksheet.getCell(`P${compHeaderRow2}`).value as string, col: "P" },
+  ], { minHeight: 22 })
   worksheet.getRow(compHeaderRow2).font = { size: 9, color: { argb: "FF1E40AF" } }
 
   currentRow++
@@ -747,7 +858,14 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${compHeaderRow3}`).style = blueHeader
   }
-  worksheet.getRow(compHeaderRow3).height = 30
+  setMeritExportRowHeight(worksheet, compHeaderRow3, [
+    { text: worksheet.getCell(`H${compHeaderRow3}`).value as string, col: "H" },
+    { text: worksheet.getCell(`I${compHeaderRow3}`).value as string, col: "I" },
+    { text: worksheet.getCell(`J${compHeaderRow3}`).value as string, col: "J" },
+    { text: worksheet.getCell(`M${compHeaderRow3}`).value as string, col: "M" },
+    { text: worksheet.getCell(`N${compHeaderRow3}`).value as string, col: "N" },
+    { text: worksheet.getCell(`O${compHeaderRow3}`).value as string, col: "O" },
+  ], { minHeight: 22 })
   worksheet.getRow(compHeaderRow3).font = { size: 9, color: { argb: "FF1E40AF" } }
 
   worksheet.mergeCells(`A${compHeaderRow1}:A${compHeaderRow3}`)
@@ -798,7 +916,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     const compEva1st = comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_1ST)
     const compEva2nd = comp.competencyEvaluations.find((f) => f.period === Period.EVALUATION_2ND)
 
-    worksheet.getCell(`G${currentRow}`).value = compEva1st?.actualApprover
+    worksheet.getCell(`G${currentRow}`).value = compEva1st?.actualOwner
     worksheet.getCell(`G${currentRow}`).alignment = { vertical: "top", wrapText: true }
     worksheet.getCell(`G${currentRow}`).border = cellBorder
     worksheet.getCell(`G${currentRow}`).font = { size: 9 }
@@ -823,7 +941,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     worksheet.getCell(`K${currentRow}`).border = cellBorder
     worksheet.getCell(`K${currentRow}`).font = { size: 9 }
 
-    worksheet.getCell(`L${currentRow}`).value = compEva2nd?.actualApprover
+    worksheet.getCell(`L${currentRow}`).value = compEva2nd?.actualOwner
     worksheet.getCell(`L${currentRow}`).alignment = { vertical: "top", wrapText: true }
     worksheet.getCell(`L${currentRow}`).border = cellBorder
     worksheet.getCell(`L${currentRow}`).font = { size: 9 }
@@ -848,7 +966,17 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     worksheet.getCell(`P${currentRow}`).border = cellBorder
     worksheet.getCell(`P${currentRow}`).font = { size: 9 }
 
-    worksheet.getRow(currentRow).height = 60
+    setMeritExportRowHeight(worksheet, currentRow, [
+      { text: comp.competency?.name, col: "B" },
+      {
+        text: comp.competency?.[`t${comp.expectedLevel}` as "t1" | "t2" | "t3" | "t4" | "t5"] as string | null,
+        col: "D",
+      },
+      { text: comp.input, col: "E" },
+      { text: comp.output, col: "F" },
+      { text: compEva1st?.actualOwner, col: "G" },
+      { text: compEva2nd?.actualOwner, col: "L" },
+    ], { minHeight: 30 })
     currentRow++
   }
 
@@ -937,7 +1065,15 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${cultHeaderRow1}`).style = blueHeader
   }
-  worksheet.getRow(cultHeaderRow1).height = 30
+  setMeritExportRowHeight(worksheet, cultHeaderRow1, [
+    { text: worksheet.getCell(`A${cultHeaderRow1}`).value as string, col: "A" },
+    { text: worksheet.getCell(`B${cultHeaderRow1}`).value as string, col: "B" },
+    { text: worksheet.getCell(`C${cultHeaderRow1}`).value as string, col: "C" },
+    { text: worksheet.getCell(`D${cultHeaderRow1}`).value as string, col: "D" },
+    { text: worksheet.getCell(`E${cultHeaderRow1}`).value as string, cols: ["E", "F"] },
+    { text: worksheet.getCell(`G${cultHeaderRow1}`).value as string, cols: ["G", "H", "I", "J", "K"] },
+    { text: worksheet.getCell(`L${cultHeaderRow1}`).value as string, cols: ["L", "M", "N", "O", "P"] },
+  ], { minHeight: 24 })
 
   currentRow++
   const cultHeaderRow2 = currentRow
@@ -955,7 +1091,14 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${cultHeaderRow2}`).style = blueHeader
   }
-  worksheet.getRow(cultHeaderRow2).height = 30
+  setMeritExportRowHeight(worksheet, cultHeaderRow2, [
+    { text: worksheet.getCell(`G${cultHeaderRow2}`).value as string, col: "G" },
+    { text: worksheet.getCell(`H${cultHeaderRow2}`).value as string, cols: ["H", "I", "J"] },
+    { text: worksheet.getCell(`K${cultHeaderRow2}`).value as string, col: "K" },
+    { text: worksheet.getCell(`L${cultHeaderRow2}`).value as string, col: "L" },
+    { text: worksheet.getCell(`M${cultHeaderRow2}`).value as string, cols: ["M", "N", "O"] },
+    { text: worksheet.getCell(`P${cultHeaderRow2}`).value as string, col: "P" },
+  ], { minHeight: 22 })
 
   currentRow++
   const cultHeaderRow3 = currentRow
@@ -971,7 +1114,14 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${cultHeaderRow3}`).style = blueHeader
   }
-  worksheet.getRow(cultHeaderRow3).height = 30
+  setMeritExportRowHeight(worksheet, cultHeaderRow3, [
+    { text: worksheet.getCell(`H${cultHeaderRow3}`).value as string, col: "H" },
+    { text: worksheet.getCell(`I${cultHeaderRow3}`).value as string, col: "I" },
+    { text: worksheet.getCell(`J${cultHeaderRow3}`).value as string, col: "J" },
+    { text: worksheet.getCell(`M${cultHeaderRow3}`).value as string, col: "M" },
+    { text: worksheet.getCell(`N${cultHeaderRow3}`).value as string, col: "N" },
+    { text: worksheet.getCell(`O${cultHeaderRow3}`).value as string, col: "O" },
+  ], { minHeight: 22 })
 
   // Merge header cells
   worksheet.mergeCells(`A${cultHeaderRow1}:A${cultHeaderRow3}`)
@@ -1021,7 +1171,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     const cultEva2nd = cult.cultureEvaluations.find((f) => f.period === Period.EVALUATION_2ND)
     const cultWeight = 30 / meritForm.cultureRecords.length
 
-    worksheet.getCell(`G${currentRow}`).value = cultEva1st?.actualApprover
+    worksheet.getCell(`G${currentRow}`).value = cultEva1st?.actualOwner
     worksheet.getCell(`G${currentRow}`).alignment = { vertical: "top", wrapText: true }
     worksheet.getCell(`G${currentRow}`).border = cellBorder
     worksheet.getCell(`G${currentRow}`).font = { size: 9 }
@@ -1046,7 +1196,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     worksheet.getCell(`K${currentRow}`).border = cellBorder
     worksheet.getCell(`K${currentRow}`).font = { size: 9 }
 
-    worksheet.getCell(`L${currentRow}`).value = cultEva2nd?.actualApprover
+    worksheet.getCell(`L${currentRow}`).value = cultEva2nd?.actualOwner
     worksheet.getCell(`L${currentRow}`).alignment = { vertical: "top", wrapText: true }
     worksheet.getCell(`L${currentRow}`).border = cellBorder
     worksheet.getCell(`L${currentRow}`).font = { size: 9 }
@@ -1071,7 +1221,17 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     worksheet.getCell(`P${currentRow}`).border = cellBorder
     worksheet.getCell(`P${currentRow}`).font = { size: 9 }
 
-    worksheet.getRow(currentRow).height = 60
+    const cultureBelief = Array.isArray(cult.culture.belief)
+      ? cult.culture.belief.map((item) => `- ${String(item)}`).join("\n")
+      : ""
+
+    setMeritExportRowHeight(worksheet, currentRow, [
+      { text: cult.culture.name, col: "B" },
+      { text: cultureBelief, col: "D" },
+      { text: cult.evidence, cols: ["E", "F"] },
+      { text: cultEva1st?.actualOwner, col: "G" },
+      { text: cultEva2nd?.actualOwner, col: "L" },
+    ], { minHeight: 30 })
     currentRow++
   }
 
@@ -1206,7 +1366,16 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${commentHeaderRow1}`).style = blueHeader
   }
-  worksheet.getRow(commentHeaderRow1).height = 36
+  setMeritExportRowHeight(worksheet, commentHeaderRow1, [
+    {
+      text: worksheet.getCell(`${midYearFirstCol}${commentHeaderRow1}`).value as string,
+      cols: MERIT_COMMENT_MID_YEAR_COLS,
+    },
+    {
+      text: worksheet.getCell(`${yearEndFirstCol}${commentHeaderRow1}`).value as string,
+      cols: MERIT_COMMENT_YEAR_END_COLS,
+    },
+  ], { minHeight: 28 })
   currentRow++
 
   const commentHeaderRow2 = currentRow
@@ -1219,7 +1388,21 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${commentHeaderRow2}`).style = blueHeader
   }
-  worksheet.getRow(commentHeaderRow2).height = 40
+  setMeritExportRowHeight(
+    worksheet,
+    commentHeaderRow2,
+    [
+      ...midYearColGroups.map((cols, index) => ({
+        text: commentGroupLabels[index],
+        cols,
+      })),
+      ...yearEndColGroups.map((cols, index) => ({
+        text: commentGroupLabels[index],
+        cols,
+      })),
+    ],
+    { minHeight: 28 },
+  )
   currentRow++
 
   const commentDataRow = currentRow
@@ -1243,7 +1426,21 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     worksheet.getCell(`${col}${commentDataRow}`).border = cellBorder
   }
 
-  worksheet.getRow(commentDataRow).height = 100
+  setMeritExportRowHeight(
+    worksheet,
+    commentDataRow,
+    [
+      ...midYearColGroups.map((cols, index) => ({
+        text: getCommentValue(commentMidYear, index),
+        cols,
+      })),
+      ...yearEndColGroups.map((cols, index) => ({
+        text: getCommentValue(commentEndYear, index),
+        cols,
+      })),
+    ],
+    { minHeight: 40 },
+  )
 
   // Generate and download file
   const buffer = await workbook.xlsx.writeBuffer();

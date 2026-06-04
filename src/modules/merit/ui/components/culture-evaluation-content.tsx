@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AttachButton } from "@/components/attach-button";
 import { useDeleteCultureFile } from "../../api/use-delete-culture-file";
+import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../../constant";
 import { HistoryActualPopover } from "./history-actual-popover";
 import { HistoryResultPopover } from "./history-result-popover";
 
@@ -55,16 +56,8 @@ export const CultureEvaluationContent = ({
   const eva2nd = cultureRecord.cultureEvaluations.find((eva) => eva.period === Period.EVALUATION_2ND);
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
-  const checkerActualRef = useRef<HTMLTextAreaElement | null>(null);
-  const approverActualRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const textareaRefs = useMemo(
-    () =>
-      hasChecker
-        ? [ownerActualRef, checkerActualRef, approverActualRef]
-        : [ownerActualRef, approverActualRef],
-    [hasChecker],
-  );
+  const textareaRefs = useMemo(() => [ownerActualRef], []);
 
   const { groupSyncFunctions } = useSyncTextareaHeights([
     {
@@ -80,7 +73,7 @@ export const CultureEvaluationContent = ({
 
   const evaluationGridClass = cn(
     "grid grid-cols-1 gap-2",
-    hasChecker ? "lg:grid-cols-3" : "lg:grid-cols-2",
+    hasChecker ? "lg:grid-cols-3 lg:items-stretch" : "lg:grid-cols-2 lg:items-stretch",
   );
 
   const blueFormClass = {
@@ -90,30 +83,47 @@ export const CultureEvaluationContent = ({
     form: "flex flex-col gap-2 flex-1 min-h-0 bg-transparent p-0 h-auto",
   };
 
+  const fillHeightFormClass = {
+    ...blueFormClass,
+    form: cn(blueFormClass.form, "lg:flex-1 lg:min-h-0"),
+    input: cn(blueFormClass.input, "lg:min-h-10"),
+  };
+
   const evaluationColumnClass =
     "flex flex-col gap-2 min-h-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center grow gap-2">
-        <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
-          <div className="text-white text-xl font-semibold">
-            {cultureRecord.culture.code}
+      <div className="flex flex-row items-center justify-between gap-2">
+        <div className="flex items-center grow gap-2 min-w-0">
+          <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
+            <div className="text-white text-xl font-semibold">
+              {cultureRecord.culture.code}
+            </div>
+          </div>
+
+          <div className="flex flex-col min-w-0 whitespace-nowrap overflow-hidden text-ellipsis">
+            <div className="text-base leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
+              {cultureRecord.culture.name}
+            </div>
+            <div className="text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
+              {cultureRecord.culture.description}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis">
-          <div className="text-base leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-            {cultureRecord.culture.name}
-          </div>
-          <div className="text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
-            {cultureRecord.culture.description}
-          </div>
+        <div className="flex flex-row items-center gap-2 shrink-0 bg-[#0080d51c] dark:bg-[#298bfd10] p-2 rounded-sm">
+          <h4 className="text-sm text-marine">
+            น้ำหนัก (%)
+          </h4>
+          <p className="text-sm shadow-[0_4px_12px_0_rgba(25,25,25,0.029),0_1px_2px_0_rgba(25,25,25,0.019),0_0_0_1px_rgba(0,124,215,0.094)] dark:shadow-[0_4px_12px_0_rgba(25,25,25,0.4),0_0_0_1px_rgba(71,157,255,0.173)] bg-background py-1 px-2 rounded">
+            {formatDecimal(weight)}
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
-        <CardInfo label="Behavior" variant="default" className="col-span-2 h-auto">
+      <div className="grid grid-cols-2 gap-2">
+        <CardInfo label="พฤติกรรมที่คาดหวัง (Key Behavior)" variant="default" className="h-auto">
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-full whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
               {Array.isArray(cultureRecord.culture?.belief) ? cultureRecord.culture?.belief?.map((item, idx) => (
@@ -122,17 +132,10 @@ export const CultureEvaluationContent = ({
             </p>
           </div>
         </CardInfo>
-        <CardInfo label="Evidence" variant="default" className="col-span-2 h-auto">
+        <CardInfo label="แนวทางในการประเมิน (Key Evidence)" variant="default" className="h-auto">
           <div className="relative w-full flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
               {cultureRecord.evidence}
-            </p>
-          </div>
-        </CardInfo>
-        <CardInfo label="น้ำหนัก (%)" variant="default" className="col-span-1 h-auto">
-          <div className="relative w-full flex items-center px-2.5 py-2">
-            <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-              {formatDecimal(weight)}
             </p>
           </div>
         </CardInfo>
@@ -148,7 +151,8 @@ export const CultureEvaluationContent = ({
               variant="bigText"
               label="พนักงาน (Employee)"
               disabled={!permissions.canPerformOwner}
-              description="ผลลัพธ์ (Result) การแสดงออกตามพฤติกรรมที่คาดหวัง"
+              description="ผลลัพธ์การแสดงออกตามพฤติกรรมที่คาดหวัง (Result)"
+              maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
               className={blueFormClass}
               textareaRef={(el) => {
                 ownerActualRef.current = el;
@@ -197,12 +201,9 @@ export const CultureEvaluationContent = ({
                 label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
                 disabled={!permissions.canPerformChecker}
                 description="ความคิดเห็น (Comment)"
-                className={blueFormClass}
-                textareaRef={(el) => {
-                  checkerActualRef.current = el;
-                  syncTextareaHeights();
-                }}
-                onInput={() => syncTextareaHeights()}
+                maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+                fillHeight
+                className={fillHeightFormClass}
               >
                 <HistoryActualPopover period={period} actual={eva1st?.actualChecker} />
               </FormGenerator>
@@ -224,12 +225,9 @@ export const CultureEvaluationContent = ({
               label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
               disabled={!permissions.canPerformApprover}
               description="ความคิดเห็น (Comment)"
-              className={blueFormClass}
-              textareaRef={(el) => {
-                approverActualRef.current = el;
-                syncTextareaHeights();
-              }}
-              onInput={() => syncTextareaHeights()}
+              maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+              fillHeight
+              className={fillHeightFormClass}
             >
               <HistoryActualPopover period={period} actual={eva1st?.actualApprover} />
             </FormGenerator>
@@ -258,6 +256,8 @@ interface EvaluationResultFieldProps {
 const formatLevel = (level: number | null | undefined) =>
   level != null ? `Level ${level}` : "-";
 
+const CLEAR_LEVEL_VALUE = "__none__";
+
 const EvaluationResultField = ({
   form,
   period,
@@ -271,7 +271,7 @@ const EvaluationResultField = ({
     <div className="flex flex-col gap-2 mt-auto pt-1">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium text-marine shrink-0">
-          ผลการประเมิน (Evaluation Result)
+          ผลการประเมิน (Evaluation)
         </span>
         {isYearEnd && (
           <HistoryResultPopover
@@ -300,18 +300,21 @@ const EvaluationResultField = ({
                 </p>
               ) : (
                 <Select
-                  value={field.value != null ? String(field.value) : ""}
+                  value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
                   onValueChange={(value) => {
-                    field.onChange(value ? Number(value) : null);
+                    field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
                     void form.trigger(name);
                   }}
                 >
                   <FormControl>
                     <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
-                      <SelectValue placeholder="เลือกระดับพฤติกรรม" />
+                      <SelectValue placeholder="เลือกระดับความสำเร็จ" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
+                      เลือกระดับความสำเร็จ
+                    </SelectItem>
                     <SelectItem value="1">1</SelectItem>
                     <SelectItem value="2">2</SelectItem>
                     <SelectItem value="3">3</SelectItem>
@@ -340,18 +343,21 @@ const EvaluationResultField = ({
                   </p>
                 ) : (
                   <Select
-                    value={field.value != null ? String(field.value) : ""}
+                    value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
                     onValueChange={(value) => {
-                      field.onChange(value ? Number(value) : null);
+                      field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
                       void form.trigger(name);
                     }}
                   >
                     <FormControl>
                       <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
-                        <SelectValue placeholder="เลือกระดับพฤติกรรม" />
+                        <SelectValue placeholder="เลือกระดับความสำเร็จ" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
+                      เลือกระดับความสำเร็จ
+                    </SelectItem>
                       <SelectItem value="1">1</SelectItem>
                       <SelectItem value="2">2</SelectItem>
                       <SelectItem value="3">3</SelectItem>

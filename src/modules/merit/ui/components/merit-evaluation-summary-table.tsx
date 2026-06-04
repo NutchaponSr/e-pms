@@ -63,10 +63,16 @@ export const MeritEvaluationSummaryTable = ({
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-border bg-[#2383e218] dark:bg-[#298bfd14]">
-              <th className="border-r border-border/70 px-2 py-1 text-left font-medium text-secondary">
+              <th
+                rowSpan={2}
+                className="border-r border-border/70 px-2 py-1 text-left align-middle font-medium text-secondary"
+              >
                 Category
               </th>
-              <th className="border-r border-border/70 px-2 py-1 text-center font-medium text-secondary">
+              <th
+                rowSpan={2}
+                className="border-r border-border/70 px-2 py-1 text-center align-middle font-medium text-secondary"
+              >
                 Full
               </th>
               <th
@@ -77,8 +83,6 @@ export const MeritEvaluationSummaryTable = ({
               </th>
             </tr>
             <tr className="border-b border-border bg-[#2383e210] dark:bg-[#298bfd0c]">
-              <th className="border-r border-border/70" />
-              <th className="border-r border-border/70" />
               {evaluatorColumns.map((col, colIndex) => (
                 <th
                   key={col.key}

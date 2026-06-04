@@ -1,13 +1,20 @@
 import { z } from "zod";
 
+import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../constant";
+
+const competencyActualFieldSchema = z
+  .string()
+  .max(COMPETENCY_ACTUAL_MAX_LENGTH, `กรอกได้ไม่เกิน ${COMPETENCY_ACTUAL_MAX_LENGTH} ตัวอักษร`)
+  .nullable();
+
 export const comepetencyEvaluationSchema = z.object({
   id: z.string(),
   role: z.enum(["owner", "checker", "approver"]),
-  actualOwner: z.string().nullable(),
+  actualOwner: competencyActualFieldSchema,
   achievementOwner: z.coerce.number().nullable(),
-  actualChecker: z.string().nullable(),
+  actualChecker: competencyActualFieldSchema,
   achievementChecker: z.coerce.number().nullable(),
-  actualApprover: z.string().nullable(),
+  actualApprover: competencyActualFieldSchema,
   achievementApprover: z.coerce.number().nullable(),
   fileUrl: z.string().nullable(),
   result: z.string().nullable(),
@@ -17,24 +24,18 @@ export const comepetencyEvaluationSchema = z.object({
       if (!data.actualOwner?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual owner is required", path: ["actualOwner"] });
       }
-      if (data.achievementOwner == null) {
-        ctx.addIssue({ code: "custom", message: "Achievement owner is required", path: ["achievementOwner"] });
+      if (!data.fileUrl?.trim()) {
+        ctx.addIssue({ code: "custom", message: "Evident file is required", path: ["fileUrl"] });
       }
       break;
     case "checker":
       if (!data.actualChecker?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual checker is required", path: ["actualChecker"] });
       }
-      if (data.achievementChecker == null) {
-        ctx.addIssue({ code: "custom", message: "Achievement checker is required", path: ["achievementChecker"] });
-      }
       break;
     case "approver":
       if (!data.actualApprover?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual approver is required", path: ["actualApprover"] });
-      }
-      if (data.achievementApprover == null) {
-        ctx.addIssue({ code: "custom", message: "Achievement approver is required", path: ["achievementApprover"] });
       }
       break;
   }
@@ -43,11 +44,11 @@ export const comepetencyEvaluationSchema = z.object({
 export const cultureEvaluationSchema = z.object({
   id: z.string(),
   role: z.enum(["owner", "checker", "approver"]),
-  actualOwner: z.string().nullable(),
+  actualOwner: competencyActualFieldSchema,
   levelBehaviorOwner: z.coerce.number().nullable(),
-  actualChecker: z.string().nullable(),
+  actualChecker: competencyActualFieldSchema,
   levelBehaviorChecker: z.coerce.number().nullable(),
-  actualApprover: z.string().nullable(),
+  actualApprover: competencyActualFieldSchema,
   levelBehaviorApprover: z.coerce.number().nullable(),
   fileUrl: z.string().nullable(),
   result: z.string().nullable(),
@@ -58,8 +59,8 @@ export const cultureEvaluationSchema = z.object({
         ctx.addIssue({ code: "custom", message: "Actual owner is required", path: ["actualOwner"] });
       }
 
-      if (data.levelBehaviorOwner == null) {
-        ctx.addIssue({ code: "custom", message: "Level behavior owner is required", path: ["levelBehaviorOwner"] });
+      if (!data.fileUrl?.trim()) {
+        ctx.addIssue({ code: "custom", message: "Evident file is required", path: ["fileUrl"] });
       }
 
       break;
@@ -68,28 +69,25 @@ export const cultureEvaluationSchema = z.object({
         ctx.addIssue({ code: "custom", message: "Actual checker is required", path: ["actualChecker"] });
       }
 
-      if (data.levelBehaviorChecker == null) {
-        ctx.addIssue({ code: "custom", message: "Level behavior checker is required", path: ["levelBehaviorChecker"] });
-      }
-
       break;
     case "approver":
       if (!data.actualApprover?.trim()) {
         ctx.addIssue({ code: "custom", message: "Actual approver is required", path: ["actualApprover"] });
       }
 
-      if (data.levelBehaviorApprover == null) {
-        ctx.addIssue({ code: "custom", message: "Level behavior approver is required", path: ["levelBehaviorApprover"] });
-      }
-
       break;
   }
 });
 
+const overallCommentFieldSchema = z
+  .string()
+  .max(COMPETENCY_ACTUAL_MAX_LENGTH, `กรอกได้ไม่เกิน ${COMPETENCY_ACTUAL_MAX_LENGTH} ตัวอักษร`)
+  .nullable();
+
 export const overallCommentFieldsSchema = z.object({
-  commentOwner: z.string().nullable(),
-  commentChecker: z.string().nullable(),
-  commentApprover: z.string().nullable(),
+  commentOwner: overallCommentFieldSchema,
+  commentChecker: overallCommentFieldSchema,
+  commentApprover: overallCommentFieldSchema,
 });
 
 const overallCommentWithRoleSchema = overallCommentFieldsSchema.extend({
@@ -97,10 +95,77 @@ const overallCommentWithRoleSchema = overallCommentFieldsSchema.extend({
 });
 
 export const meritEvaluationsSchema = z.object({
+  requireEvaluationResults: z.boolean().default(false),
   cultures: z.array(cultureEvaluationSchema),
   competencies: z.array(comepetencyEvaluationSchema),
   overallComments: overallCommentWithRoleSchema,
 }).superRefine((data, ctx) => {
+  if (data.requireEvaluationResults) {
+    data.competencies.forEach((competency, index) => {
+      switch (competency.role) {
+        case "owner":
+          if (competency.achievementOwner == null) {
+            ctx.addIssue({
+              code: "custom",
+              message: "กรุณาเลือกผลการประเมิน",
+              path: ["competencies", index, "achievementOwner"],
+            });
+          }
+          break;
+        case "checker":
+          if (competency.achievementChecker == null) {
+            ctx.addIssue({
+              code: "custom",
+              message: "กรุณาเลือกผลการประเมิน",
+              path: ["competencies", index, "achievementChecker"],
+            });
+          }
+          break;
+        case "approver":
+          if (competency.achievementApprover == null) {
+            ctx.addIssue({
+              code: "custom",
+              message: "กรุณาเลือกผลการประเมิน",
+              path: ["competencies", index, "achievementApprover"],
+            });
+          }
+          break;
+      }
+    });
+
+    data.cultures.forEach((culture, index) => {
+      switch (culture.role) {
+        case "owner":
+          if (culture.levelBehaviorOwner == null) {
+            ctx.addIssue({
+              code: "custom",
+              message: "กรุณาเลือกผลการประเมิน",
+              path: ["cultures", index, "levelBehaviorOwner"],
+            });
+          }
+          break;
+        case "checker":
+          if (culture.levelBehaviorChecker == null) {
+            ctx.addIssue({
+              code: "custom",
+              message: "กรุณาเลือกผลการประเมิน",
+              path: ["cultures", index, "levelBehaviorChecker"],
+            });
+          }
+          break;
+        case "approver":
+          if (culture.levelBehaviorApprover == null) {
+            ctx.addIssue({
+              code: "custom",
+              message: "กรุณาเลือกผลการประเมิน",
+              path: ["cultures", index, "levelBehaviorApprover"],
+            });
+          }
+          break;
+      }
+    });
+  }
+
   switch (data.overallComments.role) {
     case "owner":
       if (!data.overallComments.commentOwner?.trim()) {
