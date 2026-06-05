@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useRef, useState } from "react";
 
 import { useEdgeStore } from "@/lib/edegstore";
+import { extractFileNameFromUrl, getEdgeStoreUrl } from "@/lib/attach-utils";
 
 import { Spinner } from "@/components/ui/spinner";
 
@@ -15,15 +16,7 @@ interface Props {
   canPerform: boolean;
   onChange: (url: string | null) => void;
   onRemove: () => void;
-}
-
-function getFileNameFromUrl(url: string): string {
-  try {
-    const segment = decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "");
-    return segment || "เอกสารแนบ";
-  } catch {
-    return "เอกสารแนบ";
-  }
+  onUpload?: (url: string) => void;
 }
 
 export const AttachButton = ({
@@ -31,6 +24,7 @@ export const AttachButton = ({
   canPerform,
   onChange,
   onRemove,
+  onUpload,
 }: Props) => {
   const { edgestore } = useEdgeStore();
 
@@ -42,9 +36,9 @@ export const AttachButton = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const MAX_SIZE_BYTES = 15 * 1024 * 1024; // 5MB
+    const MAX_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
     if (file.size > MAX_SIZE_BYTES) {
-      toast.error("File size must not exceed 5MB.");
+      toast.error("File size must not exceed 15MB.");
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
@@ -55,11 +49,17 @@ export const AttachButton = ({
       const { url } = await edgestore.publicFiles.upload({ 
         file,
         options: {
-          replaceTargetUrl: value || undefined
+          replaceTargetUrl: value ? getEdgeStoreUrl(value) : undefined
         } 
       });
 
-      onChange(url);
+      // Persist original filename for display by encoding it into the URL.
+      // This keeps backward-compat with existing string-only `fileUrl` fields.
+      const urlWithName = new URL(url);
+      urlWithName.searchParams.set("filename", file.name);
+      const persistedUrl = urlWithName.toString();
+      onChange(persistedUrl);
+      onUpload?.(persistedUrl);
     } catch (err) {
       console.error(err);
     } finally {
@@ -68,6 +68,8 @@ export const AttachButton = ({
     }
   };
 
+  const fileName = value ? extractFileNameFromUrl(value) : null;
+
   const handleClear = async () => {
     if (!value) return;
     
@@ -75,7 +77,7 @@ export const AttachButton = ({
     
     try {
       await edgestore.publicFiles.delete({
-        url: value,
+        url: getEdgeStoreUrl(value),
       });
 
       onRemove();
@@ -90,7 +92,7 @@ export const AttachButton = ({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex w-full min-w-0 flex-col gap-2">
       <input
         ref={inputRef}
         type="file"
@@ -99,8 +101,8 @@ export const AttachButton = ({
         onChange={handleFileChange}
       />
 
-      <div className="flex items-center gap-2">        
-      <div 
+      <div className="flex w-full min-w-0 items-center gap-2">        
+        <div 
           role="button" 
           onClick={(e) => {
             e.preventDefault();
@@ -111,25 +113,29 @@ export const AttachButton = ({
             }
           }} 
           data-disabled={isUploading || !canPerform}
-          className="transition border border-border rounded bg-background hover:bg-primary/6 flex items-center py-1 px-2 w-full min-h-8 group/image relative data-[disabled=true]:opacity-80"
+          className="transition border border-border rounded bg-background hover:bg-primary/6 flex w-full min-w-0 items-center overflow-hidden py-1 px-2 min-h-8 group/image relative data-[disabled=true]:opacity-80"
         >
           <div 
-            className="flex-1 flex items-center data-[disabled=true]:pointer-events-none"
+            className={`flex min-w-0 flex-1 items-center overflow-hidden data-[disabled=true]:pointer-events-none ${value ? "pe-12" : ""}`}
             data-disabled={isUploading || !canPerform}
           >
             {isUploading ? (
               <>
-                <Spinner className="size-4 me-1.5 text-tertiary!" />
-                <div className="whitespace-nowrap overflow-hidden text-ellipsis text-sm text-primary">
-                  กำลังอัพโหลด...
+                <Spinner className="size-4 me-1.5 shrink-0 text-tertiary!" />
+                <div className="min-w-0 flex-1 truncate text-sm text-primary">
+                  กำลังโหลด...
                 </div>
               </>
             ) : (
               <>
-                <BsFileText className="size-4 me-1.5 text-secondary" />
-                <div data-active={!!value} className="whitespace-nowrap overflow-hidden text-ellipsis text-sm text-primary data-[active=true]:text-marine">
-                  {value ? getFileNameFromUrl(value) : "อัพโหลด (.pdf ไม่เกิน 15MB)"}
-                </div>
+                <BsFileText className="size-4 me-1.5 shrink-0 text-secondary" />
+                <p
+                  data-active={!!value}
+                  title={fileName ?? undefined}
+                  className="min-w-0 flex-1 truncate text-sm text-primary data-[active=true]:text-marine"
+                >
+                  {fileName ?? "อัพโหลด (.pdf ไม่เกิน 15MB)"}
+                </p>
               </>
             )}
           </div>

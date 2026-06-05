@@ -21,6 +21,13 @@ import { columns } from "../constants";
 import { readCSV } from "@/seeds/lib/utils";
 import { generateTaskId } from "@/modules/tasks/utils";
 
+import {
+  collectReplacedFileUrls,
+  deleteAttachIfUnreferenced,
+  extractFileNameFromUrl,
+  upsertAttach,
+} from "@/lib/attach";
+
 interface ApprovalCSVProps {
   employeeId: string;
   checker?: string;
@@ -373,18 +380,47 @@ export const kpiProcedure = createTRPCRouter({
         kpis: z.array(kpiEvaluationSchema.omit({ role: true }))
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       if (input.kpis.length === 0) return { success: true };
 
-      await db.$transaction(
-        input.kpis.map((kpi) => {
-          const { id, ...data } = kpi;
-          return db.kpiEvaluation.update({
+      const existingKpis = await db.kpiEvaluation.findMany({
+        where: { id: { in: input.kpis.map((kpi) => kpi.id) } },
+        select: { id: true, fileUrl: true },
+      });
+      const oldUrlById = new Map(existingKpis.map((kpi) => [kpi.id, kpi.fileUrl]));
+
+      const ops = input.kpis.flatMap((kpi) => {
+        const { id, ...data } = kpi;
+        const fileUrl = data.fileUrl;
+
+        const attachOps =
+          fileUrl != null
+            ? [
+                db.attach.upsert({
+                  where: { url: fileUrl },
+                  update: { fileName: extractFileNameFromUrl(fileUrl) },
+                  create: {
+                    url: fileUrl,
+                    fileName: extractFileNameFromUrl(fileUrl),
+                    createdBy: ctx.user.username,
+                  },
+                }),
+              ]
+            : [];
+
+        return [
+          ...attachOps,
+          db.kpiEvaluation.update({
             where: { id },
             data,
-          });
-        }),
-      );
+          }),
+        ];
+      });
+
+      await db.$transaction(ops);
+
+      const replacedUrls = collectReplacedFileUrls(input.kpis, oldUrlById);
+      await Promise.all(replacedUrls.map((url) => deleteAttachIfUnreferenced(db, url)));
 
       return { success: true };
     }),
@@ -416,6 +452,11 @@ export const kpiProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      const existing = await db.kpiEvaluation.findUnique({
+        where: { id: input.id },
+        select: { fileUrl: true },
+      });
+
       const kpi = await db.kpiEvaluation.update({
         where: {
           id: input.id,
@@ -425,7 +466,37 @@ export const kpiProcedure = createTRPCRouter({
         },
       });
 
+      if (existing?.fileUrl) {
+        await deleteAttachIfUnreferenced(db, existing.fileUrl);
+      }
+
       return kpi;
+    }),
+  syncKpiAttach: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        fileUrl: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const existing = await db.kpiEvaluation.findUnique({
+        where: { id: input.id },
+        select: { fileUrl: true },
+      });
+
+      await upsertAttach(db, input.fileUrl, ctx.user.username);
+
+      await db.kpiEvaluation.update({
+        where: { id: input.id },
+        data: { fileUrl: input.fileUrl },
+      });
+
+      if (existing?.fileUrl && existing.fileUrl !== input.fileUrl) {
+        await deleteAttachIfUnreferenced(db, existing.fileUrl);
+      }
+
+      return { success: true };
     }),
   export: protectedProcedure
     .input(

@@ -19,6 +19,13 @@ import { columns } from "../constant";
 import { readCSV } from "@/seeds/lib/utils";
 import { generateTaskId } from "@/modules/tasks/utils";
 
+import {
+  collectReplacedFileUrls,
+  deleteAttachIfUnreferenced,
+  extractFileNameFromUrl,
+  upsertAttach,
+} from "@/lib/attach";
+
 interface ApprovalCSVProps {
   employeeId: string;
   checker?: string;
@@ -524,7 +531,7 @@ export const meritProcedure = createTRPCRouter({
         overallComments: overallCommentFieldsSchema,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       if (input.competencies.length === 0 && input.cultures.length === 0) {
         await db.meritOverallComment.upsert({
           where: {
@@ -570,9 +577,48 @@ export const meritProcedure = createTRPCRouter({
         },
       });
 
+      const competencyIds = input.competencies.map((competency) => competency.id);
+      const cultureIds = input.cultures.map((culture) => culture.id);
+
+      const [existingCompetencies, existingCultures] = await Promise.all([
+        competencyIds.length > 0
+          ? db.competencyEvaluation.findMany({
+              where: { id: { in: competencyIds } },
+              select: { id: true, fileUrl: true },
+            })
+          : Promise.resolve([]),
+        cultureIds.length > 0
+          ? db.cultureEvaluation.findMany({
+              where: { id: { in: cultureIds } },
+              select: { id: true, fileUrl: true },
+            })
+          : Promise.resolve([]),
+      ]);
+
+      const oldCompetencyUrlById = new Map(
+        existingCompetencies.map((competency) => [competency.id, competency.fileUrl]),
+      );
+      const oldCultureUrlById = new Map(
+        existingCultures.map((culture) => [culture.id, culture.fileUrl]),
+      );
+
       await Promise.all(
-        input.competencies.map((competency) => {
+        input.competencies.map(async (competency) => {
           const { id, achievementOwner, achievementChecker, achievementApprover, ...data } = competency;
+          const fileUrl = data.fileUrl;
+
+          if (fileUrl != null) {
+            await db.attach.upsert({
+              where: { url: fileUrl },
+              update: { fileName: extractFileNameFromUrl(fileUrl) },
+              create: {
+                url: fileUrl,
+                fileName: extractFileNameFromUrl(fileUrl),
+                createdBy: ctx.user.username,
+              },
+            });
+          }
+
           return db.competencyEvaluation.update({
             where: { id },
             data: {
@@ -584,13 +630,33 @@ export const meritProcedure = createTRPCRouter({
           });
         }));
 
-      await Promise.all(input.cultures.map((culture) => {
+      await Promise.all(input.cultures.map(async (culture) => {
         const { id, ...data } = culture;
+
+        const fileUrl = data.fileUrl;
+        if (fileUrl != null) {
+          await db.attach.upsert({
+            where: { url: fileUrl },
+            update: { fileName: extractFileNameFromUrl(fileUrl) },
+            create: {
+              url: fileUrl,
+              fileName: extractFileNameFromUrl(fileUrl),
+              createdBy: ctx.user.username,
+            },
+          });
+        }
+
         return db.cultureEvaluation.update({
           where: { id },
           data,
         });
       }));
+
+      const replacedUrls = [
+        ...collectReplacedFileUrls(input.competencies, oldCompetencyUrlById),
+        ...collectReplacedFileUrls(input.cultures, oldCultureUrlById),
+      ];
+      await Promise.all(replacedUrls.map((url) => deleteAttachIfUnreferenced(db, url)));
 
       return { success: true };
     }),
@@ -601,6 +667,11 @@ export const meritProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      const existing = await db.competencyEvaluation.findUnique({
+        where: { id: input.id },
+        select: { fileUrl: true },
+      });
+
       const record = await db.competencyEvaluation.update({
         where: {
           id: input.id,
@@ -609,6 +680,10 @@ export const meritProcedure = createTRPCRouter({
           fileUrl: null,
         },
       });
+
+      if (existing?.fileUrl) {
+        await deleteAttachIfUnreferenced(db, existing.fileUrl);
+      }
 
       return record;
     }),
@@ -619,6 +694,11 @@ export const meritProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      const existing = await db.cultureEvaluation.findUnique({
+        where: { id: input.id },
+        select: { fileUrl: true },
+      });
+
       const record = await db.cultureEvaluation.update({
         where: {
           id: input.id,
@@ -628,7 +708,63 @@ export const meritProcedure = createTRPCRouter({
         },
       });
 
+      if (existing?.fileUrl) {
+        await deleteAttachIfUnreferenced(db, existing.fileUrl);
+      }
+
       return record;
+    }),
+  syncCompetencyAttach: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        fileUrl: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const existing = await db.competencyEvaluation.findUnique({
+        where: { id: input.id },
+        select: { fileUrl: true },
+      });
+
+      await upsertAttach(db, input.fileUrl, ctx.user.username);
+
+      await db.competencyEvaluation.update({
+        where: { id: input.id },
+        data: { fileUrl: input.fileUrl },
+      });
+
+      if (existing?.fileUrl && existing.fileUrl !== input.fileUrl) {
+        await deleteAttachIfUnreferenced(db, existing.fileUrl);
+      }
+
+      return { success: true };
+    }),
+  syncCultureAttach: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        fileUrl: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const existing = await db.cultureEvaluation.findUnique({
+        where: { id: input.id },
+        select: { fileUrl: true },
+      });
+
+      await upsertAttach(db, input.fileUrl, ctx.user.username);
+
+      await db.cultureEvaluation.update({
+        where: { id: input.id },
+        data: { fileUrl: input.fileUrl },
+      });
+
+      if (existing?.fileUrl && existing.fileUrl !== input.fileUrl) {
+        await deleteAttachIfUnreferenced(db, existing.fileUrl);
+      }
+
+      return { success: true };
     }),
   export: protectedProcedure
     .input(

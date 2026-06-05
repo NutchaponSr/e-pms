@@ -97,6 +97,7 @@ model Employee {
   approver Task[] @relation("Approver")
   comments Comment[]
   forms Form[]
+  attaches Attach[]
 
   @@map("employee")
 }
@@ -229,6 +230,7 @@ model KpiEvaluation {
   actualApprover String?
   achievementApprover Int?
   fileUrl String?
+  attach Attach? @relation("KpiEvaluationAttach", fields: [fileUrl], references: [url], onDelete: Cascade)
   order Int
 
   formId String
@@ -269,6 +271,7 @@ model CultureEvaluation {
   actualChecker String? @db.Text
   actualApprover String? @db.Text
   fileUrl String?
+  attach Attach? @relation("CultureEvaluationAttach", fields: [fileUrl], references: [url], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -356,10 +359,32 @@ model CompetencyEvaluation {
 
   createdAt DateTime @default(now())
   fileUrl String?
+  attach Attach? @relation("CompetencyEvaluationAttach", fields: [fileUrl], references: [url], onDelete: Cascade)
 
   competencyRecordId String
   competencyRecord CompetencyRecord @relation(fields: [competencyRecordId], references: [id], onDelete: Cascade)
 
   @@index([competencyRecordId])
   @@map("competencyEvaluation")
+}
+
+model Attach {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  fileName  String
+  mimeType  String?
+  sizeBytes Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy String?
+  employee  Employee? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  kpiEvaluations        KpiEvaluation[]        @relation("KpiEvaluationAttach")
+  cultureEvaluations    CultureEvaluation[]    @relation("CultureEvaluationAttach")
+  competencyEvaluations CompetencyEvaluation[] @relation("CompetencyEvaluationAttach")
+
+  @@index([createdBy])
+  @@map("attach")
 }

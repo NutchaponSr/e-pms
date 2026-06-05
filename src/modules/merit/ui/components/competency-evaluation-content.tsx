@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/badge";
 import { AttachButton } from "@/components/attach-button";
 import { useDeleteCompetencyFile } from "../../api/use-delete-competency-file";
+import { useSyncCompetencyAttach } from "../../api/use-sync-competency-attach";
 import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../../constant";
 import { HistoryActualPopover } from "./history-actual-popover";
 import { HistoryResultPopover } from "./history-result-popover";
@@ -53,9 +54,13 @@ export const CompetencyEvaluationContent = ({
   hasChecker,
 }: Props) => {
   const { mutation: deleteCompetencyFile } = useDeleteCompetencyFile(formId, period);
+  const { mutation: syncCompetencyAttach } = useSyncCompetencyAttach(formId, period);
 
   const eva1st = competencyRecord.competencyEvaluations.find((evaluation) => evaluation.period === Period.EVALUATION_1ST);
-  const eva2nd = competencyRecord.competencyEvaluations.find((evaluation) => evaluation.period === Period.EVALUATION_2ND); 
+  const eva2nd = competencyRecord.competencyEvaluations.find((evaluation) => evaluation.period === Period.EVALUATION_2ND);
+  const currentEvaluation = competencyRecord.competencyEvaluations.find(
+    (evaluation) => evaluation.period === period,
+  );
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -187,7 +192,16 @@ export const CompetencyEvaluationContent = ({
                           value={field.value as string | null}
                           canPerform={permissions.canPerformOwner}
                           onChange={field.onChange}
-                          onRemove={() => deleteCompetencyFile({ id: eva1st!.id })}
+                          onUpload={(url) => {
+                            if (currentEvaluation) {
+                              syncCompetencyAttach({ id: currentEvaluation.id, fileUrl: url });
+                            }
+                          }}
+                          onRemove={() => {
+                            if (currentEvaluation) {
+                              deleteCompetencyFile({ id: currentEvaluation.id });
+                            }
+                          }}
                         />
                       </FormControl>
                     </FormItem>

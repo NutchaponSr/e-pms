@@ -21,6 +21,7 @@ import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
 import { formatDecimal } from "@/lib/utils";
 import { AttachButton } from "@/components/attach-button";
 import { useDeleteKpiFile } from "../../api/use-delete-kpi-file";
+import { useSyncKpiAttach } from "../../api/use-sync-kpi-attach";
 
 interface Props {
   id: string;
@@ -49,6 +50,7 @@ export const KpiEvaluationContent = ({
   finalSumWeight,
 }: Props) => {
   const { mutation: deleteKpiFile } = useDeleteKpiFile(id, period);
+  const { mutation: syncKpiAttach } = useSyncKpiAttach(id, period);
 
   const targetPopulated = useMemo(() => {
     const targets = [
@@ -212,6 +214,7 @@ export const KpiEvaluationContent = ({
                         value={field.value as string | null}
                         canPerform={canPerformOwner}
                         onChange={field.onChange}
+                        onUpload={(url) => syncKpiAttach({ id: kpi.id, fileUrl: url })}
                         onRemove={() => deleteKpiFile({ id: kpi.id })}
                       />
                     </FormControl>

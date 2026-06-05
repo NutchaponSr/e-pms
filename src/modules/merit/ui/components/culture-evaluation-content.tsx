@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AttachButton } from "@/components/attach-button";
 import { useDeleteCultureFile } from "../../api/use-delete-culture-file";
+import { useSyncCultureAttach } from "../../api/use-sync-culture-attach";
 import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../../constant";
 import { HistoryActualPopover } from "./history-actual-popover";
 import { HistoryResultPopover } from "./history-result-popover";
@@ -51,9 +52,13 @@ export const CultureEvaluationContent = ({
   hasChecker,
 }: Props) => {
   const { mutation: deleteCultureFile } = useDeleteCultureFile(formId, period);
+  const { mutation: syncCultureAttach } = useSyncCultureAttach(formId, period);
 
   const eva1st = cultureRecord.cultureEvaluations.find((eva) => eva.period === Period.EVALUATION_1ST);
   const eva2nd = cultureRecord.cultureEvaluations.find((eva) => eva.period === Period.EVALUATION_2ND);
+  const currentEvaluation = cultureRecord.cultureEvaluations.find(
+    (evaluation) => evaluation.period === period,
+  );
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -173,7 +178,16 @@ export const CultureEvaluationContent = ({
                           value={field.value as string | null}
                           canPerform={permissions.canPerformOwner}
                           onChange={field.onChange}
-                          onRemove={() => deleteCultureFile({ id: eva1st!.id })}
+                          onUpload={(url) => {
+                            if (currentEvaluation) {
+                              syncCultureAttach({ id: currentEvaluation.id, fileUrl: url });
+                            }
+                          }}
+                          onRemove={() => {
+                            if (currentEvaluation) {
+                              deleteCultureFile({ id: currentEvaluation.id });
+                            }
+                          }}
                         />
                       </FormControl>
                     </FormItem>
