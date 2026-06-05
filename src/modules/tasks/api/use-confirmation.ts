@@ -40,7 +40,7 @@ export const useConfirmation = (id: string, period: Period) => {
         if (!!data.owner.email && !!data.approver.email) {
           if (data.isApproved) {
             await sendDone({
-              to: process.env.NODE_ENV === "production" ? data.owner.email : "pondpopza5@gmail.com",
+              to: "weerawat.m@somboon.co.th",
               cc: process.env.NODE_ENV === "production" ? [data.checker.email || "", data.approver.email] : [],
               subject: `[E-PMS] Completed: แจ้งผลการอนุมัติเอกสาร ${app} - ${data.owner.name}`,
               checkerName: data.checker.name,
@@ -56,7 +56,7 @@ export const useConfirmation = (id: string, period: Period) => {
           } else {
             if (value.approved) {
               await sendPending({
-                to: process.env.NODE_ENV === "production" ? data.approver.email : "pondpopza5@gmail.com",
+                to: "weerawat.m@somboon.co.th",
                 cc: process.env.NODE_ENV === "production" ? [data.checker.email || "", data.owner.email] : [],
                 subject: `[E-PMS] Action Required: ตรวจสอบและอนุมัติเอกสาร ${app} (Final Evaluation) - ${data.owner.name}`,
                 checkerName: data.checker.name,
@@ -71,7 +71,7 @@ export const useConfirmation = (id: string, period: Period) => {
               });
             } else {
               await sendReject({
-                to: process.env.NODE_ENV === "production" ? data.owner.email : "pondpopza5@gmail.com",
+                to: "weerawat.m@somboon.co.th",
                 cc: process.env.NODE_ENV === "production" ? [data.checker.email || data.approver.email] : [],
                 subject: `[E-PMS] Action Required: แจ้งแก้ไขข้อมูล (Declined by ${data.declinedBy}) - ${app}`,
                 checkerName: data.checker.name,
