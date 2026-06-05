@@ -315,7 +315,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               </div>
               <AccordionContent>
                 <MeritEvaluationCriteriaGuide 
-                  description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง ตามแนวทางในการประเมิน (Key Evidence Guideline) ที่กาหนดโดย N 1 ของแต่ละสายงาน"
+                  description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง ตามแนวทางในการประเมิน (Key Evidence Guideline) ที่กาหนดโดย N-1 ของแต่ละสายงาน"
                   levels={cultureLevels}
                 />
                 <div className="grid grid-cols-1 gap-y-6">

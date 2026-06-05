@@ -17,6 +17,15 @@ interface Props {
   onRemove: () => void;
 }
 
+function getFileNameFromUrl(url: string): string {
+  try {
+    const segment = decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "");
+    return segment || "เอกสารแนบ";
+  } catch {
+    return "เอกสารแนบ";
+  }
+}
+
 export const AttachButton = ({
   value,
   canPerform,
@@ -119,7 +128,7 @@ export const AttachButton = ({
               <>
                 <BsFileText className="size-4 me-1.5 text-secondary" />
                 <div data-active={!!value} className="whitespace-nowrap overflow-hidden text-ellipsis text-sm text-primary data-[active=true]:text-marine">
-                  {value ? "แทนที่" : "อัพโหลด (.pdf ไม่เกิน 15MB)"}
+                  {value ? getFileNameFromUrl(value) : "อัพโหลด (.pdf ไม่เกิน 15MB)"}
                 </div>
               </>
             )}

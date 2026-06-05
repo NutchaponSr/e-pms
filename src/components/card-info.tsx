@@ -39,7 +39,7 @@ export const CardInfo = ({
       <div className="flex flex-col gap-2 h-full">
         <h3 className={cn(
           cardVariants({ label: variant }),
-          "text-sm font-medium"
+          "text-sm font-medium whitespace-pre-line"
         )}>
           {label}
         </h3>

@@ -185,7 +185,14 @@ const BigText = <TFieldValues extends FieldValues>({
 
   if (disabled) {
     return (
-      <div className={cn(className, fillHeightClass, fillHeight && "lg:overflow-auto")}>
+      <div
+        className={cn(
+          className,
+          fillHeightClass,
+          "min-w-0 whitespace-pre-wrap wrap-break-word",
+          fillHeight ? "lg:overflow-auto" : "overflow-hidden",
+        )}
+      >
         {field.value ?? ""}
       </div>
     );

@@ -92,7 +92,7 @@ export const CompetencyEvaluationContent = ({
   };
 
   const evaluationColumnClass =
-    "flex flex-col gap-2 min-h-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+    "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
 
   return (
     <div className="flex flex-col gap-4">
@@ -120,7 +120,11 @@ export const CompetencyEvaluationContent = ({
       </div>
 
       <div className="grid grid-cols-6 gap-2">
-        <CardInfo label="พฤติกรรมที่คาดหวัง (Expected Level)" variant="default" className="col-span-2">
+        <CardInfo 
+          label={`พฤติกรรมที่คาดหวัง\n(Expected Level)`} 
+          variant="default" 
+          className="col-span-2"
+        >
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
             {competencyRecord.competency?.[`t${competencyRecord.expectedLevel}` as 't1' | 't2' | 't3' | 't4' | 't5'] as string | null}
@@ -128,7 +132,7 @@ export const CompetencyEvaluationContent = ({
           </div>
         </CardInfo>
         <CardInfo 
-          label="การแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expected Behavior)" 
+          label={`การแสดงออกตามพฤติกรรมที่คาดหวัง\n(Demonstration of Expected Behavior)`} 
           variant="default" 
           className="col-span-2"
         >
@@ -139,7 +143,8 @@ export const CompetencyEvaluationContent = ({
           </div>
         </CardInfo>
         <CardInfo 
-          label="โครงการ/กิจกรรมที่ใช้เป็นตัวแสดงออกตามพฤติกรรมที่คาดหวัง (Projects / Activities Demonstrating Expected Behavior)" variant="default" 
+          label={`โครงการ/กิจกรรมที่ใช้เป็นตัวแสดงออกตามพฤติกรรมที่คาดหวัง\n(Projects / Activities Demonstrating Expected Behavior)`} 
+          variant="default" 
           className="col-span-2"
         >
           <div className="relative w-auto flex items-center px-2.5 py-2">

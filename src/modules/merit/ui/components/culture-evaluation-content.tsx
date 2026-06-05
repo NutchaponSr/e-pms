@@ -106,7 +106,7 @@ export const CultureEvaluationContent = ({
             <div className="text-base leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
               {cultureRecord.culture.name}
             </div>
-            <div className="text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
+            <div className="text-sm leading-5 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
               {cultureRecord.culture.description}
             </div>
           </div>
