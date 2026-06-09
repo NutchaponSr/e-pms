@@ -51,8 +51,6 @@ export const KpiInfo = ({ year }: Props) => {
 
   const { data } = useSuspenseQuery(trpc.kpi.getInfo.queryOptions({ year }));
 
-  const isAdmin = session?.user.role === UserRole.ADMIN;
-
   const draftCompleted = data.task.draft?.status === Status.COMPLETED;
 
   return (
@@ -69,7 +67,7 @@ export const KpiInfo = ({ year }: Props) => {
           </div>
         </div>
 
-        {!!data.task.draft && isAdmin && (
+        {!!data.task.draft && (
           <Button variant="secondary" size="sm" onClick={() => exportKpi({ id: data.task.draft!.formId })} disabled={exportKpiCtx.isPending}>
             Export
           </Button>

@@ -57,8 +57,6 @@ export const MeritInfo = ({ year }: Props) => {
 
   const { data: session } = authClient.useSession();
 
-  const isAdmin = session?.user.role === UserRole.ADMIN;
-
   const [selectedCategory, setSelectedCategory] = useState<"competency" | "culture">("competency");
 
   const { data } = useSuspenseQuery(trpc.merit.getInfo.queryOptions({ year }));
@@ -91,7 +89,7 @@ export const MeritInfo = ({ year }: Props) => {
           </div>
         </div>
 
-        {!!data.task.draft && isAdmin && (
+        {!!data.task.draft && (
           <Button variant="secondary" size="sm" onClick={() => exportMerit({ id: data.task.draft!.formId })} disabled={exportMeritCtx.isPending}>
             Export
           </Button>
