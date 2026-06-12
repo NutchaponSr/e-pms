@@ -170,9 +170,9 @@ export const CultureEvaluationContent = ({
                   name={`cultures.${index}.fileUrl`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-start flex-col gap-0.5 text-xs text-marine whitespace-normal">
+                      <FormLabel className="flex items-center justify-between gap-0.5 text-xs text-marine whitespace-normal">
                         <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
-                        <span className="font-normal text-secondary">(optional)</span>
+                        <span className="font-normal text-secondary">ไม่บังคับแนบไฟล์ (optional)</span>
                       </FormLabel>
                       <FormControl>
                         <AttachButton
