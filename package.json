@@ -10,6 +10,7 @@
     "format": "biome format --write",
     "db:studio": "npx prisma studio",
     "db:seed": "tsx src/seeds/index.ts",
+    "db:seed:reset-merit-evaluation-1st": "tsx src/seeds/reset-merit-evaluation-1st.ts",
     "db:seed:backup": "tsx src/seeds/backup.ts",
     "db:export": "tsx src/seeds/export.ts",
     "db:filter-import-dump": "tsx scripts/filter-pgdump-copy.ts",

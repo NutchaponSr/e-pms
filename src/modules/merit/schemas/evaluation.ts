@@ -59,10 +59,6 @@ export const cultureEvaluationSchema = z.object({
         ctx.addIssue({ code: "custom", message: "Actual owner is required", path: ["actualOwner"] });
       }
 
-      if (!data.fileUrl?.trim()) {
-        ctx.addIssue({ code: "custom", message: "Evident file is required", path: ["fileUrl"] });
-      }
-
       break;
     case "checker":
       if (!data.actualChecker?.trim()) {
