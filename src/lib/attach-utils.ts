@@ -14,11 +14,11 @@ export function extractFileNameFromUrl(url: string | null | undefined): string {
   }
 }
 
-export function getEdgeStoreUrl(url: string): string {
+export function getFileUrl(url: string): string {
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(url, "http://localhost");
     parsed.search = "";
-    return parsed.toString();
+    return url.startsWith("/") ? `${parsed.pathname}` : parsed.toString();
   } catch {
     return url.split("?")[0];
   }
