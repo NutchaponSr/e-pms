@@ -8,18 +8,21 @@ import { authClient } from "@/lib/auth-client";
 import { Loader } from "@/components/loader";
 
 export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
-  const router = useRouter(); 
-  const { isPending } = authClient.useSession();
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
 
   useEffect(() => {
-    if (!isPending) {
-      router.push("/");
+    if (!isPending && !session) {
+      const callbackUrl = encodeURIComponent(
+        window.location.pathname + window.location.search,
+      );
+      router.push(`/auth/sign-in?callbackUrl=${callbackUrl}`);
     }
-  }, [isPending]);
+  }, [isPending, session, router]);
 
-  if (isPending) {
-    return <Loader />
+  if (isPending || !session) {
+    return <Loader />;
   }
 
   return children;
-}
+};

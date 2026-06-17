@@ -6,8 +6,7 @@ import {
 import { toast } from "sonner";
 import { useRef, useState } from "react";
 
-import { useEdgeStore } from "@/lib/edegstore";
-import { extractFileNameFromUrl, getEdgeStoreUrl } from "@/lib/attach-utils";
+import { extractFileNameFromUrl, getFileUrl } from "@/lib/attach-utils";
 
 import { Spinner } from "@/components/ui/spinner";
 
@@ -26,8 +25,6 @@ export const AttachButton = ({
   onRemove,
   onUpload,
 }: Props) => {
-  const { edgestore } = useEdgeStore();
-
   const [isUploading, setIsUploading] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,22 +43,28 @@ export const AttachButton = ({
     setIsUploading(true);
     
     try {
-      const { url } = await edgestore.publicFiles.upload({ 
-        file,
-        options: {
-          replaceTargetUrl: value ? getEdgeStoreUrl(value) : undefined
-        } 
+      const formData = new FormData();
+      formData.append("file", file);
+      if (value) {
+        formData.append("replaceUrl", getFileUrl(value));
+      }
+
+      const res = await fetch("/api/files/upload", {
+        method: "POST",
+        body: formData,
       });
 
-      // Persist original filename for display by encoding it into the URL.
-      // This keeps backward-compat with existing string-only `fileUrl` fields.
-      const urlWithName = new URL(url);
-      urlWithName.searchParams.set("filename", file.name);
-      const persistedUrl = urlWithName.toString();
-      onChange(persistedUrl);
-      onUpload?.(persistedUrl);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Upload failed");
+      }
+
+      const { url } = (await res.json()) as { url: string };
+      onChange(url);
+      onUpload?.(url);
     } catch (err) {
       console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to upload file.");
     } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -76,12 +79,12 @@ export const AttachButton = ({
     setIsUploading(true);
     
     try {
-      await edgestore.publicFiles.delete({
-        url: getEdgeStoreUrl(value),
-      });
+      const res = await fetch(getFileUrl(value), { method: "DELETE" });
+      if (!res.ok) {
+        throw new Error("Delete failed");
+      }
 
       onRemove();
-
       onChange(null);
     } catch (err) {
       console.error(err);

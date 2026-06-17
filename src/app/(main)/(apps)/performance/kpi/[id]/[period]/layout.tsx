@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
+import { Loader } from "@/components/loader";
 import { getQueryClient, trpc } from "@/trpc/server";
 
 import { Period } from "@/generated/prisma/client";
@@ -25,7 +26,7 @@ const Layout = async (props: {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loader />}>
         <div className="flex flex-col w-full h-full cursor-default bg-background overflow-x-hidden overflow-y-auto">
           {props.children}
         </div>

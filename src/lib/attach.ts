@@ -2,6 +2,7 @@ import "server-only";
 
 import db from "@/lib/db";
 import { extractFileNameFromUrl } from "@/lib/attach-utils";
+import { deleteFileByUrl } from "@/lib/file-storage";
 
 import { Prisma } from "@/generated/prisma/client";
 
@@ -33,6 +34,8 @@ export async function deleteAttachIfUnreferenced(client: DbClient, url: string) 
   ]);
 
   if (kpiCount + cultureCount + competencyCount > 0) return;
+
+  await deleteFileByUrl(url);
 
   try {
     await client.attach.delete({ where: { url } });

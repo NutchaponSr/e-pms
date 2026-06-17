@@ -1,4 +1,5 @@
 import { Header } from "@/components/header";
+import { Loader } from "@/components/loader";
 import { loadSearchParams } from "@/stores/search-params";
 import { getQueryClient } from "@/trpc/server";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
@@ -14,7 +15,7 @@ const Layout = async (props: LayoutProps<"/performance">) => {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loader />}>
         <div className="order-3 flex flex-col w-full bg-transparent relative">
           <Header />
           <main className="grow-0 shrink flex flex-col bg-background z-1 h-full max-h-full w-full overflow-hidden">
