@@ -89,11 +89,11 @@ export const MeritInfo = ({ year }: Props) => {
           </div>
         </div>
 
-        {!!data.task.draft && (
+        {/* {!!data.task.draft && (
           <Button variant="secondary" size="sm" onClick={() => exportMerit({ id: data.task.draft!.formId })} disabled={exportMeritCtx.isPending}>
             Export
           </Button>
-        )}
+        )} */}
       </div>
       <div className="px-0 z-1 relative flex flex-col rounded-lg bg-[#ffffffe6] dark:bg-[#202020e6] dark:shadow-[unset] backdrop-blur-[48px] min-h-0 max-h-full py-0 flex-1 shadow-[0_12px_32px_0_rgba(0,0,0,0.02),0_0_0_1.25px_rgba(0,0,0,0.05)]">
         <div className="basis-0 grow px-9 pt-8 pb-6 border-b border-border">

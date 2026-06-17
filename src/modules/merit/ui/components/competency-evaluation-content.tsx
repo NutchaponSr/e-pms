@@ -143,7 +143,7 @@ export const CompetencyEvaluationContent = ({
         >
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-              {competencyRecord.output}
+              {competencyRecord.input}
             </p>
           </div>
         </CardInfo>
@@ -154,7 +154,7 @@ export const CompetencyEvaluationContent = ({
         >
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-              {competencyRecord.input}
+              {competencyRecord.output}
             </p>
           </div>
         </CardInfo>
