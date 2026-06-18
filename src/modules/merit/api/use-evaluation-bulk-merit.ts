@@ -37,8 +37,26 @@ export const useEvaluateBulkMerit = (formId: string, period: Period) => {
     }); 
   };
 
+  const mutationAsync = async (input: RequestType) => {
+    toast.loading("Updating Merit...", { id: "update-bulk-merit" });
+
+    try {
+      await evaluateBulkMerit.mutateAsync(input);
+      toast.success("Merit Updated!", { id: "update-bulk-merit" });
+      queryClient.invalidateQueries(trpc.merit.getOne.queryOptions({ id: formId, period }));
+
+      if (input.saved) {
+        setSave(true);
+      }
+    } catch (ctx) {
+      toast.error((ctx as Error).message || "Something went wrong", { id: "update-bulk-merit" });
+      throw ctx;
+    }
+  };
+
   return {
     mutation,
+    mutationAsync,
     ctx: evaluateBulkMerit,
   };
 };

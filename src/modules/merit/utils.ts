@@ -79,12 +79,15 @@ export function meritDefinitionMap(data: MeritFormData): MeritDefinition {
 
 const toNumberOrZero = (value: unknown): number => Number.isNaN(Number(value)) ? 0 : Number(value);
 
+const sortByOrder = <T extends { order: number }>(records: T[]) =>
+  [...records].sort((a, b) => a.order - b.order);
+
 export function meritEvaluationsMap(
   data: MeritFormData,
   period: Period,
   role: Approval
 ): MeritEvaluation {
-  const competencies = data.competencyRecords.map(record => {
+  const competencies = sortByOrder(data.competencyRecords).map(record => {
     const evaluation = record.competencyEvaluations.find(e => e.period === period);
 
     return {
@@ -101,7 +104,7 @@ export function meritEvaluationsMap(
     };
   });
 
-  const cultures = data.cultureRecords.map(record => {
+  const cultures = sortByOrder(data.cultureRecords).map(record => {
     const evaluation = record.cultureEvaluations.find(e => e.period === period);
 
     return {

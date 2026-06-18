@@ -49,10 +49,20 @@ interface Props {
 }
 
 export const MeritEvaluationScreen = ({ id, period, data, permissions, role, hasChecker }: Props) => {
+  const sortedCompetencyRecords = useMemo(
+    () => [...data.competencyRecords].sort((a, b) => a.order - b.order),
+    [data.competencyRecords],
+  );
+
+  const sortedCultureRecords = useMemo(
+    () => [...data.cultureRecords].sort((a, b) => a.order - b.order),
+    [data.cultureRecords],
+  );
+
   const evaluations = meritEvaluationsMap(data, period, role);
   
   const startWorkflow = useStartWorkflow(id, period);
-  const { mutation: evaluateBulkMerit } = useEvaluateBulkMerit(id, period);
+  const { mutation: evaluateBulkMerit, mutationAsync: evaluateBulkMeritAsync } = useEvaluateBulkMerit(id, period);
 
   const form = useForm<MeritEvaluation>({
     resolver: zodResolver(meritEvaluationsSchema) as Resolver<MeritEvaluation>,
@@ -81,6 +91,17 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     const { requireEvaluationResults: _requireEvaluationResults, ...evaluationValues } = values;
 
     evaluateBulkMerit({
+      formId: id,
+      period,
+      ...evaluationValues,
+      saved,
+    });
+  };
+
+  const submitEvaluationAsync = async (values: MeritEvaluation, saved: boolean) => {
+    const { requireEvaluationResults: _requireEvaluationResults, ...evaluationValues } = values;
+
+    await evaluateBulkMeritAsync({
       formId: id,
       period,
       ...evaluationValues,
@@ -137,24 +158,24 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     // Calculate competency achievement for each role
     const competencyOwner = competencies?.reduce((acc, competency, index) => {
       const achievement = Number(competency?.achievementOwner ?? 0);
-      const weight = Number(data.competencyRecords[index]?.weight ?? 0);
+      const weight = Number(sortedCompetencyRecords[index]?.weight ?? 0);
       return acc + (achievement / 5) * weight;
     }, 0) ?? 0;
 
     const competencyChecker = competencies?.reduce((acc, competency, index) => {
       const achievement = Number(competency?.achievementChecker ?? 0);
-      const weight = Number(data.competencyRecords[index]?.weight ?? 0);
+      const weight = Number(sortedCompetencyRecords[index]?.weight ?? 0);
       return acc + (achievement / 5) * weight;
     }, 0) ?? 0;
 
     const competencyApprover = competencies?.reduce((acc, competency, index) => {
       const achievement = Number(competency?.achievementApprover ?? 0);
-      const weight = Number(data.competencyRecords[index]?.weight ?? 0);
+      const weight = Number(sortedCompetencyRecords[index]?.weight ?? 0);
       return acc + (achievement / 5) * weight;
     }, 0) ?? 0;
 
     // Calculate culture achievement for each role
-    const cultureWeight = 30 / data.cultureRecords.length;
+    const cultureWeight = 30 / sortedCultureRecords.length;
     const cultureOwner = cultures?.reduce((acc, culture) => {
       const achievement = Number(culture?.levelBehaviorOwner ?? 0);
       return acc + (achievement / 5) * cultureWeight;
@@ -170,7 +191,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
       return acc + (achievement / 5) * cultureWeight;
     }, 0) ?? 0;
 
-    const competencyFull = data.competencyRecords.reduce(
+    const competencyFull = sortedCompetencyRecords.reduce(
       (acc, record) => acc + Number(record.weight ?? 0),
       0,
     );
@@ -192,7 +213,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
         culture: cultureApprover,
       },
     };
-  }, [competencies, cultures, data.competencyRecords, data.cultureRecords.length]);
+  }, [competencies, cultures, sortedCompetencyRecords, sortedCultureRecords.length]);
 
   return (
     <Form {...form}>
@@ -221,7 +242,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               return;
             }
 
-            submitEvaluation(form.getValues(), true);
+            await submitEvaluationAsync(form.getValues(), true);
             startWorkflow({ id: data.tasks.id });
           }}
           onExport={async () => {
@@ -271,9 +292,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                   levels={competencyAchievementLevels}
                 />
                 <div className="grid grid-cols-1 gap-y-6">
-                  {data.competencyRecords
-                    .sort((a, b) => a.order - b.order)
-                    .map((competencyRecord, index) => (
+                  {sortedCompetencyRecords.map((competencyRecord, index) => (
                       <Card key={competencyRecord.id}>
                         <CompetencyEvaluationContent 
                           index={index} 
@@ -319,9 +338,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                   levels={cultureLevels}
                 />
                 <div className="grid grid-cols-1 gap-y-6">
-                  {data.cultureRecords
-                  .sort((a, b) => a.order - b.order)
-                  .map((cultureRecord, index) => (
+                  {sortedCultureRecords.map((cultureRecord, index) => (
                     <Card key={cultureRecord.id}>
                       <CultureEvaluationContent 
                         index={index}
@@ -333,7 +350,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                           canPerformChecker: permissions.write && role === "checker",
                           canPerformApprover: permissions.write && role === "approver",
                         }}
-                        weight={30 / data.cultureRecords.length}
+                        weight={30 / sortedCultureRecords.length}
                         hasChecker={hasChecker}
                         formId={id}
                       />
@@ -456,7 +473,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                 return false;
               }
 
-              submitEvaluation(form.getValues(), false);
+              await submitEvaluationAsync(form.getValues(), false);
               return true;
             }}
           />,

@@ -204,6 +204,7 @@ export const CultureEvaluationContent = ({
               name={`cultures.${index}.levelBehaviorOwner`}
               disabled={!permissions.canPerformOwner}
               midYearLevel={eva1st?.levelBehaviorOwner}
+              displayLevel={currentEvaluation?.levelBehaviorOwner}
             />
           </div>
 
@@ -228,6 +229,7 @@ export const CultureEvaluationContent = ({
                 name={`cultures.${index}.levelBehaviorChecker`}
                 disabled={!permissions.canPerformChecker}
                 midYearLevel={eva1st?.levelBehaviorChecker}
+                displayLevel={currentEvaluation?.levelBehaviorChecker}
               />
             </div>
           )}
@@ -252,6 +254,7 @@ export const CultureEvaluationContent = ({
               name={`cultures.${index}.levelBehaviorApprover`}
               disabled={!permissions.canPerformApprover}
               midYearLevel={eva1st?.levelBehaviorApprover}
+              displayLevel={currentEvaluation?.levelBehaviorApprover}
             />
           </div>
         </div>
@@ -266,10 +269,14 @@ interface EvaluationResultFieldProps {
   name: `cultures.${number}.${"levelBehaviorOwner" | "levelBehaviorChecker" | "levelBehaviorApprover"}`;
   disabled: boolean;
   midYearLevel: number | null | undefined;
+  displayLevel: number | null | undefined;
 }
 
 const formatLevel = (level: number | null | undefined) =>
   level != null ? `Level ${level}` : "-";
+
+const formatScore = (level: number | null | undefined) =>
+  level != null ? `${level}` : "";
 
 const CLEAR_LEVEL_VALUE = "__none__";
 
@@ -279,8 +286,15 @@ const EvaluationResultField = ({
   name,
   disabled,
   midYearLevel,
+  displayLevel,
 }: EvaluationResultFieldProps) => {
   const isYearEnd = period === Period.EVALUATION_2ND;
+
+  const resolveLevel = (fieldValue: unknown) => {
+    const value = fieldValue != null && fieldValue !== "" ? Number(fieldValue) : null;
+    if (value != null && !Number.isNaN(value)) return value;
+    return displayLevel ?? null;
+  };
 
   return (
     <div className="flex flex-col gap-2 mt-auto pt-1">
@@ -311,7 +325,7 @@ const EvaluationResultField = ({
             <FormItem>
               {disabled ? (
                 <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
-                  {field.value ? `${field.value}` : ""}
+                  {formatScore(resolveLevel(field.value))}
                 </p>
               ) : (
                 <Select
@@ -354,7 +368,7 @@ const EvaluationResultField = ({
               <FormItem>
                 {disabled ? (
                   <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
-                    {field.value ? `${field.value}` : ""}
+                    {formatScore(resolveLevel(field.value))}
                   </p>
                 ) : (
                   <Select

@@ -12,8 +12,6 @@ import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/m
 import { formatMeritExport, sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
 import { comepetencyEvaluationSchema, cultureEvaluationSchema, overallCommentFieldsSchema } from "../schemas/evaluation";
-import { competencyUploadSchema, cultureUploadSchema } from "../schemas/upload";
-import { PERIOD_LABELS } from "@/modules/tasks/constant";
 import { exportExcel } from "@/lib/utils";
 import { columns } from "../constant";
 import { readCSV } from "@/seeds/lib/utils";
@@ -323,8 +321,16 @@ export const meritProcedure = createTRPCRouter({
             },
           },
           include: {
-            competencyRecords: true,
-            cultureRecords: true,
+            competencyRecords: {
+              orderBy: {
+                order: "asc",
+              },
+            },
+            cultureRecords: {
+              orderBy: {
+                order: "asc",
+              },
+            },
             tasks: true,
           },
         });
@@ -373,6 +379,13 @@ export const meritProcedure = createTRPCRouter({
 
       let form = null;
 
+      if (existingMeritTask) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Merit task already exists for this period",
+        });
+      }
+
       if (existingForm) {
         await db.task.create({
           data: {
@@ -390,8 +403,8 @@ export const meritProcedure = createTRPCRouter({
 
         await db.$transaction(async (tx) => {
           await tx.competencyEvaluation.createMany({
-            data: Array.from({ length: 4 }, (_, index) => ({
-              competencyRecordId: existingForm.competencyRecords[index].id,
+            data: existingForm.competencyRecords.map((record) => ({
+              competencyRecordId: record.id,
               period: input.period,
             })),
           })
@@ -603,7 +616,9 @@ export const meritProcedure = createTRPCRouter({
       );
 
       await Promise.all(
-        input.competencies.map(async (competency) => {
+        input.competencies
+          .filter((competency) => competency.id)
+          .map(async (competency) => {
           const { id, achievementOwner, achievementChecker, achievementApprover, ...data } = competency;
           const fileUrl = data.fileUrl;
 
@@ -630,7 +645,7 @@ export const meritProcedure = createTRPCRouter({
           });
         }));
 
-      await Promise.all(input.cultures.map(async (culture) => {
+      await Promise.all(input.cultures.filter((culture) => culture.id).map(async (culture) => {
         const { id, ...data } = culture;
 
         const fileUrl = data.fileUrl;
