@@ -466,7 +466,9 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             period={period} 
             confirmTitle="Confirm Merit Evaluation"
             onSave={async () => {
+              form.setValue("requireEvaluationResults", true);
               const ok = await form.trigger();
+              form.setValue("requireEvaluationResults", false);
 
               if (!ok) {
                 toast.error("Please fix validation errors before confirming");

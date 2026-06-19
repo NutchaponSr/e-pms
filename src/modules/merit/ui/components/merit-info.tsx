@@ -21,7 +21,12 @@ import {
 
 import { Event } from "@/components/event";
 
-import { dayOfYear, isInRange } from "@/modules/tasks/utils";
+import {
+  dayOfYear,
+  getDefinitionTaskButtonLabel,
+  getEvaluationTaskButtonLabel,
+  isInRange,
+} from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -75,8 +80,6 @@ export const MeritInfo = ({ year }: Props) => {
     evaluator2: item[selectedCategory].evaluator2,
   }));
 
-  console.log(data.task);
-
   return (
     <section className="h-full flex flex-col">
       <div className="shrink-0 flex justify-between items-center h-8 pb-3.5 mx-2">
@@ -107,7 +110,7 @@ export const MeritInfo = ({ year }: Props) => {
               buttonCtx={{  
                 disabled: createMeritTaskCtx.isPending,
                 active: isInRange(year, 1, dayOfYear(year, 4, 3), 2026),
-                label: !!data.task.draft ? "View" : "Create",
+                label: getDefinitionTaskButtonLabel(data.task.draft),
                 onClick: () => {
                   if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2026)) {
                     toast.error(
@@ -138,7 +141,7 @@ export const MeritInfo = ({ year }: Props) => {
                 active:
                   draftCompleted &&
                   isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)),
-                label: !!data.task.evaluation1st ? "Evaluate" : "Create",
+                label: getEvaluationTaskButtonLabel(data.task.evaluation1st),
                 onClick: () => {
                   if (
                     !isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)) &&
@@ -178,7 +181,7 @@ export const MeritInfo = ({ year }: Props) => {
                 active:
                   evaluation1stCompleted &&
                   isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)),
-                label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
+                label: getEvaluationTaskButtonLabel(data.task.evaluation2nd),
                 onClick: () => {
                   if (!isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31))) {
                     toast.error(

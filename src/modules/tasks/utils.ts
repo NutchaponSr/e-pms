@@ -1,4 +1,20 @@
+import { Status } from "@/generated/prisma/enums";
+
 const TIMEZONE_BANGKOK = "Asia/Bangkok";
+
+type TaskWithStatus = { status: Status } | null | undefined;
+
+export function getDefinitionTaskButtonLabel(task: TaskWithStatus): "Create" | "View" {
+  return task ? "View" : "Create";
+}
+
+export function getEvaluationTaskButtonLabel(
+  task: TaskWithStatus,
+): "Create" | "View" | "Evaluate" {
+  if (!task) return "Create";
+  if (task.status === Status.COMPLETED) return "View";
+  return "Evaluate";
+}
 
 export function generateTaskId(): string {
   return `TK${Date.now()}-${Math.floor(Math.random() * 1000000)}`;

@@ -23,7 +23,12 @@ import {
 
 import { Event } from "@/components/event";
 
-import { dayOfYear, isInRange } from "@/modules/tasks/utils";
+import {
+  dayOfYear,
+  getDefinitionTaskButtonLabel,
+  getEvaluationTaskButtonLabel,
+  isInRange,
+} from "@/modules/tasks/utils";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
 import { Button } from "@/components/ui/button";
 import { useExportKpi } from "../../api/use-export-kpi";
@@ -83,7 +88,7 @@ export const KpiInfo = ({ year }: Props) => {
               buttonCtx={{
                 disabled: createKpiTaskCtx.isPending,
                 active: isInRange(year, 1, dayOfYear(year, 4, 3), 2026),
-                label: !!data.task.draft ? "View" : "Create",
+                label: getDefinitionTaskButtonLabel(data.task.draft),
                 onClick: () => {
                   if (!isInRange(year, 1, dayOfYear(year, 4, 3), 2026)) {
                     toast.error(
@@ -113,9 +118,8 @@ export const KpiInfo = ({ year }: Props) => {
                 disabled: createKpiTaskCtx.isPending,
                 active:
                   draftCompleted &&
-                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)) &&
-                  data.task.evaluation?.status !== Status.COMPLETED,
-                label: !!data.task.evaluation ? "Evaluate" : "Create",
+                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)),
+                label: getEvaluationTaskButtonLabel(data.task.evaluation),
                 onClick: () => {
                   if (
                     !isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31), 2025) &&
