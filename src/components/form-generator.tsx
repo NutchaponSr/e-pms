@@ -24,8 +24,11 @@ import {
 
 import { InputVariants } from "@/types/form";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@radix-ui/react-scroll-area";
 
 type TextareaRefCallback = (element: HTMLTextAreaElement | null) => void;
+
+const SCROLL_AREA_MIN_HEIGHT_PX = 192;
 
 interface Props<TFieldValues extends FieldValues> {
   isError?: boolean;
@@ -49,6 +52,7 @@ interface Props<TFieldValues extends FieldValues> {
   description?: string;
   maxLength?: number;
   fillHeight?: boolean;
+  scrollAreaClassName?: string;
   children?: React.ReactNode;
 }
 
@@ -67,6 +71,7 @@ interface RenderProps<TFieldValues extends FieldValues> {
   fileUpload?: React.ReactNode;
   maxLength?: number;
   fillHeight?: boolean;
+  scrollAreaClassName?: string;
 }
 
 type InputRenderer<TFieldValues extends FieldValues> = (
@@ -90,6 +95,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
   description,
   maxLength,
   fillHeight,
+  scrollAreaClassName,
   children,
 }: Props<TFieldValues>) => {
   const INPUT_RENDERERS: Partial<
@@ -147,6 +153,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
                 onInput,
                 maxLength,
                 fillHeight,
+                scrollAreaClassName,
               })}
               {maxLength != null && (
                 <p
@@ -179,9 +186,73 @@ const BigText = <TFieldValues extends FieldValues>({
   onInput,
   maxLength,
   fillHeight,
+  scrollAreaClassName,
 }: RenderProps<TFieldValues>) => {
-  const fillHeightClass = fillHeight ? "lg:h-full lg:min-h-10 lg:flex-1" : undefined;
-  const overflowClass = fillHeight ? "lg:overflow-auto" : "overflow-hidden";
+  const useScrollArea = Boolean(scrollAreaClassName);
+  const fillHeightClass = fillHeight && !useScrollArea ? "lg:h-full lg:min-h-10 lg:flex-1" : undefined;
+  const overflowClass = fillHeight && !useScrollArea ? "lg:overflow-auto" : "overflow-hidden";
+
+  const growTextarea = (el: HTMLTextAreaElement | null) => {
+    if (!el || !useScrollArea) return;
+
+    const viewport = el.closest('[data-slot="scroll-area-viewport"]') as HTMLElement | null;
+    const minHeight = viewport?.clientHeight ?? SCROLL_AREA_MIN_HEIGHT_PX;
+
+    el.style.height = "0px";
+    el.style.height = `${Math.max(el.scrollHeight, minHeight)}px`;
+  };
+
+  const handleInput = (event: React.FormEvent<HTMLTextAreaElement>) => {
+    growTextarea(event.currentTarget);
+    onInput?.();
+  };
+
+  const innerFieldClass = cn(
+    useScrollArea &&
+      "min-h-full w-full resize-none border-0 bg-transparent p-2.5 text-sm leading-tight text-primary shadow-none rounded-none outline-none focus-visible:ring-0",
+    !useScrollArea && className,
+    !useScrollArea && fillHeightClass,
+    "min-w-0 whitespace-pre-wrap wrap-break-word",
+    !useScrollArea && overflowClass,
+  );
+
+  const content = disabled ? (
+    <div className={cn(innerFieldClass, useScrollArea && "min-h-full")}>
+      {field.value ?? ""}
+    </div>
+  ) : (
+    <textarea
+      {...field}
+      rows={1}
+      ref={(el) => {
+        if (fillHeight && el && !useScrollArea) {
+          el.style.height = "";
+        }
+        growTextarea(el);
+        if (textareaRef) {
+          textareaRef(el);
+        }
+        field.ref(el);
+      }}
+      onInput={handleInput}
+      value={field.value ?? ""}
+      maxLength={maxLength}
+      onChange={(e) => {
+        const value = maxLength != null ? e.target.value.slice(0, maxLength) : e.target.value;
+        field.onChange(value);
+      }}
+      placeholder={placeholder}
+      className={innerFieldClass}
+    />
+  );
+
+  if (useScrollArea) {
+    return (
+      <ScrollArea className={cn(className, scrollAreaClassName, "p-0")}>
+        {content}
+      </ScrollArea>
+    );
+  }
 
   if (disabled) {
     return (

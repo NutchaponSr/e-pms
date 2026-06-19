@@ -120,8 +120,21 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     form: "flex flex-col gap-2 flex-1 min-h-0 bg-transparent p-0 h-auto",
   };
 
+  const fillHeightFormClass = {
+    ...blueFormClass,
+    form: cn(blueFormClass.form, "lg:flex-1 lg:min-h-0"),
+    input: cn(blueFormClass.input, "lg:min-h-10"),
+  };
+
+  const overallCommentScrollAreaClassName = "lg:flex-1 lg:min-h-48 w-full";
+
+  const evaluationGridClass = cn(
+    "grid grid-cols-1 gap-2",
+    hasChecker ? "lg:grid-cols-3 lg:items-stretch" : "lg:grid-cols-2 lg:items-stretch",
+  );
+
   const evaluationColumnClass =
-    "flex flex-col gap-2 min-h-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+    "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
 
   const overallOwnerCommentRef = useRef<HTMLTextAreaElement | null>(null);
   const overallCheckerCommentRef = useRef<HTMLTextAreaElement | null>(null);
@@ -385,14 +398,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                     {periodLabel}
                   </p>
                 )}
-                <div
-                  className={cn(
-                    "grid gap-4",
-                    hasChecker
-                      ? "grid-cols-1 lg:grid-cols-3 lg:items-stretch"
-                      : "grid-cols-1 lg:grid-cols-2 lg:items-stretch",
-                  )}
-                >
+                <div className={evaluationGridClass}>
                   <div className={evaluationColumnClass}>
                     <FormGenerator
                       name="overallComments.commentOwner"
@@ -401,7 +407,9 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                       label="พนักงาน (Employee)"
                       disabled={!(permissions.write && role === "owner")}
                       maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                      className={blueFormClass}
+                      fillHeight
+                      className={fillHeightFormClass}
+                      scrollAreaClassName={overallCommentScrollAreaClassName}
                       textareaRef={(el) => {
                         overallOwnerCommentRef.current = el;
                         syncOverallCommentTextareaHeights();
@@ -421,7 +429,9 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                         label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
                         disabled={!(permissions.write && role === "checker")}
                         maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                        className={blueFormClass}
+                        fillHeight
+                        className={fillHeightFormClass}
+                        scrollAreaClassName={overallCommentScrollAreaClassName}
                         textareaRef={(el) => {
                           overallCheckerCommentRef.current = el;
                           syncOverallCommentTextareaHeights();
@@ -441,7 +451,9 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                       label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
                       disabled={!(permissions.write && role === "approver")}
                       maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                      className={blueFormClass}
+                      fillHeight
+                      className={fillHeightFormClass}
+                      scrollAreaClassName={overallCommentScrollAreaClassName}
                       textareaRef={(el) => {
                         overallApproverCommentRef.current = el;
                         syncOverallCommentTextareaHeights();
