@@ -75,6 +75,8 @@ export const MeritInfo = ({ year }: Props) => {
     evaluator2: item[selectedCategory].evaluator2,
   }));
 
+  console.log(data.task);
+
   return (
     <section className="h-full flex flex-col">
       <div className="shrink-0 flex justify-between items-center h-8 pb-3.5 mx-2">
@@ -135,8 +137,7 @@ export const MeritInfo = ({ year }: Props) => {
                 disabled: createMeritTaskCtx.isPending,
                 active:
                   draftCompleted &&
-                  isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)) &&
-                  data.task.evaluation1st?.status !== Status.COMPLETED,
+                  isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)),
                 label: !!data.task.evaluation1st ? "Evaluate" : "Create",
                 onClick: () => {
                   if (
@@ -176,8 +177,7 @@ export const MeritInfo = ({ year }: Props) => {
               buttonCtx={{
                 active:
                   evaluation1stCompleted &&
-                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)) &&
-                  data.task.evaluation2nd?.status !== Status.COMPLETED,
+                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)),
                 label: !!data.task.evaluation2nd ? "Evaluate" : "Create",
                 onClick: () => {
                   if (!isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31))) {
