@@ -4,7 +4,7 @@ import { AppRouter } from "@/trpc/routers/_app";
 import { CardInfo } from "@/components/card-info";
 import { formatDecimal } from "@/lib/utils";
 import { MeritEvaluation } from "../../schemas/evaluation";
-import { UseFormReturn } from "react-hook-form";
+import { UseFormReturn, useFormState } from "react-hook-form";
 import { Period } from "@/generated/prisma/enums";
 import { Action } from "@/modules/tasks/permissions";
 import { useMemo, useRef } from "react";
@@ -302,6 +302,8 @@ const EvaluationResultField = ({
   displayLevel,
 }: EvaluationResultFieldProps) => {
   const isYearEnd = period === Period.EVALUATION_2ND;
+  const formState = useFormState({ control: form.control });
+  const hasError = Boolean(form.getFieldState(name, formState).error);
 
   const resolveLevel = (fieldValue: unknown) => {
     const value = fieldValue != null && fieldValue !== "" ? Number(fieldValue) : null;
@@ -312,7 +314,12 @@ const EvaluationResultField = ({
   return (
     <div className="flex flex-col gap-2 mt-auto pt-1">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-marine shrink-0">
+        <span
+          className={cn(
+            "text-sm font-medium shrink-0",
+            hasError ? "text-destructive" : "text-marine",
+          )}
+        >
           ผลการประเมิน (Evaluation)
         </span>
         {isYearEnd && (

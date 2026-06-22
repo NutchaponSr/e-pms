@@ -82,7 +82,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     if (!data) return;
 
     form.reset(meritEvaluationsMap(data, period, role), {
-      keepDirty: false,
+      keepDirtyValues: true,
       keepTouched: false,
     });
   }, [data, form, period, role]);
