@@ -24,9 +24,42 @@ import { generateTaskId } from "@/modules/tasks/utils";
 import {
   collectReplacedFileUrls,
   deleteAttachIfUnreferenced,
-  extractFileNameFromUrl,
   upsertAttach,
 } from "@/lib/attach";
+
+type EvaluationRole = "owner" | "checker" | "approver";
+
+function buildKpiRoleUpdate(
+  kpi: {
+    actualOwner: string | null;
+    achievementOwner: number | null;
+    actualChecker: string | null;
+    achievementChecker: number | null;
+    actualApprover: string | null;
+    achievementApprover: number | null;
+    fileUrl?: string | null;
+  },
+  role: EvaluationRole,
+) {
+  switch (role) {
+    case "owner":
+      return {
+        actualOwner: kpi.actualOwner,
+        achievementOwner: kpi.achievementOwner,
+        fileUrl: kpi.fileUrl ?? null,
+      };
+    case "checker":
+      return {
+        actualChecker: kpi.actualChecker,
+        achievementChecker: kpi.achievementChecker,
+      };
+    case "approver":
+      return {
+        actualApprover: kpi.actualApprover,
+        achievementApprover: kpi.achievementApprover,
+      };
+  }
+}
 
 interface ApprovalCSVProps {
   employeeId: string;
@@ -377,11 +410,34 @@ export const kpiProcedure = createTRPCRouter({
   evaluate: protectedProcedure
     .input(
       z.object({
-        kpis: z.array(kpiEvaluationSchema.omit({ role: true }))
+        formId: z.string(),
+        period: z.enum(Period),
+        kpis: z.array(kpiEvaluationSchema.omit({ role: true })),
       }),
     )
     .mutation(async ({ input, ctx }) => {
       if (input.kpis.length === 0) return { success: true };
+
+      const task = await db.task.findFirst({
+        where: {
+          formId: input.formId,
+          context: {
+            path: ["period"],
+            equals: input.period,
+          },
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
+      }
+
+      const permission = buildPermissionContext(ctx.user.username, task);
+      const role = getUserRole(permission);
+
+      if (!role) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No permission to evaluate" });
+      }
 
       const existingKpis = await db.kpiEvaluation.findMany({
         where: { id: { in: input.kpis.map((kpi) => kpi.id) } },
@@ -389,38 +445,29 @@ export const kpiProcedure = createTRPCRouter({
       });
       const oldUrlById = new Map(existingKpis.map((kpi) => [kpi.id, kpi.fileUrl]));
 
-      const ops = input.kpis.flatMap((kpi) => {
-        const { id, ...data } = kpi;
-        const fileUrl = data.fileUrl;
+      await Promise.all(
+        input.kpis.map(async (kpi) => {
+          const data = buildKpiRoleUpdate(kpi, role);
+          const fileUrl = "fileUrl" in data ? data.fileUrl : null;
 
-        const attachOps =
-          fileUrl != null
-            ? [
-                db.attach.upsert({
-                  where: { url: fileUrl },
-                  update: { fileName: extractFileNameFromUrl(fileUrl) },
-                  create: {
-                    url: fileUrl,
-                    fileName: extractFileNameFromUrl(fileUrl),
-                    createdBy: ctx.user.username,
-                  },
-                }),
-              ]
-            : [];
+          if (fileUrl != null) {
+            await upsertAttach(db, fileUrl, ctx.user.username);
+          }
 
-        return [
-          ...attachOps,
-          db.kpiEvaluation.update({
-            where: { id },
+          return db.kpiEvaluation.update({
+            where: { id: kpi.id },
             data,
-          }),
-        ];
-      });
+          });
+        }),
+      );
 
-      await db.$transaction(ops);
-
-      const replacedUrls = collectReplacedFileUrls(input.kpis, oldUrlById);
-      await Promise.all(replacedUrls.map((url) => deleteAttachIfUnreferenced(db, url)));
+      if (role === "owner") {
+        const replacedUrls = collectReplacedFileUrls(
+          input.kpis.map((kpi) => ({ id: kpi.id, fileUrl: kpi.fileUrl ?? null })),
+          oldUrlById,
+        );
+        await Promise.all(replacedUrls.map((url) => deleteAttachIfUnreferenced(db, url)));
+      }
 
       return { success: true };
     }),

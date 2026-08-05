@@ -8,6 +8,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { KpiEvaluation as KPI, Period } from "@/generated/prisma/client";
@@ -18,7 +19,7 @@ import { formRecord } from "@/types/form";
 import { Badge } from "@/components/badge";
 import { TargetTable } from "./target-table";
 import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
-import { formatDecimal } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { AttachButton } from "@/components/attach-button";
 import { useDeleteKpiFile } from "../../api/use-delete-kpi-file";
 import { useSyncKpiAttach } from "../../api/use-sync-kpi-attach";
@@ -47,7 +48,6 @@ export const KpiEvaluationContent = ({
   hasChecker, 
   year,
   role,
-  finalSumWeight,
 }: Props) => {
   const { mutation: deleteKpiFile } = useDeleteKpiFile(id, period);
   const { mutation: syncKpiAttach } = useSyncKpiAttach(id, period);
@@ -79,12 +79,12 @@ export const KpiEvaluationContent = ({
   }, [kpi.target70, kpi.target80, kpi.target90, kpi.target100, year]);
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
-  const checkerActualRef = useRef<HTMLTextAreaElement | null>(null);
-  const approverActualRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const textareaRefs = useMemo(() => [ownerActualRef], []);
 
   const { groupSyncFunctions } = useSyncTextareaHeights([
     {
-      refs: [ownerActualRef, checkerActualRef, approverActualRef],
+      refs: textareaRefs,
       breakpoint: "(min-width: 1024px)",
     },
   ]);
@@ -98,6 +98,27 @@ export const KpiEvaluationContent = ({
   const canPerformOwner = permissions.write && role === "owner";
   const canPerformChecker = permissions.write && role === "checker";
   const canPerformApprover = permissions.write && role === "approver";
+
+  const evaluationGridClass = cn(
+    "grid grid-cols-1 gap-2",
+    hasChecker ? "lg:grid-cols-3 lg:items-stretch" : "lg:grid-cols-2 lg:items-stretch",
+  );
+
+  const blueFormClass = {
+    input: formRecord.blue.input,
+    label: formRecord.blue.label,
+    description: "text-xs text-secondary",
+    form: "flex flex-col gap-2 flex-1 min-h-0 bg-transparent p-0 h-auto",
+  };
+
+  const fillHeightFormClass = {
+    ...blueFormClass,
+    form: cn(blueFormClass.form, "lg:flex-1 lg:min-h-0"),
+    input: cn(blueFormClass.input, "lg:min-h-10"),
+  };
+
+  const evaluationColumnClass =
+    "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
 
   return (
       <div className="w-full relative z-80 flex flex-col gap-4">
@@ -186,87 +207,74 @@ export const KpiEvaluationContent = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-4">
-          <FormGenerator
-            name={`kpis.${index}.actualOwner`}
-            form={form}
-            variant="bigText"
-            disabled={!canPerformOwner}
-            label="พนักงาน (Employee)"
-            description="รายละเอียดของผลสำเร็จเพิ่มเติม (Detail of success result)"
-            className={{
-              ...formRecord.default,
-              form: "grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2 col-span-2",
-            }}
-            textareaRef={(el) => {
-              ownerActualRef.current = el;
-              syncTextareaHeights();
-            }}
-            onInput={() => syncTextareaHeights()}
-            fileUpload={
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.fileUrl`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <AttachButton
-                        value={field.value as string | null}
-                        canPerform={canPerformOwner}
-                        onChange={field.onChange}
-                        onUpload={(url) => syncKpiAttach({ id: kpi.id, fileUrl: url })}
-                        onRemove={() => deleteKpiFile({ id: kpi.id })}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            }
-          />
-          <FormGenerator
-            name={`kpis.${index}.actualChecker`}
-            form={form}
-            variant="bigText"
-            disabled={!canPerformChecker}
-            label="ผู้ประเมินคนที่ 1 (Evaluator 1)"
-            description="ความคิดเห็น (Comment)"
-            className={{
-              ...formRecord.default,
-              form: "grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2 col-span-2",
-            }}
-            textareaRef={(el) => {
-              checkerActualRef.current = el;
-              syncTextareaHeights();
-            }}
-            onInput={() => syncTextareaHeights()}
-          />
-          <FormGenerator
-            name={`kpis.${index}.actualApprover`}
-            form={form}
-            variant="bigText"
-            disabled={!canPerformApprover}
-            label="ผู้ประเมินคนที่ 2 (Evaluator 2)"
-            description="ความคิดเห็น (Comment)"
-            className={{
-              ...formRecord.default,
-              form: "grow-0 shrink-0 basis-auto p-2 box-content h-max dark:bg-[#fcfcfc08] rounded-sm flex flex-col gap-2 col-span-2",
-            }}
-            textareaRef={(el) => {
-              approverActualRef.current = el;
-              syncTextareaHeights();
-            }}
-            onInput={() => syncTextareaHeights()}
-          />
-          <div className="flex flex-col gap-1.5">
-            <div className="flex flex-row">
-              <div className="flex items-center leading-4.5 min-w-0 text-sm text-secondary">
-                <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                  % ผลสำเร็จ
-                </div>
-              </div>
-            </div>
+        <div className={evaluationGridClass}>
+          <div className={evaluationColumnClass}>
+            <FormGenerator
+              name={`kpis.${index}.actualOwner`}
+              form={form}
+              variant="bigText"
+              disabled={!canPerformOwner}
+              label="พนักงาน (Employee)"
+              description="รายละเอียดของผลสำเร็จเพิ่มเติม (Detail of success result)"
+              className={blueFormClass}
+              textareaRef={(el) => {
+                ownerActualRef.current = el;
+                syncTextareaHeights();
+              }}
+              onInput={() => syncTextareaHeights()}
+              fileUpload={
+                <FormField
+                  control={form.control}
+                  name={`kpis.${index}.fileUrl`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-secondary flex flex-col gap-0.5 font-normal items-start">
+                        <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
+                        <span className="font-normal text-secondary">ไม่บังคับแนบไฟล์ (optional)</span>
+                      </FormLabel>
+                      <FormControl>
+                        <AttachButton
+                          value={field.value as string | null}
+                          canPerform={canPerformOwner}
+                          onChange={field.onChange}
+                          onUpload={(url) => syncKpiAttach({ id: kpi.id, fileUrl: url })}
+                          onRemove={() => deleteKpiFile({ id: kpi.id })}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              }
+            />
+          </div>
 
-            <Badge color="orange" label={formatDecimal(finalSumWeight)} />
+          {hasChecker && (
+            <div className={evaluationColumnClass}>
+              <FormGenerator
+                name={`kpis.${index}.actualChecker`}
+                form={form}
+                variant="bigText"
+                disabled={!canPerformChecker}
+                label="ผู้ประเมินคนที่ 1 (Evaluator 1)"
+                description="ความคิดเห็น (Comment)"
+                fillHeight
+                className={fillHeightFormClass}
+              />
+            </div>
+          )}
+
+          <div className={evaluationColumnClass}>
+            <FormGenerator
+              name={`kpis.${index}.actualApprover`}
+              form={form}
+              variant="bigText"
+              disabled={!canPerformApprover}
+              label="ผู้ประเมินคนที่ 2 (Evaluator 2)"
+              description="ความคิดเห็น (Comment)"
+              fillHeight
+              className={fillHeightFormClass}
+            />
           </div>
         </div>
       </div>

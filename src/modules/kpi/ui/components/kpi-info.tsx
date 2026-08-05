@@ -118,11 +118,11 @@ export const KpiInfo = ({ year }: Props) => {
                 disabled: createKpiTaskCtx.isPending,
                 active:
                   draftCompleted &&
-                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)),
+                  isInRange(year, dayOfYear(year, 8, 1), dayOfYear(year, 12, 31)),
                 label: getEvaluationTaskButtonLabel(data.task.evaluation),
                 onClick: () => {
                   if (
-                    !isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31), 2025) &&
+                    !isInRange(year, dayOfYear(year, 8, 1), dayOfYear(year, 12, 31), 2025) &&
                     process.env.NODE_ENV !== "development"
                   ) {
                     toast.error(

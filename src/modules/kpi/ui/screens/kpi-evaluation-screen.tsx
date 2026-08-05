@@ -1,4 +1,4 @@
-import { Resolver, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { Resolver, useForm, useWatch } from "react-hook-form";
 import { inferProcedureOutput } from "@trpc/server";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -17,7 +17,6 @@ import { StateInfo } from "@/components/state-info";
 import { KpiEvaluationContent } from "../components/kpi-evaluation-content";
 import { useCallback, useEffect, useMemo } from "react";
 import { Employee, KpiEvaluation, Task, Period } from "@/generated/prisma/client";
-import { formatDecimal } from "@/lib/utils";
 import { useWeight } from "../../stores/use-weight";
 import { toast } from "sonner";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
@@ -35,7 +34,7 @@ interface Props {
   form: inferProcedureOutput<AppRouter["kpi"]["getOne"]>["form"];
 }
 
-export const KpiEvaluationScreen = ({ 
+export const KpiEvaluationScreen = ({
   id,
   form,
   role,
@@ -44,7 +43,7 @@ export const KpiEvaluationScreen = ({
 }: Props) => {
   const { setWeight } = useWeight();
 
-  const evaluateKpis = useEvaluateKpis(id, period);
+  const { mutation: evaluateKpis, mutationAsync: evaluateKpisAsync } = useEvaluateKpis(id, period);
   const startWorkflow = useStartWorkflow(id, period);
 
   const map = useCallback((kpi: KpiEvaluation) => kpiEvaluationMap({ ...kpi, role }), [role]);
@@ -92,18 +91,27 @@ export const KpiEvaluationScreen = ({
     };
   }, [kpis, form.kpis]);
 
+  const submitEvaluation = (values: KpisEvaluation, saved: boolean) => {
+    evaluateKpis({ kpis: values.kpis, saved });
+  };
+
+  const submitEvaluationAsync = async (values: KpisEvaluation, saved: boolean) => {
+    await evaluateKpisAsync({ kpis: values.kpis, saved });
+  };
+
   const onSubmit = (data: KpisEvaluation) => {
-    evaluateKpis({ kpis: data.kpis, saved: true });
+    submitEvaluation(data, true);
   };
 
   useEffect(() => {
     if (!form.kpis) return;
+
     f.reset(
       {
         kpis: (form.kpis || []).map((kpi) => kpiEvaluationMap({ ...kpi, role })),
       },
       {
-        keepDirty: false,
+        keepDirtyValues: true,
         keepTouched: false,
       },
     );
@@ -154,10 +162,16 @@ export const KpiEvaluationScreen = ({
               return;
             }
 
-            evaluateKpis({ ...f.getValues(), saved: true });
+            const values = f.getValues();
+            await submitEvaluationAsync(values, true);
+            f.reset(values);
             startWorkflow({ id: form.tasks!.id });
           }}
-          onSaveDraft={() => evaluateKpis({ ...f.getValues(), saved: false })}
+          onSaveDraft={async () => {
+            const values = f.getValues();
+            await submitEvaluationAsync(values, false);
+            f.reset(values);
+          }}
           onExport={async () => exportDefinitionKpi({
             ...form,
             kpis: form.kpis,
@@ -173,34 +187,40 @@ export const KpiEvaluationScreen = ({
           >
             {form.kpis.map((kpi, index) => (
               <Card key={kpi.id} className="group/card">
-                <KpiEvaluationContent 
+                <KpiEvaluationContent
                   id={id}
                   period={period}
-                  index={index} 
-                  form={f} 
+                  index={index}
+                  form={f}
                   kpi={kpi}
                   permissions={props.permissions}
-                  hasChecker={form.tasks.checker !== null} 
+                  hasChecker={form.tasks.checker !== null}
                   year={form.year}
                   role={role}
                   finalSumWeight={calculateAchievementSum.approver}
-                />                
+                />
               </Card>
             ))}
           </div>
         </div>
 
         {props.permissions.approve && createPortal(
-          <Confirmation 
-            id={id} 
+          <Confirmation
+            id={id}
             app="KPI Bonus"
-            taskId={form.tasks.id} 
-            period={period} 
+            taskId={form.tasks.id}
+            period={period}
             confirmTitle="Confirm KPI Evaluation"
             onSave={async () => {
               const ok = await f.trigger();
-              if (!ok) return false;
-              evaluateKpis({ ...f.getValues(), saved: false });
+              if (!ok) {
+                toast.error("Please fix validation errors before confirming");
+                return false;
+              }
+
+              const values = f.getValues();
+              await submitEvaluationAsync(values, false);
+              f.reset(values);
               return true;
             }}
           />,
@@ -209,4 +229,4 @@ export const KpiEvaluationScreen = ({
       </form>
     </Form>
   );
-};  
+};

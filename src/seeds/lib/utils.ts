@@ -13,6 +13,8 @@ export function readCSV<T>(
     columns: true,
     skipEmptyLines: true,
     trim: true,
+    bom: true,
+    relax_quotes: true,
     cast,
   });
 }

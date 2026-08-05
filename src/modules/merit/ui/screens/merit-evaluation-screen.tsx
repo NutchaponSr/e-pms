@@ -255,7 +255,9 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               return;
             }
 
-            await submitEvaluationAsync(form.getValues(), true);
+            const values = form.getValues();
+            await submitEvaluationAsync(values, true);
+            form.reset(values);
             startWorkflow({ id: data.tasks.id });
           }}
           onExport={async () => {
@@ -267,7 +269,11 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               task: data.tasks as Task & { checker?: Employee; approver: Employee },
             });
           }}
-          onSaveDraft={() => submitEvaluation(form.getValues(), false)}
+          onSaveDraft={async () => {
+            const values = form.getValues();
+            await submitEvaluationAsync(values, false);
+            form.reset(values);
+          }}
           permissions={permissions}
           status={STATUS_VARIANTS[data.tasks?.status!]}
         />
@@ -487,7 +493,9 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                 return false;
               }
 
-              await submitEvaluationAsync(form.getValues(), false);
+              const values = form.getValues();
+              await submitEvaluationAsync(values, false);
+              form.reset(values);
               return true;
             }}
           />,

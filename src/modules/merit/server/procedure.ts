@@ -20,10 +20,96 @@ import { generateTaskId } from "@/modules/tasks/utils";
 import {
   collectReplacedFileUrls,
   deleteAttachIfUnreferenced,
-  extractFileNameFromUrl,
   upsertAttach,
 } from "@/lib/attach";
 
+type EvaluationRole = "owner" | "checker" | "approver";
+
+function buildCompetencyRoleUpdate(
+  competency: {
+    actualOwner: string | null;
+    achievementOwner: number | null;
+    actualChecker: string | null;
+    achievementChecker: number | null;
+    actualApprover: string | null;
+    achievementApprover: number | null;
+    fileUrl: string | null;
+    result: string | null;
+  },
+  role: EvaluationRole,
+) {
+  switch (role) {
+    case "owner":
+      return {
+        actualOwner: competency.actualOwner,
+        levelOwner: competency.achievementOwner,
+        fileUrl: competency.fileUrl,
+        result: competency.result,
+      };
+    case "checker":
+      return {
+        actualChecker: competency.actualChecker,
+        levelChecker: competency.achievementChecker,
+      };
+    case "approver":
+      return {
+        actualApprover: competency.actualApprover,
+        levelApprover: competency.achievementApprover,
+      };
+  }
+}
+
+function buildCultureRoleUpdate(
+  culture: {
+    actualOwner: string | null;
+    levelBehaviorOwner: number | null;
+    actualChecker: string | null;
+    levelBehaviorChecker: number | null;
+    actualApprover: string | null;
+    levelBehaviorApprover: number | null;
+    fileUrl: string | null;
+    result: string | null;
+  },
+  role: EvaluationRole,
+) {
+  switch (role) {
+    case "owner":
+      return {
+        actualOwner: culture.actualOwner,
+        levelBehaviorOwner: culture.levelBehaviorOwner,
+        fileUrl: culture.fileUrl,
+        result: culture.result,
+      };
+    case "checker":
+      return {
+        actualChecker: culture.actualChecker,
+        levelBehaviorChecker: culture.levelBehaviorChecker,
+      };
+    case "approver":
+      return {
+        actualApprover: culture.actualApprover,
+        levelBehaviorApprover: culture.levelBehaviorApprover,
+      };
+  }
+}
+
+function buildOverallCommentRoleUpdate(
+  comments: {
+    commentOwner: string | null;
+    commentChecker: string | null;
+    commentApprover: string | null;
+  },
+  role: EvaluationRole,
+) {
+  switch (role) {
+    case "owner":
+      return { commentOwner: comments.commentOwner };
+    case "checker":
+      return { commentChecker: comments.commentChecker };
+    case "approver":
+      return { commentApprover: comments.commentApprover };
+  }
+}
 interface ApprovalCSVProps {
   employeeId: string;
   checker?: string;
@@ -402,18 +488,62 @@ export const meritProcedure = createTRPCRouter({
         });
 
         await db.$transaction(async (tx) => {
-          await tx.competencyEvaluation.createMany({
-            data: existingForm.competencyRecords.map((record) => ({
-              competencyRecordId: record.id,
-              period: input.period,
-            })),
-          })
-          await tx.cultureEvaluation.createMany({
-            data: existingForm.cultureRecords.map((record) => ({
-              cultureRecordId: record.id,
-              period: input.period,
-            })),
-          })
+          const competencyRecordIds = existingForm.competencyRecords.map((record) => record.id);
+          const cultureRecordIds = existingForm.cultureRecords.map((record) => record.id);
+
+          const [existingCompetencyEvals, existingCultureEvals] = await Promise.all([
+            competencyRecordIds.length > 0
+              ? tx.competencyEvaluation.findMany({
+                  where: {
+                    competencyRecordId: { in: competencyRecordIds },
+                    period: input.period,
+                  },
+                  select: { competencyRecordId: true },
+                })
+              : Promise.resolve([]),
+            cultureRecordIds.length > 0
+              ? tx.cultureEvaluation.findMany({
+                  where: {
+                    cultureRecordId: { in: cultureRecordIds },
+                    period: input.period,
+                  },
+                  select: { cultureRecordId: true },
+                })
+              : Promise.resolve([]),
+          ]);
+
+          const existingCompetencyRecordIds = new Set(
+            existingCompetencyEvals.map((evaluation) => evaluation.competencyRecordId),
+          );
+          const existingCultureRecordIds = new Set(
+            existingCultureEvals.map((evaluation) => evaluation.cultureRecordId),
+          );
+
+          const competencyToCreate = existingForm.competencyRecords.filter(
+            (record) => !existingCompetencyRecordIds.has(record.id),
+          );
+          const cultureToCreate = existingForm.cultureRecords.filter(
+            (record) => !existingCultureRecordIds.has(record.id),
+          );
+
+          if (competencyToCreate.length > 0) {
+            await tx.competencyEvaluation.createMany({
+              data: competencyToCreate.map((record) => ({
+                competencyRecordId: record.id,
+                period: input.period,
+              })),
+            });
+          }
+          
+          if (cultureToCreate.length > 0) {
+            await tx.cultureEvaluation.createMany({
+              data: cultureToCreate.map((record) => ({
+                cultureRecordId: record.id,
+                period: input.period,
+              })),
+            });
+          }
+
           await tx.meritOverallComment.upsert({
             where: {
               formId_period: {
@@ -545,29 +675,28 @@ export const meritProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      if (input.competencies.length === 0 && input.cultures.length === 0) {
-        await db.meritOverallComment.upsert({
-          where: {
-            formId_period: {
-              formId: input.formId,
-              period: input.period,
-            },
+      const task = await db.task.findFirst({
+        where: {
+          formId: input.formId,
+          context: {
+            path: ["period"],
+            equals: input.period,
           },
-          create: {
-            formId: input.formId,
-            period: input.period,
-            commentOwner: input.overallComments.commentOwner,
-            commentChecker: input.overallComments.commentChecker,
-            commentApprover: input.overallComments.commentApprover,
-          },
-          update: {
-            commentOwner: input.overallComments.commentOwner,
-            commentChecker: input.overallComments.commentChecker,
-            commentApprover: input.overallComments.commentApprover,
-          },
-        });
-        return { success: true };
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
+
+      const permission = buildPermissionContext(ctx.user.username, task);
+      const role = getUserRole(permission);
+
+      if (!role) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No permission to evaluate" });
+      }
+
+      const overallCommentUpdate = buildOverallCommentRoleUpdate(input.overallComments, role);
 
       await db.meritOverallComment.upsert({
         where: {
@@ -579,19 +708,17 @@ export const meritProcedure = createTRPCRouter({
         create: {
           formId: input.formId,
           period: input.period,
-          commentOwner: input.overallComments.commentOwner,
-          commentChecker: input.overallComments.commentChecker,
-          commentApprover: input.overallComments.commentApprover,
+          ...overallCommentUpdate,
         },
-        update: {
-          commentOwner: input.overallComments.commentOwner,
-          commentChecker: input.overallComments.commentChecker,
-          commentApprover: input.overallComments.commentApprover,
-        },
+        update: overallCommentUpdate,
       });
 
-      const competencyIds = input.competencies.map((competency) => competency.id);
-      const cultureIds = input.cultures.map((culture) => culture.id);
+      if (input.competencies.length === 0 && input.cultures.length === 0) {
+        return { success: true };
+      }
+
+      const competencyIds = input.competencies.map((competency) => competency.id).filter(Boolean);
+      const cultureIds = input.cultures.map((culture) => culture.id).filter(Boolean);
 
       const [existingCompetencies, existingCultures] = await Promise.all([
         competencyIds.length > 0
@@ -619,59 +746,45 @@ export const meritProcedure = createTRPCRouter({
         input.competencies
           .filter((competency) => competency.id)
           .map(async (competency) => {
-          const { id, achievementOwner, achievementChecker, achievementApprover, ...data } = competency;
-          const fileUrl = data.fileUrl;
+            const data = buildCompetencyRoleUpdate(competency, role);
+            const fileUrl = "fileUrl" in data ? data.fileUrl : null;
 
-          if (fileUrl != null) {
-            await db.attach.upsert({
-              where: { url: fileUrl },
-              update: { fileName: extractFileNameFromUrl(fileUrl) },
-              create: {
-                url: fileUrl,
-                fileName: extractFileNameFromUrl(fileUrl),
-                createdBy: ctx.user.username,
-              },
+            if (fileUrl != null) {
+              await upsertAttach(db, fileUrl, ctx.user.username);
+            }
+
+            return db.competencyEvaluation.update({
+              where: { id: competency.id },
+              data,
             });
-          }
+          }),
+      );
 
-          return db.competencyEvaluation.update({
-            where: { id },
-            data: {
-              ...data,
-              levelOwner: achievementOwner,
-              levelChecker: achievementChecker,
-              levelApprover: achievementApprover,
-            },
-          });
-        }));
+      await Promise.all(
+        input.cultures
+          .filter((culture) => culture.id)
+          .map(async (culture) => {
+            const data = buildCultureRoleUpdate(culture, role);
+            const fileUrl = "fileUrl" in data ? data.fileUrl : null;
 
-      await Promise.all(input.cultures.filter((culture) => culture.id).map(async (culture) => {
-        const { id, ...data } = culture;
+            if (fileUrl != null) {
+              await upsertAttach(db, fileUrl, ctx.user.username);
+            }
 
-        const fileUrl = data.fileUrl;
-        if (fileUrl != null) {
-          await db.attach.upsert({
-            where: { url: fileUrl },
-            update: { fileName: extractFileNameFromUrl(fileUrl) },
-            create: {
-              url: fileUrl,
-              fileName: extractFileNameFromUrl(fileUrl),
-              createdBy: ctx.user.username,
-            },
-          });
-        }
+            return db.cultureEvaluation.update({
+              where: { id: culture.id },
+              data,
+            });
+          }),
+      );
 
-        return db.cultureEvaluation.update({
-          where: { id },
-          data,
-        });
-      }));
-
-      const replacedUrls = [
-        ...collectReplacedFileUrls(input.competencies, oldCompetencyUrlById),
-        ...collectReplacedFileUrls(input.cultures, oldCultureUrlById),
-      ];
-      await Promise.all(replacedUrls.map((url) => deleteAttachIfUnreferenced(db, url)));
+      if (role === "owner") {
+        const replacedUrls = [
+          ...collectReplacedFileUrls(input.competencies, oldCompetencyUrlById),
+          ...collectReplacedFileUrls(input.cultures, oldCultureUrlById),
+        ];
+        await Promise.all(replacedUrls.map((url) => deleteAttachIfUnreferenced(db, url)));
+      }
 
       return { success: true };
     }),

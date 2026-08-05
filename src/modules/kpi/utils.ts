@@ -46,7 +46,7 @@ export function kpiEvaluationMap(kpi: z.infer<typeof kpiEvaluationSchema>) {
     achievementChecker: kpi.achievementChecker,
     actualApprover: kpi.actualApprover,
     achievementApprover: kpi.achievementApprover,
-    fileUrl: kpi.fileUrl,
+    fileUrl: kpi.fileUrl ?? null,
   };
 }
 

@@ -1,26 +1,23 @@
 import { toast } from "sonner";
 import { inferProcedureInput } from "@trpc/server";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import { useTRPC } from "@/trpc/client";
-import { appRouter } from "@/trpc/routers/_app";
+import { AppRouter } from "@/trpc/routers/_app";
 import { Period } from "@/generated/prisma/enums";
 
-type RequestType = inferProcedureInput<typeof appRouter["kpi"]["deleteKpiFile"]>;
+type RequestType = inferProcedureInput<AppRouter["kpi"]["deleteKpiFile"]>;
 
-export const useDeleteKpiFile = (formId: string, period: Period) => {
+export const useDeleteKpiFile = (_formId: string, _period: Period) => {
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
-
   const deleteKpiFile = useMutation(trpc.kpi.deleteKpiFile.mutationOptions());
 
   const mutation = (value: RequestType) => {
     toast.loading("Deleting KPI File...", { id: "delete-kpi-file" });
 
+    // Do not invalidate getOne — form already clears fileUrl via AttachButton onChange.
     deleteKpiFile.mutate(value, {
       onSuccess: () => {
-        queryClient.invalidateQueries(trpc.kpi.getOne.queryOptions({ id: formId, period }));
-
         toast.success("KPI File Deleted!", { id: "delete-kpi-file" });
       },
       onError: (ctx) => {

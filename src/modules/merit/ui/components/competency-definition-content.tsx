@@ -108,7 +108,7 @@ export const CompetencyDefinitionContent = ({
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )}
+          )}
           />
         </div>
         <FormGenerator 

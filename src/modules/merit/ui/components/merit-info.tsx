@@ -140,15 +140,15 @@ export const MeritInfo = ({ year }: Props) => {
                 disabled: createMeritTaskCtx.isPending,
                 active:
                   draftCompleted &&
-                  isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)),
+                  isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 12, 31)),
                 label: getEvaluationTaskButtonLabel(data.task.evaluation1st),
                 onClick: () => {
                   if (
-                    !isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 7, 31)) &&
+                    !isInRange(year, dayOfYear(year, 5, 1), dayOfYear(year, 12, 31)) &&
                     process.env.NODE_ENV !== "development"
                   ) {
                     toast.error(
-                      "You can only evaluate Merit from June to July",
+                      "You can only evaluate Merit from June to December",
                     );
                     return;
                   }

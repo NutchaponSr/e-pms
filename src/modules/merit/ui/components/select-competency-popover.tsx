@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckIcon, ChevronDownIcon, FileIcon, Loader2Icon, SearchIcon } from "lucide-react";
 
@@ -41,54 +41,56 @@ export const SelectCompetencyPopover = ({
 }: Props) => {
   const trpc = useTRPC();
 
+  const selectedId = selectedCompetencyId || value || fallbackCompetency?.id || "";
+
   const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
   const [pendingCompetency, setPendingCompetency] = useState<Competency | null>(null);
   const [confirmedCompetency, setConfirmedCompetency] = useState<Competency | null>(
     fallbackCompetency || null
   );
 
   const debouncedSearchTerm = useDebounce(search, 500);
-
-  const query = trpc.competency.getMany.queryOptions({
-    types: types.types,
-    search: debouncedSearchTerm
-  });
-
   const enabled = debouncedSearchTerm.length > 0;
 
   const {
     data: competencies,
     isLoading,
   } = useQuery({
-    ...query,
+    ...trpc.competency.getMany.queryOptions({
+      types: types.types,
+      search: debouncedSearchTerm,
+    }),
     enabled,
   });
 
-  const selectedCompetency = useMemo(() => {
-    const idToFind = selectedCompetencyId || value || fallbackCompetency?.id;
-    if (idToFind && competencies) {
-      const found = competencies.find(c => c.id === idToFind);
-      if (found) return found;
-    }
-    return fallbackCompetency || null;
-  }, [selectedCompetencyId, value, competencies, fallbackCompetency]);
-  
+  // Sync จาก server/form เฉพาะเมื่อค่าตรงกับ fallback (เช่นหลัง save draft + refetch)
+  // ไม่ดึงจาก search results เพราะพอปิด dialog แล้ว search ถูกเคลียร์ จะได้ fallback เก่ากลับมาทับ
   useEffect(() => {
-    if (selectedCompetency && selectedCompetency.id !== confirmedCompetency?.id) {
-      setConfirmedCompetency(selectedCompetency);
-    }
-  }, [selectedCompetency, confirmedCompetency?.id]);
+    if (!fallbackCompetency) return;
+    if (fallbackCompetency.id !== selectedId) return;
+    setConfirmedCompetency(fallbackCompetency);
+  }, [fallbackCompetency, selectedId]);
+
+  const resolvedCompetency =
+    (confirmedCompetency?.id === selectedId ? confirmedCompetency : null) ||
+    (fallbackCompetency?.id === selectedId ? fallbackCompetency : null) ||
+    confirmedCompetency ||
+    fallbackCompetency ||
+    null;
 
   const effectiveSelectedCompetency =
-    pendingCompetency || confirmedCompetency || selectedCompetency || null;
+    pendingCompetency || resolvedCompetency;
 
-  const displayText = effectiveSelectedCompetency?.name || fallbackCompetency?.name || types.label;
-  const isButtonSelected = !!effectiveSelectedCompetency;
+  const displayText = resolvedCompetency?.name || types.label;
+  const isButtonSelected = !!resolvedCompetency;
 
   return (
     <Dialog
-      onOpenChange={(open) => {
-        if (!open) {
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
           setPendingCompetency(null);
           setSearch("");
         }
@@ -110,7 +112,7 @@ export const SelectCompetencyPopover = ({
             <ChevronDownIcon 
               className={cn(
                 "ml-2 size-6 shrink-0 transition-transform duration-200 stroke-[1.5]",
-                isButtonSelected && "rotate-180"
+                open && "rotate-180"
               )} 
             />
           )}
@@ -153,7 +155,7 @@ export const SelectCompetencyPopover = ({
 
                   {competencies && competencies.length > 0 && (
                     <div className="flex flex-col gap-px">
-                      {competencies?.map((competency) => {
+                      {competencies.map((competency) => {
                         const isItemSelected = competency.id === effectiveSelectedCompetency?.id;
                         return (
                           <div 
@@ -217,10 +219,9 @@ export const SelectCompetencyPopover = ({
                 size="sm"
                 disabled={!effectiveSelectedCompetency}
                 onClick={() => {
-                  if (effectiveSelectedCompetency) {
-                    setConfirmedCompetency(effectiveSelectedCompetency);
-                    onSelect(effectiveSelectedCompetency);
-                  }
+                  if (!effectiveSelectedCompetency) return;
+                  setConfirmedCompetency(effectiveSelectedCompetency);
+                  onSelect(effectiveSelectedCompetency);
                 }}
               >
                 Confirm

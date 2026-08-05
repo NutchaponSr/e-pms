@@ -14,32 +14,32 @@ export const competencyProcedure = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
+      const search = input.search?.trim();
+
       const res = await db.competency.findMany({
         where: {
-          AND: [
-            {
-              type: {
-                in: input.types,
-              },
-            },
-            {
-              OR: [
-                {
-                  name: {
-                    contains: input.search,
-                    mode: "insensitive",
+          type: {
+            in: input.types,
+          },
+          ...(search
+            ? {
+                OR: [
+                  {
+                    name: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
                   },
-                },
-                {
-                  definition: {
-                    contains: input.search,
-                    mode: "insensitive",
+                  {
+                    definition: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
                   },
-                },
-              ],
-            }
-          ]
-        }
+                ],
+              }
+            : {}),
+        },
       });
 
       return res;

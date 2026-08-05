@@ -9,7 +9,7 @@ export const kpiEvaluationSchema = z.object({
   achievementChecker: z.coerce.number().nullable(),
   actualApprover: z.string().nullable(),
   achievementApprover: z.coerce.number().nullable(),
-  fileUrl: z.string().nullable(),
+  fileUrl: z.string().nullish(),
 }).superRefine((data, ctx) => {
   switch (data.role) {
     case "owner":
