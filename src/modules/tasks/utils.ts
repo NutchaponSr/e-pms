@@ -12,7 +12,13 @@ export function getEvaluationTaskButtonLabel(
   task: TaskWithStatus,
 ): "Create" | "View" | "Evaluate" {
   if (!task) return "Create";
-  if (task.status === Status.COMPLETED) return "View";
+  if (
+    task.status === Status.COMPLETED ||
+    task.status === Status.WAITING_APPROVER_1 ||
+    task.status === Status.WAITING_APPROVER_2
+  ) {
+    return "View";
+  }
   return "Evaluate";
 }
 

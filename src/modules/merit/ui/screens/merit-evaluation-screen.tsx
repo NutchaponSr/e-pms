@@ -4,7 +4,7 @@ import { AppRouter } from "@/trpc/routers/_app";
 import { Period } from "@/generated/prisma/enums";
 
 import { Action, Approval } from "@/modules/tasks/permissions";
-import { exportMeritDefinition, meritEvaluationsMap } from "../../utils";
+import { exportMeritDefinition, meritEvaluationsMap, sumCompetencyByPeriod, sumCultureByPeriod } from "../../utils";
 import { useEffect, useMemo, useRef } from "react";
 import { MeritEvaluation, meritEvaluationsSchema } from "../../schemas/evaluation";
 import { Resolver, useForm, useWatch } from "react-hook-form";
@@ -155,6 +155,11 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
   const syncOverallCommentTextareaHeights = overallCommentSyncFunctions[0];
 
   const periodLabel = MERIT_EVALUATION_PERIOD_LABELS[period];
+  const isYearEnd = period === Period.EVALUATION_2ND;
+  const midYearOverallComment = useMemo(
+    () => data.overallComments?.find((comment) => comment.period === Period.EVALUATION_1ST),
+    [data.overallComments],
+  );
 
   // useWatch find total competency and culture achievement for each role
   const competencies = useWatch({
@@ -228,11 +233,28 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     };
   }, [competencies, cultures, sortedCompetencyRecords, sortedCultureRecords.length]);
 
+  const midYearOverall = useMemo(
+    () => ({
+      competency: sumCompetencyByPeriod(
+        sortedCompetencyRecords,
+        Period.EVALUATION_1ST,
+        "levelOwner",
+      ),
+      culture: sumCultureByPeriod(
+        sortedCultureRecords,
+        Period.EVALUATION_1ST,
+        "levelBehaviorOwner",
+      ),
+    }),
+    [sortedCompetencyRecords, sortedCultureRecords],
+  );
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <EmployeeInfo owner={data.tasks?.owner} checker={data.tasks?.checker} approver={data.tasks?.approver}>
           <MeritEvaluationSummaryTable
+            period={period}
             hasChecker={hasChecker}
             competencyFull={scores.competencyFull}
             cultureFull={scores.cultureFull}
@@ -241,6 +263,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               checker: scores.checker,
               approver: scores.approver,
             }}
+            midYearOverall={period === Period.EVALUATION_2ND ? midYearOverall : undefined}
           />
         </EmployeeInfo>
 
@@ -285,7 +308,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             className="space-y-4"
           >
             <AccordionItem value="competency">
-              <div className="h-[42px] z-87 relative text-sm">
+              <div className="h-10.5 z-87 relative text-sm">
                 <div className="flex items-center h-full pt-0 mb-2">
                   <div className="flex items-center h-full overflow-hidden gap-1">
                     <AccordionTrigger asChild>
@@ -332,7 +355,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="culture">
-              <div className="h-[42px] z-87 relative text-sm">
+              <div className="h-10.5 z-87 relative text-sm">
                 <div className="flex items-center h-full pt-0 mb-2">
                   <div className="flex items-center h-full overflow-hidden gap-1">
                     <AccordionTrigger asChild>
@@ -379,7 +402,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="overall-comments">
-              <div className="h-[42px] z-87 relative text-sm">
+              <div className="h-10.5 z-87 relative text-sm">
                 <div className="flex items-center h-full pt-0 mb-2">
                   <div className="flex items-center h-full overflow-hidden gap-1">
                     <AccordionTrigger asChild>
@@ -399,76 +422,110 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
                 </div>
               </div>
               <AccordionContent>
-                {periodLabel && (
-                  <p className="text-primary text-sm font-medium mb-4">
-                    {periodLabel}
-                  </p>
-                )}
-                <div className={evaluationGridClass}>
-                  <div className={evaluationColumnClass}>
-                    <FormGenerator
-                      name="overallComments.commentOwner"
-                      form={form}
-                      variant="bigText"
-                      label="พนักงาน (Employee)"
-                      disabled={!(permissions.write && role === "owner")}
-                      maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                      fillHeight
-                      className={fillHeightFormClass}
-                      scrollAreaClassName={overallCommentScrollAreaClassName}
-                      textareaRef={(el) => {
-                        overallOwnerCommentRef.current = el;
-                        syncOverallCommentTextareaHeights();
-                      }}
-                      onInput={() => {
-                        revalidateOverallComments();
-                        syncOverallCommentTextareaHeights();
-                      }}
-                    />
-                  </div>
-                  {hasChecker && (
-                    <div className={evaluationColumnClass}>
-                      <FormGenerator
-                        name="overallComments.commentChecker"
-                        form={form}
-                        variant="bigText"
-                        label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
-                        disabled={!(permissions.write && role === "checker")}
-                        maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                        fillHeight
-                        className={fillHeightFormClass}
-                        scrollAreaClassName={overallCommentScrollAreaClassName}
-                        textareaRef={(el) => {
-                          overallCheckerCommentRef.current = el;
-                          syncOverallCommentTextareaHeights();
-                        }}
-                        onInput={() => {
-                          revalidateOverallComments();
-                          syncOverallCommentTextareaHeights();
-                        }}
-                      />
+                <div className="flex flex-col gap-4">
+                  {isYearEnd && (
+                    <div className="flex flex-col gap-2">
+                      <h2 className="text-sm font-medium text-marine">
+                        {MERIT_EVALUATION_PERIOD_LABELS[Period.EVALUATION_1ST]}
+                      </h2>
+                      <div className={evaluationGridClass}>
+                        <div className={evaluationColumnClass}>
+                          <ReadOnlyOverallComment
+                            label="พนักงาน (Employee)"
+                            value={midYearOverallComment?.commentOwner}
+                          />
+                        </div>
+                        {hasChecker && (
+                          <div className={evaluationColumnClass}>
+                            <ReadOnlyOverallComment
+                              label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
+                              value={midYearOverallComment?.commentChecker}
+                            />
+                          </div>
+                        )}
+                        <div className={evaluationColumnClass}>
+                          <ReadOnlyOverallComment
+                            label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
+                            value={midYearOverallComment?.commentApprover}
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
-                  <div className={evaluationColumnClass}>
-                    <FormGenerator
-                      name="overallComments.commentApprover"
-                      form={form}
-                      variant="bigText"
-                      label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
-                      disabled={!(permissions.write && role === "approver")}
-                      maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                      fillHeight
-                      className={fillHeightFormClass}
-                      scrollAreaClassName={overallCommentScrollAreaClassName}
-                      textareaRef={(el) => {
-                        overallApproverCommentRef.current = el;
-                        syncOverallCommentTextareaHeights();
-                      }}
-                      onInput={() => {
-                        revalidateOverallComments();
-                        syncOverallCommentTextareaHeights();
-                      }}
-                    />
+
+                  <div className="flex flex-col gap-2">
+                    {periodLabel && (
+                      <h2 className="text-sm font-medium text-marine">
+                        {periodLabel}
+                      </h2>
+                    )}
+                    <div className={evaluationGridClass}>
+                      <div className={evaluationColumnClass}>
+                        <FormGenerator
+                          name="overallComments.commentOwner"
+                          form={form}
+                          variant="bigText"
+                          label="พนักงาน (Employee)"
+                          disabled={!(permissions.write && role === "owner")}
+                          maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+                          fillHeight
+                          className={fillHeightFormClass}
+                          scrollAreaClassName={overallCommentScrollAreaClassName}
+                          textareaRef={(el) => {
+                            overallOwnerCommentRef.current = el;
+                            syncOverallCommentTextareaHeights();
+                          }}
+                          onInput={() => {
+                            revalidateOverallComments();
+                            syncOverallCommentTextareaHeights();
+                          }}
+                        />
+                      </div>
+                      {hasChecker && (
+                        <div className={evaluationColumnClass}>
+                          <FormGenerator
+                            name="overallComments.commentChecker"
+                            form={form}
+                            variant="bigText"
+                            label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
+                            disabled={!(permissions.write && role === "checker")}
+                            maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+                            fillHeight
+                            className={fillHeightFormClass}
+                            scrollAreaClassName={overallCommentScrollAreaClassName}
+                            textareaRef={(el) => {
+                              overallCheckerCommentRef.current = el;
+                              syncOverallCommentTextareaHeights();
+                            }}
+                            onInput={() => {
+                              revalidateOverallComments();
+                              syncOverallCommentTextareaHeights();
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className={evaluationColumnClass}>
+                        <FormGenerator
+                          name="overallComments.commentApprover"
+                          form={form}
+                          variant="bigText"
+                          label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
+                          disabled={!(permissions.write && role === "approver")}
+                          maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+                          fillHeight
+                          className={fillHeightFormClass}
+                          scrollAreaClassName={overallCommentScrollAreaClassName}
+                          textareaRef={(el) => {
+                            overallApproverCommentRef.current = el;
+                            syncOverallCommentTextareaHeights();
+                          }}
+                          onInput={() => {
+                            revalidateOverallComments();
+                            syncOverallCommentTextareaHeights();
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </AccordionContent>
@@ -505,3 +562,25 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     </Form>
   );
 }
+
+const ReadOnlyOverallComment = ({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) => {
+  return (
+    <div className="flex flex-col gap-2 min-h-0 bg-transparent p-0 h-auto lg:flex-1 lg:min-h-0">
+      <span className={formRecord.blue.label}>{label}</span>
+      <p
+        className={cn(
+          formRecord.blue.input,
+          "whitespace-pre-wrap [word-break:break-word] lg:min-h-48 lg:flex-1",
+        )}
+      >
+        {value?.trim() ? value : "-"}
+      </p>
+    </div>
+  );
+};

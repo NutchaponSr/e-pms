@@ -9,7 +9,7 @@ import { Rank, managerUp, chiefDown } from "@/types/employees";
 import { Approval } from "../tasks/permissions";
 import { MeritEvaluation } from "./schemas/evaluation";
 import { competencyUploadSchema, cultureUploadSchema } from "./schemas/upload";
-import { CompetencyRecord, CompetencyEvaluation, CultureRecord, CultureEvaluation, MeritOverallComment } from "@/generated/prisma/client";
+import { CompetencyRecord, CompetencyEvaluation, CultureRecord, CultureEvaluation, OverallComment } from "@/generated/prisma/client";
 import { MeritDefinitionWithTasks, MeritFormWithInfo } from "./types";
 import { PERIOD_LABELS } from "../tasks/constant";
 import { formatDecimal } from "@/lib/utils";
@@ -602,19 +602,19 @@ function splitMeritExportColumns(cols: readonly string[], groupCount: number): s
   return groups;
 }
 
-function resolveOverallComments(meritForm: MeritDefinitionWithTasks): MeritOverallComment[] {
+function resolveOverallComments(meritForm: MeritDefinitionWithTasks): OverallComment[] {
   if (meritForm.overallComments?.length) {
     return meritForm.overallComments;
   }
 
-  const single = (meritForm as { overallComment?: MeritOverallComment | null }).overallComment;
+  const single = (meritForm as { overallComment?: OverallComment | null }).overallComment;
   return single ? [single] : [];
 }
 
 function getOverallCommentByPeriod(
-  overallComments: MeritOverallComment[],
+  overallComments: OverallComment[],
   period: Period,
-): MeritOverallComment | null {
+): OverallComment | null {
   return overallComments.find((c) => c.period === period) ?? null;
 }
 
@@ -1321,7 +1321,7 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     ? [LEVEL_SUB_HEADERS.employee, LEVEL_SUB_HEADERS.evaluator1, LEVEL_SUB_HEADERS.evaluator2]
     : [LEVEL_SUB_HEADERS.employee, LEVEL_SUB_HEADERS.evaluator2]
   const getCommentValue = (
-    comment: MeritOverallComment | null,
+    comment: OverallComment | null,
     index: number,
   ): string | null | undefined => {
     if (!comment) return null

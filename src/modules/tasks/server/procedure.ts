@@ -9,7 +9,7 @@ import { FormType, Period, Status } from "@/generated/prisma/enums";
 import { TRPCError } from "@trpc/server";
 
 import { STATUSES } from "@/modules/tasks/constant";
-import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
+import { buildPermissionContext, canPerform, getUserRole } from "@/modules/tasks/permissions";
 
 interface ApprovalCSVProps {
   employeeId: string;
@@ -129,7 +129,7 @@ export const taskProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const task = await db.task.findUnique({
         where: {
           id: input.id,
@@ -140,6 +140,15 @@ export const taskProcedure = createTRPCRouter({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Record not found",
+        });
+      }
+
+      const role = getUserRole(buildPermissionContext(ctx.user.username, task));
+
+      if (role !== "owner" || !canPerform(role, ["start-workflow"], task.status)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "No permission to start this workflow",
         });
       }
 
@@ -194,6 +203,13 @@ export const taskProcedure = createTRPCRouter({
 
       const permissionContext = buildPermissionContext(ctx.user.username, task);
       const role = getUserRole(permissionContext);
+
+      if (!role || !canPerform(role, ["approve"], task.status)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "No permission to confirm this task",
+        });
+      }
 
       let res = null;
 

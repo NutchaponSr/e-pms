@@ -9,12 +9,13 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { FormType, KpiCategory, Period, Status } from "@/generated/prisma/enums";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
-import { kpiEvaluationSchema } from "@/modules/kpi/schema/evaluation";
+import { kpiEvaluationSchema, overallCommentFieldsSchema } from "@/modules/kpi/schema/evaluation";
 import {
   kpiDefinitionInputSchema,
   kpiDefinitionSchema,
 } from "@/modules/kpi/schema/definition";
-import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
+import { buildPermissionContext, canPerform, getUserRole } from "@/modules/tasks/permissions";
+import { assertAnyRoleOnForm, assertFormOwner } from "@/modules/tasks/access";
 import { calculateSumAchievement, formatKpiExport } from "../utils";
 import { exportExcel, formatDecimal } from "@/lib/utils";
 import { columns } from "../constants";
@@ -28,6 +29,24 @@ import {
 } from "@/lib/attach";
 
 type EvaluationRole = "owner" | "checker" | "approver";
+
+function buildOverallCommentRoleUpdate(
+  comments: {
+    commentOwner: string | null;
+    commentChecker: string | null;
+    commentApprover: string | null;
+  },
+  role: EvaluationRole,
+) {
+  switch (role) {
+    case "owner":
+      return { commentOwner: comments.commentOwner };
+    case "checker":
+      return { commentChecker: comments.commentChecker };
+    case "approver":
+      return { commentApprover: comments.commentApprover };
+  }
+}
 
 function buildKpiRoleUpdate(
   kpi: {
@@ -156,6 +175,7 @@ export const kpiProcedure = createTRPCRouter({
               order: "asc",
             },
           },
+          overallComments: true,
         },
       });
 
@@ -208,10 +228,19 @@ export const kpiProcedure = createTRPCRouter({
 
       const permission = buildPermissionContext(ctx.user.username, task);
 
+      if (!getUserRole(permission)) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const overallComment = plain.overallComments.find(
+        (c) => c.period === input.period,
+      ) ?? null;
+
       return {
         form: {
           ...plain,
           kpis: kpisWithComments,
+          overallComment,
           tasks: task,
         },
         permission: {
@@ -226,7 +255,9 @@ export const kpiProcedure = createTRPCRouter({
         formId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await assertFormOwner(input.formId, ctx.user.username);
+
       const lastKpi = await db.kpiEvaluation.findFirst({
         where: {
           formId: input.formId,
@@ -337,7 +368,9 @@ export const kpiProcedure = createTRPCRouter({
         kpis: z.array(kpiUploadSchema),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await assertFormOwner(input.formId, ctx.user.username);
+
       const lastKpi = await db.kpiEvaluation.findFirst({
         where: {
           formId: input.formId,
@@ -377,8 +410,15 @@ export const kpiProcedure = createTRPCRouter({
         kpis: z.array(kpiDefinitionInputSchema),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       if (input.kpis.length === 0) return { success: true };
+
+      const owningKpis = await db.kpiEvaluation.findMany({
+        where: { id: { in: input.kpis.map((kpi) => kpi.id) } },
+        select: { formId: true },
+      });
+      const formIds = [...new Set(owningKpis.map((kpi) => kpi.formId))];
+      await Promise.all(formIds.map((formId) => assertFormOwner(formId, ctx.user.username)));
 
       const normalizeEmptyStringToNull = <T extends Record<string, unknown>>(
         obj: T,
@@ -413,11 +453,10 @@ export const kpiProcedure = createTRPCRouter({
         formId: z.string(),
         period: z.enum(Period),
         kpis: z.array(kpiEvaluationSchema.omit({ role: true })),
+        overallComments: overallCommentFieldsSchema,
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      if (input.kpis.length === 0) return { success: true };
-
       const task = await db.task.findFirst({
         where: {
           formId: input.formId,
@@ -435,9 +474,28 @@ export const kpiProcedure = createTRPCRouter({
       const permission = buildPermissionContext(ctx.user.username, task);
       const role = getUserRole(permission);
 
-      if (!role) {
+      if (!role || !canPerform(role, ["write"], task.status)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "No permission to evaluate" });
       }
+
+      const overallCommentUpdate = buildOverallCommentRoleUpdate(input.overallComments, role);
+
+      await db.overallComment.upsert({
+        where: {
+          formId_period: {
+            formId: input.formId,
+            period: input.period,
+          },
+        },
+        create: {
+          formId: input.formId,
+          period: input.period,
+          ...overallCommentUpdate,
+        },
+        update: overallCommentUpdate,
+      });
+
+      if (input.kpis.length === 0) return { success: true };
 
       const existingKpis = await db.kpiEvaluation.findMany({
         where: { id: { in: input.kpis.map((kpi) => kpi.id) } },
@@ -477,7 +535,18 @@ export const kpiProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const existing = await db.kpiEvaluation.findUnique({
+        where: { id: input.id },
+        select: { formId: true },
+      });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await assertFormOwner(existing.formId, ctx.user.username);
+
       await db.kpiEvaluation.delete({
         where: {
           id: input.id,
@@ -498,11 +567,17 @@ export const kpiProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const existing = await db.kpiEvaluation.findUnique({
         where: { id: input.id },
-        select: { fileUrl: true },
+        select: { fileUrl: true, formId: true },
       });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await assertFormOwner(existing.formId, ctx.user.username);
 
       const kpi = await db.kpiEvaluation.update({
         where: {
@@ -529,8 +604,14 @@ export const kpiProcedure = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const existing = await db.kpiEvaluation.findUnique({
         where: { id: input.id },
-        select: { fileUrl: true },
+        select: { fileUrl: true, formId: true },
       });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await assertFormOwner(existing.formId, ctx.user.username);
 
       await upsertAttach(db, input.fileUrl, ctx.user.username);
 
@@ -551,7 +632,9 @@ export const kpiProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await assertAnyRoleOnForm(input.id, ctx.user.username);
+
       const kpiForm = await db.form.findUnique({
         where: {
           id: input.id,

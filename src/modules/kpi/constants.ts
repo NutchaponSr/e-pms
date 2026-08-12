@@ -12,6 +12,8 @@ export const kpiCategoies: Record<KpiCategory, string> = {
 
 export const requiredFields = ["name", "category", "definition", "method"]
 
+export const OVERALL_COMMENT_MAX_LENGTH = 255
+
 export const columns: ExportColumn[] = [
   {
     key: "employeeId",

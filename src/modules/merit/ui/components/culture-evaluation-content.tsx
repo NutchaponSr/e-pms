@@ -1,4 +1,5 @@
 import { inferProcedureOutput } from "@trpc/server";
+import { type ReactNode, useMemo, useRef } from "react";
 
 import { Period } from "@/generated/prisma/enums";
 import { AppRouter } from "@/trpc/routers/_app";
@@ -6,7 +7,6 @@ import { UseFormReturn, useFormState } from "react-hook-form";
 import { MeritEvaluation } from "../../schemas/evaluation";
 import { CardInfo } from "@/components/card-info";
 import { formatDecimal } from "@/lib/utils";
-import { useMemo, useRef } from "react";
 import { FormGenerator } from "@/components/form-generator";
 import { formRecord } from "@/types/form";
 import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
@@ -23,8 +23,6 @@ import { AttachButton } from "@/components/attach-button";
 import { useDeleteCultureFile } from "../../api/use-delete-culture-file";
 import { useSyncCultureAttach } from "../../api/use-sync-culture-attach";
 import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../../constant";
-import { HistoryActualPopover } from "./history-actual-popover";
-import { HistoryResultPopover } from "./history-result-popover";
 
 interface Props {
   index: number;
@@ -41,6 +39,9 @@ interface Props {
   weight: number;
 }
 
+type CultureEvaluation =
+  Props["cultureRecord"]["cultureEvaluations"][number];
+
 export const CultureEvaluationContent = ({
   index,
   period,
@@ -55,10 +56,11 @@ export const CultureEvaluationContent = ({
   const { mutation: syncCultureAttach } = useSyncCultureAttach(formId, period);
 
   const eva1st = cultureRecord.cultureEvaluations.find((eva) => eva.period === Period.EVALUATION_1ST);
-  const eva2nd = cultureRecord.cultureEvaluations.find((eva) => eva.period === Period.EVALUATION_2ND);
   const currentEvaluation = cultureRecord.cultureEvaluations.find(
     (evaluation) => evaluation.period === period,
   );
+
+  const isYearEnd = period === Period.EVALUATION_2ND;
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -95,7 +97,7 @@ export const CultureEvaluationContent = ({
   };
 
   const evaluationColumnClass =
-    "flex flex-col gap-2 min-h-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+    "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
 
   return (
     <div className="flex flex-col gap-4">
@@ -146,6 +148,15 @@ export const CultureEvaluationContent = ({
         </CardInfo>
       </div>
 
+      {isYearEnd && (
+        <MidYearEvaluationSection
+          evaluation={eva1st}
+          hasChecker={hasChecker}
+          evaluationGridClass={evaluationGridClass}
+          evaluationColumnClass={evaluationColumnClass}
+        />
+      )}
+
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-medium text-marine">{evaluationSectionTitle}</h2>
         <div className={evaluationGridClass}>
@@ -195,15 +206,11 @@ export const CultureEvaluationContent = ({
                   )}
                 />
               }
-            >
-              <HistoryActualPopover period={period} actual={eva1st?.actualOwner} />
-            </FormGenerator>
+            />
             <EvaluationResultField
               form={form}
-              period={period}
               name={`cultures.${index}.levelBehaviorOwner`}
               disabled={!permissions.canPerformOwner}
-              midYearLevel={eva1st?.levelBehaviorOwner}
               displayLevel={currentEvaluation?.levelBehaviorOwner}
             />
           </div>
@@ -220,15 +227,11 @@ export const CultureEvaluationContent = ({
                 maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
                 fillHeight
                 className={fillHeightFormClass}
-              >
-                <HistoryActualPopover period={period} actual={eva1st?.actualChecker} />
-              </FormGenerator>
+              />
               <EvaluationResultField
                 form={form}
-                period={period}
                 name={`cultures.${index}.levelBehaviorChecker`}
                 disabled={!permissions.canPerformChecker}
-                midYearLevel={eva1st?.levelBehaviorChecker}
                 displayLevel={currentEvaluation?.levelBehaviorChecker}
               />
             </div>
@@ -245,15 +248,11 @@ export const CultureEvaluationContent = ({
               maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
               fillHeight
               className={fillHeightFormClass}
-            >
-              <HistoryActualPopover period={period} actual={eva1st?.actualApprover} />
-            </FormGenerator>
+            />
             <EvaluationResultField
               form={form}
-              period={period}
               name={`cultures.${index}.levelBehaviorApprover`}
               disabled={!permissions.canPerformApprover}
-              midYearLevel={eva1st?.levelBehaviorApprover}
               displayLevel={currentEvaluation?.levelBehaviorApprover}
             />
           </div>
@@ -263,32 +262,143 @@ export const CultureEvaluationContent = ({
   );
 };
 
-interface EvaluationResultFieldProps {
-  form: UseFormReturn<MeritEvaluation>;
-  period: Period;
-  name: `cultures.${number}.${"levelBehaviorOwner" | "levelBehaviorChecker" | "levelBehaviorApprover"}`;
-  disabled: boolean;
-  midYearLevel: number | null | undefined;
-  displayLevel: number | null | undefined;
+interface MidYearEvaluationSectionProps {
+  evaluation: CultureEvaluation | undefined;
+  hasChecker: boolean;
+  evaluationGridClass: string;
+  evaluationColumnClass: string;
 }
 
-const formatLevel = (level: number | null | undefined) =>
-  level != null ? `Level ${level}` : "-";
+const MidYearEvaluationSection = ({
+  evaluation,
+  hasChecker,
+  evaluationGridClass,
+  evaluationColumnClass,
+}: MidYearEvaluationSectionProps) => {
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-sm font-medium text-marine">Mid-year Evaluation</h2>
+      <div className={evaluationGridClass}>
+        <div className={evaluationColumnClass}>
+          <ReadOnlyTextBlock
+            label="พนักงาน (Employee)"
+            description="ผลลัพธ์การแสดงออกตามพฤติกรรมที่คาดหวัง (Result)"
+            value={evaluation?.actualOwner}
+            fileUpload={
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-0.5 text-xs text-marine whitespace-normal">
+                  <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
+                  <span className="font-normal text-secondary">ไม่บังคับแนบไฟล์ (optional)</span>
+                </div>
+                <AttachButton
+                  value={evaluation?.fileUrl ?? null}
+                  canPerform={false}
+                  onChange={() => {}}
+                  onRemove={() => {}}
+                />
+              </div>
+            }
+          />
+          <ReadOnlyResultField level={evaluation?.levelBehaviorOwner} />
+        </div>
 
-const formatScore = (level: number | null | undefined) =>
-  level != null ? `${level}` : "";
+        {hasChecker && (
+          <div className={evaluationColumnClass}>
+            <ReadOnlyTextBlock
+              label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
+              description="ความคิดเห็น (Comment)"
+              value={evaluation?.actualChecker}
+              fillHeight
+            />
+            <ReadOnlyResultField level={evaluation?.levelBehaviorChecker} />
+          </div>
+        )}
+
+        <div className={evaluationColumnClass}>
+          <ReadOnlyTextBlock
+            label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
+            description="ความคิดเห็น (Comment)"
+            value={evaluation?.actualApprover}
+            fillHeight
+          />
+          <ReadOnlyResultField level={evaluation?.levelBehaviorApprover} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface ReadOnlyTextBlockProps {
+  label: string;
+  description: string;
+  value: string | null | undefined;
+  fillHeight?: boolean;
+  fileUpload?: ReactNode;
+}
+
+const ReadOnlyTextBlock = ({
+  label,
+  description,
+  value,
+  fillHeight,
+  fileUpload,
+}: ReadOnlyTextBlockProps) => {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2 min-h-0 bg-transparent p-0 h-auto",
+        fillHeight && "lg:flex-1 lg:min-h-0",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={formRecord.blue.label}>{label}</span>
+      </div>
+      <span className="text-xs text-secondary">{description}</span>
+      <p
+        className={cn(
+          formRecord.blue.input,
+          "whitespace-pre-wrap [word-break:break-word]",
+          fillHeight && "lg:min-h-10 lg:flex-1",
+        )}
+      >
+        {value?.trim() ? value : "-"}
+      </p>
+      {fileUpload}
+    </div>
+  );
+};
+
+const formatScore = (level: number | null | undefined, empty = "") =>
+  level != null ? `${level}` : empty;
+
+const ReadOnlyResultField = ({ level }: { level: number | null | undefined }) => {
+  return (
+    <div className="flex flex-col gap-2 mt-auto pt-1">
+      <span className="text-sm font-medium shrink-0 text-marine">
+        ผลการประเมิน (Evaluation)
+      </span>
+      <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
+        {formatScore(level, "-")}
+      </p>
+    </div>
+  );
+};
+
+interface EvaluationResultFieldProps {
+  form: UseFormReturn<MeritEvaluation>;
+  name: `cultures.${number}.${"levelBehaviorOwner" | "levelBehaviorChecker" | "levelBehaviorApprover"}`;
+  disabled: boolean;
+  displayLevel: number | null | undefined;
+}
 
 const CLEAR_LEVEL_VALUE = "__none__";
 
 const EvaluationResultField = ({
   form,
-  period,
   name,
   disabled,
-  midYearLevel,
   displayLevel,
 }: EvaluationResultFieldProps) => {
-  const isYearEnd = period === Period.EVALUATION_2ND;
   const formState = useFormState({ control: form.control });
   const hasError = Boolean(form.getFieldState(name, formState).error);
 
@@ -300,114 +410,53 @@ const EvaluationResultField = ({
 
   return (
     <div className="flex flex-col gap-2 mt-auto pt-1">
-      <div className="flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            "text-sm font-medium shrink-0",
-            hasError ? "text-destructive" : "text-marine",
-          )}
-        >
-          ผลการประเมิน (Evaluation)
-        </span>
-        {isYearEnd && (
-          <HistoryResultPopover
-            period={period}
-            midYearLevel={midYearLevel}
-          />
+      <span
+        className={cn(
+          "text-sm font-medium shrink-0",
+          hasError ? "text-destructive" : "text-marine",
         )}
-      </div>
+      >
+        ผลการประเมิน (Evaluation)
+      </span>
 
-      {isYearEnd ? (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-marine">Mid-year Evaluation</span>
-          <p className={cn(formRecord.blue.input, "min-h-10 flex items-center px-2.5 text-sm")}>
-            {formatLevel(midYearLevel)}
-          </p>
-        </div>
-      ) : (
-        <FormField
-          control={form.control}
-          name={name}
-          render={({ field }) => (
-            <FormItem>
-              {disabled ? (
-                <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
-                  {formatScore(resolveLevel(field.value))}
-                </p>
-              ) : (
-                <Select
-                  value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
-                  onValueChange={(value) => {
-                    field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
-                    void form.trigger(name);
-                  }}
-                >
-                  <FormControl>
-                    <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
-                      <SelectValue placeholder="เลือกระดับความสำเร็จ" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
-                      เลือกระดับความสำเร็จ
-                    </SelectItem>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="4">4</SelectItem>
-                    <SelectItem value="5">5</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
-
-      {isYearEnd && (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-marine">Year-end Evaluation</span>
-          <FormField
-            control={form.control}
-            name={name}
-            render={({ field }) => (
-              <FormItem>
-                {disabled ? (
-                  <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
-                    {formatScore(resolveLevel(field.value))}
-                  </p>
-                ) : (
-                  <Select
-                    value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
-                    onValueChange={(value) => {
-                      field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
-                      void form.trigger(name);
-                    }}
-                  >
-                    <FormControl>
-                      <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
-                        <SelectValue placeholder="เลือกระดับความสำเร็จ" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
-                      เลือกระดับความสำเร็จ
-                    </SelectItem>
-                      <SelectItem value="1">1</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="3">3</SelectItem>
-                      <SelectItem value="4">4</SelectItem>
-                      <SelectItem value="5">5</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <FormMessage />
-              </FormItem>
+      <FormField
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+          <FormItem>
+            {disabled ? (
+              <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
+                {formatScore(resolveLevel(field.value))}
+              </p>
+            ) : (
+              <Select
+                value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
+                onValueChange={(value) => {
+                  field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
+                  void form.trigger(name);
+                }}
+              >
+                <FormControl>
+                  <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
+                    <SelectValue placeholder="เลือกระดับความสำเร็จ" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
+                    เลือกระดับความสำเร็จ
+                  </SelectItem>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                  <SelectItem value="3">3</SelectItem>
+                  <SelectItem value="4">4</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
+                </SelectContent>
+              </Select>
             )}
-          />
-        </div>
-      )}
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 };

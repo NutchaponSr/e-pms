@@ -180,10 +180,11 @@ export const MeritInfo = ({ year }: Props) => {
               buttonCtx={{
                 active:
                   evaluation1stCompleted &&
-                  isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31)),
+                  isInRange(year, dayOfYear(year, 8, 1), dayOfYear(year, 12, 31)),
+                // Year-end ไม่ต้องรอ KPI Bonus เสร็จ (gate เดิมอยู่ที่ merit.createTask — comment ไว้แล้ว)
                 label: getEvaluationTaskButtonLabel(data.task.evaluation2nd),
                 onClick: () => {
-                  if (!isInRange(year, dayOfYear(year, 11, 1), dayOfYear(year, 12, 31))) {
+                  if (!isInRange(year, dayOfYear(year, 8, 1), dayOfYear(year, 12, 31))) {
                     toast.error(
                       "You can only evaluate Merit from November to December",
                     );

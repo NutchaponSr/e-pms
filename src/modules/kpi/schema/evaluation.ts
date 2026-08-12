@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { OVERALL_COMMENT_MAX_LENGTH } from "../constants";
+
 export const kpiEvaluationSchema = z.object({
   id: z.string(),
   role: z.enum(["owner", "checker", "approver"]),
@@ -39,9 +41,56 @@ export const kpiEvaluationSchema = z.object({
   }
 });
 
+const overallCommentFieldSchema = z
+  .string()
+  .max(OVERALL_COMMENT_MAX_LENGTH, `กรอกได้ไม่เกิน ${OVERALL_COMMENT_MAX_LENGTH} ตัวอักษร`)
+  .nullable();
+
+export const overallCommentFieldsSchema = z.object({
+  commentOwner: overallCommentFieldSchema,
+  commentChecker: overallCommentFieldSchema,
+  commentApprover: overallCommentFieldSchema,
+});
+
+const overallCommentWithRoleSchema = overallCommentFieldsSchema.extend({
+  role: z.enum(["owner", "checker", "approver"]),
+});
+
 export const kpisEvaluationSchema = z.object({
   kpis: z.array(kpiEvaluationSchema),
+  overallComments: overallCommentWithRoleSchema,
+}).superRefine((data, ctx) => {
+  switch (data.overallComments.role) {
+    case "owner":
+      if (!data.overallComments.commentOwner?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Overall comment is required",
+          path: ["overallComments", "commentOwner"],
+        });
+      }
+      break;
+    case "checker":
+      if (!data.overallComments.commentChecker?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Overall comment is required",
+          path: ["overallComments", "commentChecker"],
+        });
+      }
+      break;
+    case "approver":
+      if (!data.overallComments.commentApprover?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Overall comment is required",
+          path: ["overallComments", "commentApprover"],
+        });
+      }
+      break;
+  }
 });
 
 export type KpiEvaluation = z.infer<typeof kpiEvaluationSchema>;
 export type KpisEvaluation = z.infer<typeof kpisEvaluationSchema>;
+export type OverallComment = z.infer<typeof overallCommentWithRoleSchema>;

@@ -7,7 +7,8 @@ import { TRPCError } from "@trpc/server";
 import { FormType, Period, Status } from "@/generated/prisma/enums";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
+import { buildPermissionContext, canPerform, getUserRole } from "@/modules/tasks/permissions";
+import { assertAnyRoleOnForm, assertFormOwner } from "@/modules/tasks/access";
 import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/merit/schemas/definition";
 import { formatMeritExport, sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
@@ -340,6 +341,11 @@ export const meritProcedure = createTRPCRouter({
       }
 
       const permission = buildPermissionContext(ctx.user.username, task);
+
+      if (!getUserRole(permission)) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
       const portion = validateWeight(task.owner.rank as Rank);
 
       const overallComment = plain.overallComments.find(
@@ -395,7 +401,7 @@ export const meritProcedure = createTRPCRouter({
         });
       }
 
-      const { existingForm, existingMeritTask, cultures, approvedKpiTask } = await db.$transaction(async (tx) => {
+      const { existingForm, existingMeritTask, cultures } = await db.$transaction(async (tx) => {
         const existingForm = await tx.form.findFirst({
           where: {
             type: FormType.MERIT,
@@ -427,37 +433,39 @@ export const meritProcedure = createTRPCRouter({
         );
 
         const cultures = await tx.culture.findMany();
-        const approvedKpiTask = await db.form.findFirst({
-          where: {
-            year: input.year,
-            type: FormType.KPI,
-            tasks: {
-              some: {
-                ownerId: ctx.user.username,
-                status: Status.COMPLETED,
-              },
-            },
-          },
-          include: {
-            tasks: true,
-          },
-        });
 
-        return { existingForm, existingMeritTask, cultures, approvedKpiTask };
-      }); 
-      
+        // Year-end / evaluation no longer requires KPI Bonus completed.
+        // Keep previous gate for reference:
+        // const approvedKpiTask = await db.form.findFirst({
+        //   where: {
+        //     year: input.year,
+        //     type: FormType.KPI,
+        //     tasks: {
+        //       some: {
+        //         ownerId: ctx.user.username,
+        //         status: Status.COMPLETED,
+        //       },
+        //     },
+        //   },
+        //   include: {
+        //     tasks: true,
+        //   },
+        // });
+
+        return { existingForm, existingMeritTask, cultures };
+      });
 
       // find merit task with period EVALUATION_1ST
-      const evaluationKpiTask = approvedKpiTask?.tasks.find((f) => (f.context as { period: Period }).period === Period.EVALUATION);
+      // const evaluationKpiTask = approvedKpiTask?.tasks.find((f) => (f.context as { period: Period }).period === Period.EVALUATION);
 
-      //  && meritTask.context.period === EVALUATION_1ST
-      if ((!evaluationKpiTask || evaluationKpiTask.status !== Status.COMPLETED) && (existingMeritTask?.context as { period: Period })?.period === Period.EVALUATION_1ST) {
-        
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "You must finish KPI evaluation and get done first!",
-        });
-      }
+      // //  && meritTask.context.period === EVALUATION_1ST
+      // if ((!evaluationKpiTask || evaluationKpiTask.status !== Status.COMPLETED) && (existingMeritTask?.context as { period: Period })?.period === Period.EVALUATION_1ST) {
+      //
+      //   throw new TRPCError({
+      //     code: "BAD_REQUEST",
+      //     message: "You must finish KPI evaluation and get done first!",
+      //   });
+      // }
 
       const checkerId = record?.checker && record.checker.trim() !== "" 
         ? record.checker 
@@ -544,7 +552,7 @@ export const meritProcedure = createTRPCRouter({
             });
           }
 
-          await tx.meritOverallComment.upsert({
+          await tx.overallComment.upsert({
             where: {
               formId_period: {
                 formId: existingForm.id,
@@ -633,8 +641,30 @@ export const meritProcedure = createTRPCRouter({
         cultures: z.array(cultureDefinitionSchema),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       if (input.competencies.length === 0 && input.cultures.length === 0) return { success: true };
+
+      const [owningCompetencyRecords, owningCultureRecords] = await Promise.all([
+        input.competencies.length > 0
+          ? db.competencyRecord.findMany({
+              where: { id: { in: input.competencies.map((c) => c.id) } },
+              select: { meritFormId: true },
+            })
+          : Promise.resolve([]),
+        input.cultures.length > 0
+          ? db.cultureRecord.findMany({
+              where: { id: { in: input.cultures.map((c) => c.id) } },
+              select: { meritFormId: true },
+            })
+          : Promise.resolve([]),
+      ]);
+      const formIds = [
+        ...new Set([
+          ...owningCompetencyRecords.map((r) => r.meritFormId),
+          ...owningCultureRecords.map((r) => r.meritFormId),
+        ]),
+      ];
+      await Promise.all(formIds.map((formId) => assertFormOwner(formId, ctx.user.username)));
 
       const normalizeEmptyStringToNull = <T extends Record<string, unknown>>(
         obj: T,
@@ -692,13 +722,13 @@ export const meritProcedure = createTRPCRouter({
       const permission = buildPermissionContext(ctx.user.username, task);
       const role = getUserRole(permission);
 
-      if (!role) {
+      if (!role || !canPerform(role, ["write"], task.status)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "No permission to evaluate" });
       }
 
       const overallCommentUpdate = buildOverallCommentRoleUpdate(input.overallComments, role);
 
-      await db.meritOverallComment.upsert({
+      await db.overallComment.upsert({
         where: {
           formId_period: {
             formId: input.formId,
@@ -794,11 +824,17 @@ export const meritProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const existing = await db.competencyEvaluation.findUnique({
         where: { id: input.id },
-        select: { fileUrl: true },
+        select: { fileUrl: true, competencyRecord: { select: { meritFormId: true } } },
       });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await assertFormOwner(existing.competencyRecord.meritFormId, ctx.user.username);
 
       const record = await db.competencyEvaluation.update({
         where: {
@@ -821,11 +857,17 @@ export const meritProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const existing = await db.cultureEvaluation.findUnique({
         where: { id: input.id },
-        select: { fileUrl: true },
+        select: { fileUrl: true, cultureRecord: { select: { meritFormId: true } } },
       });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await assertFormOwner(existing.cultureRecord.meritFormId, ctx.user.username);
 
       const record = await db.cultureEvaluation.update({
         where: {
@@ -852,8 +894,14 @@ export const meritProcedure = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const existing = await db.competencyEvaluation.findUnique({
         where: { id: input.id },
-        select: { fileUrl: true },
+        select: { fileUrl: true, competencyRecord: { select: { meritFormId: true } } },
       });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await assertFormOwner(existing.competencyRecord.meritFormId, ctx.user.username);
 
       await upsertAttach(db, input.fileUrl, ctx.user.username);
 
@@ -878,8 +926,14 @@ export const meritProcedure = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const existing = await db.cultureEvaluation.findUnique({
         where: { id: input.id },
-        select: { fileUrl: true },
+        select: { fileUrl: true, cultureRecord: { select: { meritFormId: true } } },
       });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await assertFormOwner(existing.cultureRecord.meritFormId, ctx.user.username);
 
       await upsertAttach(db, input.fileUrl, ctx.user.username);
 
@@ -900,7 +954,9 @@ export const meritProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await assertAnyRoleOnForm(input.id, ctx.user.username);
+
       const meritForm = await db.form.findUnique({
         where: {
           id: input.id,

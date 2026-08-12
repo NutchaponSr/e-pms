@@ -18,7 +18,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    minPasswordLength: 1,
+    minPasswordLength: 8,
     autoSignIn: false,
     password: {
       hash: async (password) => {
@@ -72,7 +72,4 @@ export const auth = betterAuth({
       adminRoles: [UserRole.ADMIN],
     })
   ],
-  advanced: {
-    disableOriginCheck: true,
-  }
 });

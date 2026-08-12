@@ -9,7 +9,7 @@ import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
 import { KpiDefinitionsMapping } from "./schema/definition";
 import { kpiEvaluationSchema } from "./schema/evaluation";
 import { PERIOD_LABELS } from "../tasks/constant";
-import { Employee, Form, KpiEvaluation, Task } from "@/generated/prisma/client";
+import { Employee, Form, KpiEvaluation, OverallComment, Task } from "@/generated/prisma/client";
 import { formatDecimal } from "@/lib/utils";
 import { kpiCategoies } from "./constants";
 import { RANK_LABELS } from "@/constants";
@@ -62,8 +62,31 @@ export function validateWeight(rank: Rank) {
   return 40;
 }
 
-const KPI_EXPORT_COLS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
+const KPI_EXPORT_COLS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"] as const;
 type KpiExportCol = (typeof KPI_EXPORT_COLS)[number];
+
+const KPI_EXPORT_LAST_COL = KPI_EXPORT_COLS[KPI_EXPORT_COLS.length - 1];
+
+const KPI_COMMENT_ROLE_LABELS = {
+  employee: "พนักงาน \n(Employee)",
+  evaluator1: "ผู้ประเมินลำดับที่ 1 \n(Evaluator 1)",
+  evaluator2: "ผู้ประเมินลำดับที่ 2 \n(Evaluator 2)",
+} as const;
+
+function splitKpiExportColumns(cols: readonly string[], groupCount: number): string[][] {
+  const groups: string[][] = [];
+  let index = 0;
+  const baseSize = Math.floor(cols.length / groupCount);
+  const remainder = cols.length % groupCount;
+
+  for (let i = 0; i < groupCount; i++) {
+    const size = baseSize + (i < remainder ? 1 : 0);
+    groups.push([...cols.slice(index, index + size)]);
+    index += size;
+  }
+
+  return groups;
+}
 
 const KPI_EXPORT_COLUMN_WIDTHS: Record<KpiExportCol, number> = {
   A: 5,
@@ -71,11 +94,13 @@ const KPI_EXPORT_COLUMN_WIDTHS: Record<KpiExportCol, number> = {
   C: 10,
   D: 8,
   E: 30,
-  F: 30,
-  G: 30,
-  H: 25,
-  I: 15,
-  J: 10,
+  F: 28,
+  G: 28,
+  H: 22,
+  I: 12,
+  J: 14,
+  K: 14,
+  L: 10,
 };
 
 const KPI_EXPORT_CELL_PADDING_X_CHARS = 0;
@@ -373,7 +398,9 @@ export async function exportDefinitionKpi(
     task: Task & {
       checker?: Employee;
       approver: Employee;
-    } 
+    };
+    overallComment?: OverallComment | null;
+    overallComments?: OverallComment[];
   },
 ) {
   const workbook = new ExcelJS.Workbook();
@@ -382,6 +409,12 @@ export async function exportDefinitionKpi(
   worksheet.columns = KPI_EXPORT_COLS.map((col) => ({
     width: KPI_EXPORT_COLUMN_WIDTHS[col],
   }));
+
+  const hasChecker = Boolean(kpiForm.task.checker);
+  const overallComment =
+    kpiForm.overallComment ??
+    kpiForm.overallComments?.find((c) => c.period === Period.EVALUATION) ??
+    null;
 
   const blueHeader = {
     fill: {
@@ -411,7 +444,7 @@ export async function exportDefinitionKpi(
   };
 
   // Title
-  worksheet.mergeCells("A1:J1");
+  worksheet.mergeCells(`A1:${KPI_EXPORT_LAST_COL}1`);
   const titleCell = worksheet.getCell("A1");
   titleCell.value = `แบบประเมินผลการปฏิบัติงาน ประจำปี ${kpiForm.year}`;
   titleCell.font = {
@@ -425,14 +458,14 @@ export async function exportDefinitionKpi(
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
   worksheet.getRow(1).height = 30;
 
-  worksheet.mergeCells("A2:J2");
+  worksheet.mergeCells(`A2:${KPI_EXPORT_LAST_COL}2`);
   const subtitleCell = worksheet.getCell("A2");
   subtitleCell.value = "KPI Bonus";
   subtitleCell.font = { bold: true, color: { argb: "FF1E40AF" } };
   subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
 
   // have 3 levels are Manager, GM/AGM และ MD/VP else "-"
-  const managerCell = worksheet.getCell("J3");
+  const managerCell = worksheet.getCell(`${KPI_EXPORT_LAST_COL}3`);
   managerCell.value = RANK_LABELS[kpiForm.employee.rank as Rank];
   managerCell.fill = {
     type: "pattern",
@@ -459,12 +492,11 @@ export async function exportDefinitionKpi(
   worksheet.getCell(`F${currentRow}`).value = "ผู้ประเมิน (Evaluator)";
   worksheet.getCell(`F${currentRow}`).style = blueHeader;
 
-  worksheet.mergeCells(`H${currentRow}:J${currentRow}`);
+  worksheet.mergeCells(`H${currentRow}:${KPI_EXPORT_LAST_COL}${currentRow}`);
   worksheet.getCell(`H${currentRow}`).value = "ข้อมูล (Info)";
   worksheet.getCell(`H${currentRow}`).style = blueHeader;
 
-  // ให้เส้นขอบหัวตาราง Owner/Info/Approver/Info แสดงครบทุกคอลัมน์
-  for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
+  for (const col of KPI_EXPORT_COLS) {
     worksheet.getCell(`${col}${currentRow}`).border = cellBorder
   }
 
@@ -525,13 +557,12 @@ export async function exportDefinitionKpi(
     worksheet.getCell(`F${currentRow}`).border = cellBorder
     worksheet.getCell(`F${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
 
-    worksheet.mergeCells(`H${currentRow}:J${currentRow}`)
+    worksheet.mergeCells(`H${currentRow}:${KPI_EXPORT_LAST_COL}${currentRow}`)
     worksheet.getCell(`H${currentRow}`).value = info.evaluatorValue
     worksheet.getCell(`H${currentRow}`).border = cellBorder
     worksheet.getCell(`H${currentRow}`).font = { size: 9 }
 
-    // ให้เส้นขอบต่อเนื่องครบทุกคอลัมน์ในแถวข้อมูล
-    for (const col of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]) {
+    for (const col of KPI_EXPORT_COLS) {
       worksheet.getCell(`${col}${currentRow}`).border = cellBorder
     }
 
@@ -547,10 +578,9 @@ export async function exportDefinitionKpi(
   worksheet.getCell(`D${headerRow1}`).value = "เป้าหมาย \n(Target)"
   worksheet.getCell(`F${headerRow1}`).value = "คำจำกัดความและสูตรการคำนวณ \n(Definition and Calculation Formula)"
   worksheet.getCell(`G${headerRow1}`).value = "รูปแบบและวิธีการรายงานผลความสำเร็จ \n(Format/Method of Reporting Achievement)"
-  worksheet.mergeCells(`H${headerRow1}:J${headerRow1}`)
-  worksheet.getCell(`H${headerRow1}`).value = "การประเมินผลการปฏิบัคิงานปลายปี (JAN - DEC) \n(Year-End Evaluation)"
+  worksheet.mergeCells(`H${headerRow1}:L${headerRow1}`)
+  worksheet.getCell(`H${headerRow1}`).value = "การประเมินผลการปฏิบัติงานปลายปี (JAN - DEC) \n(Year-End Evaluation)"
 
-  // Apply header styles
   for (const col of KPI_EXPORT_COLS) {
     worksheet.getCell(`${col}${headerRow1}`).style = blueHeader
   }
@@ -561,50 +591,61 @@ export async function exportDefinitionKpi(
     { text: worksheet.getCell(`D${headerRow1}`).value as string, cols: ["D", "E"] },
     { text: worksheet.getCell(`F${headerRow1}`).value as string, col: "F" },
     { text: worksheet.getCell(`G${headerRow1}`).value as string, col: "G" },
-    { text: worksheet.getCell(`H${headerRow1}`).value as string, cols: ["H", "I", "J"] },
+    { text: worksheet.getCell(`H${headerRow1}`).value as string, cols: ["H", "I", "J", "K", "L"] },
   ], { minHeight: 24 })
   worksheet.getRow(headerRow1).font = { size: 9, color: { argb: "FF1E40AF" } }
-
 
   currentRow++;
   const headerRow2 = currentRow;
 
-  worksheet.getCell(`A${headerRow2}`).value = ""
-  worksheet.getCell(`B${headerRow2}`).value = ""
-  worksheet.getCell(`C${headerRow2}`).value = ""
-  worksheet.getCell(`D${headerRow2}`).value = ""
-  worksheet.getCell(`E${headerRow2}`).value = ""
-  worksheet.getCell(`F${headerRow2}`).value = ""
-  worksheet.getCell(`G${headerRow2}`).value = ""
-  worksheet.getCell(`H${headerRow2}`).value = "ข้อมูล/หลักฐาน การประเมิน \n(Achievement Evident)"
-  worksheet.getCell(`I${headerRow2}`).value = "ระดับความสำเร็จ \n(Achieved Level)"
-  worksheet.getCell(`J${headerRow2}`).value = "คะแนน \n(Score)"
-
-  // Merge เป้าหมาย (Target) ให้เป็นบล็อกเดียวครอบ D:E ทั้งสองแถว
-  worksheet.mergeCells(`D${headerRow1}:E${headerRow2}`)
+  worksheet.getCell(`H${headerRow2}`).value = "ผลสำเร็จ \n(Result)"
+  worksheet.mergeCells(`I${headerRow2}:K${headerRow2}`)
+  worksheet.getCell(`I${headerRow2}`).value = "ระดับความสำเร็จ \n(Level of Achievement)"
+  worksheet.getCell(`L${headerRow2}`).value = "คะแนน \n(Score)"
 
   for (const col of KPI_EXPORT_COLS) {
     worksheet.getCell(`${col}${headerRow2}`).style = blueHeader
   }
   setKpiExportRowHeight(worksheet, headerRow2, [
     { text: worksheet.getCell(`H${headerRow2}`).value as string, col: "H" },
-    { text: worksheet.getCell(`I${headerRow2}`).value as string, col: "I" },
-    { text: worksheet.getCell(`J${headerRow2}`).value as string, col: "J" },
+    { text: worksheet.getCell(`I${headerRow2}`).value as string, cols: ["I", "J", "K"] },
+    { text: worksheet.getCell(`L${headerRow2}`).value as string, col: "L" },
   ], { minHeight: 22 })
   worksheet.getRow(headerRow2).font = { size: 9, color: { argb: "FF1E40AF" } }
 
-  // Merge header cells that span two rows
-  worksheet.mergeCells(`A${headerRow1}:A${headerRow2}`)
-  worksheet.mergeCells(`B${headerRow1}:B${headerRow2}`)
-  worksheet.mergeCells(`C${headerRow1}:C${headerRow2}`)
-  worksheet.mergeCells(`F${headerRow1}:F${headerRow2}`)
-  worksheet.mergeCells(`G${headerRow1}:G${headerRow2}`)
+  currentRow++;
+  const headerRow3 = currentRow;
+
+  worksheet.getCell(`I${headerRow3}`).value = KPI_COMMENT_ROLE_LABELS.employee
+  worksheet.getCell(`J${headerRow3}`).value = KPI_COMMENT_ROLE_LABELS.evaluator1
+  worksheet.getCell(`K${headerRow3}`).value = KPI_COMMENT_ROLE_LABELS.evaluator2
+
+  // Merge เป้าหมาย (Target) ให้เป็นบล็อกเดียวครอบ D:E ทั้งสามแถว
+  worksheet.mergeCells(`D${headerRow1}:E${headerRow3}`)
+  worksheet.mergeCells(`H${headerRow2}:H${headerRow3}`)
+  worksheet.mergeCells(`L${headerRow2}:L${headerRow3}`)
+
+  for (const col of KPI_EXPORT_COLS) {
+    worksheet.getCell(`${col}${headerRow3}`).style = blueHeader
+  }
+  setKpiExportRowHeight(worksheet, headerRow3, [
+    { text: worksheet.getCell(`I${headerRow3}`).value as string, col: "I" },
+    { text: worksheet.getCell(`J${headerRow3}`).value as string, col: "J" },
+    { text: worksheet.getCell(`K${headerRow3}`).value as string, col: "K" },
+  ], { minHeight: 28 })
+  worksheet.getRow(headerRow3).font = { size: 9, color: { argb: "FF1E40AF" } }
+
+  // Merge header cells that span three rows
+  worksheet.mergeCells(`A${headerRow1}:A${headerRow3}`)
+  worksheet.mergeCells(`B${headerRow1}:B${headerRow3}`)
+  worksheet.mergeCells(`C${headerRow1}:C${headerRow3}`)
+  worksheet.mergeCells(`F${headerRow1}:F${headerRow3}`)
+  worksheet.mergeCells(`G${headerRow1}:G${headerRow3}`)
 
   currentRow++;
 
   const targetLevels = [70, 80, 90, 100] as const
 
-  // Helper function to get target value from level
   const getTargetValue = (kpi: KpiEvaluation, level: typeof targetLevels[number]): string | null => {
     switch (level) {
       case 70:
@@ -620,10 +661,20 @@ export async function exportDefinitionKpi(
     }
   }
 
+  const formatAchievementMark = (achievement: number | null | undefined, level: number) =>
+    achievement != null && Number(achievement) === level ? "✓" : ""
+
   for (let kpiIndex = 0; kpiIndex < kpiForm.kpis.length; kpiIndex++) {
     const kpi = kpiForm.kpis[kpiIndex]
     const startRow = currentRow
     const kpiTitle = `${kpi.name} \n${kpiCategoies[kpi.category!] ?? ""}`
+    const achievementForScore =
+      kpi.achievementApprover ??
+      (hasChecker ? kpi.achievementChecker : null) ??
+      kpi.achievementOwner ??
+      0
+    const kpiScore = formatDecimal((Number(kpi.weight) * Number(achievementForScore)) / 100)
+    const resultText = kpi.actualApprover || kpi.actualChecker || kpi.actualOwner || ""
 
     for (let levelIndex = 0; levelIndex < targetLevels.length; levelIndex++) {
       const level = targetLevels[levelIndex];
@@ -634,22 +685,33 @@ export async function exportDefinitionKpi(
         setKpiExportBodyCell(worksheet.getCell(`C${currentRow}`), Number(kpi.weight), "center", cellBorder)
         setKpiExportBodyCell(worksheet.getCell(`F${currentRow}`), kpi.definition, "wrap", cellBorder)
         setKpiExportBodyCell(worksheet.getCell(`G${currentRow}`), kpi.method, "wrap", cellBorder)
-        setKpiExportBodyCell(worksheet.getCell(`H${currentRow}`), kpi.achievementApprover, "wrap", cellBorder)
-        setKpiExportBodyCell(worksheet.getCell(`J${currentRow}`), 0, "center", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`H${currentRow}`), resultText, "wrap", cellBorder)
+        setKpiExportBodyCell(worksheet.getCell(`L${currentRow}`), kpiScore, "center", cellBorder)
       }
 
       setKpiExportBodyCell(worksheet.getCell(`D${currentRow}`), `${level}%`, "center", cellBorder)
       setKpiExportBodyCell(worksheet.getCell(`E${currentRow}`), getTargetValue(kpi, level), "wrap", cellBorder)
       setKpiExportBodyCell(
         worksheet.getCell(`I${currentRow}`),
-        `${level}%`,
+        formatAchievementMark(kpi.achievementOwner, level),
         "center",
         cellBorder,
-        8,
+      )
+      setKpiExportBodyCell(
+        worksheet.getCell(`J${currentRow}`),
+        hasChecker ? formatAchievementMark(kpi.achievementChecker, level) : "",
+        "center",
+        cellBorder,
+      )
+      setKpiExportBodyCell(
+        worksheet.getCell(`K${currentRow}`),
+        formatAchievementMark(kpi.achievementApprover, level),
+        "center",
+        cellBorder,
       )
 
       if (levelIndex > 0) {
-        for (const col of ["A", "B", "C", "F", "G", "H", "J"] as const) {
+        for (const col of ["A", "B", "C", "F", "G", "H", "L"] as const) {
           worksheet.getCell(`${col}${currentRow}`).border = cellBorder
         }
       }
@@ -664,7 +726,7 @@ export async function exportDefinitionKpi(
     worksheet.mergeCells(`F${startRow}:F${endRow}`)
     worksheet.mergeCells(`G${startRow}:G${endRow}`)
     worksheet.mergeCells(`H${startRow}:H${endRow}`)
-    worksheet.mergeCells(`J${startRow}:J${endRow}`)
+    worksheet.mergeCells(`L${startRow}:L${endRow}`)
 
     setKpiExportMergedBlockRowHeights(
       worksheet,
@@ -674,17 +736,23 @@ export async function exportDefinitionKpi(
         { text: kpiTitle, col: "B" },
         { text: kpi.definition, col: "F" },
         { text: kpi.method, col: "G" },
-        { text: kpi.achievementApprover, col: "H" },
+        { text: resultText, col: "H" },
       ],
       targetLevels.map((level) => [{ text: getTargetValue(kpi, level), col: "E" }]),
       { minHeight: 22 },
     )
   }
 
-  // Calculate total score from achievementApprover and weights
+  // Calculate total score: prefer Approver, then Checker, then Owner
   const totalScore = calculateSumAchievement(
-    kpiForm.kpis.map((kpi) => kpi.achievementApprover ?? 0),
-    kpiForm.kpis.map((kpi) => Number(kpi.weight))
+    kpiForm.kpis.map(
+      (kpi) =>
+        kpi.achievementApprover ??
+        (hasChecker ? kpi.achievementChecker : null) ??
+        kpi.achievementOwner ??
+        0,
+    ),
+    kpiForm.kpis.map((kpi) => Number(kpi.weight)),
   )
 
   // Footer row
@@ -695,26 +763,132 @@ export async function exportDefinitionKpi(
   worksheet.getCell(`A${currentRow}`).border = cellBorder
   worksheet.getCell(`A${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
 
-  // find sum weight
   worksheet.getCell(`C${currentRow}`).value = kpiForm.kpis.reduce((acc, kpi) => acc + Number(kpi.weight), 0)
   worksheet.getCell(`C${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
   worksheet.getCell(`C${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
   worksheet.getCell(`C${currentRow}`).border = cellBorder
   worksheet.getCell(`C${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
 
-
-  for (const col of ["D", "E", "F", "G", "I"]) {
+  for (const col of ["D", "E", "F", "G"] as const) {
     const cell = worksheet.getCell(`${col}${currentRow}`)
     cell.border = cellBorder
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
   }
 
-  worksheet.mergeCells(`H${currentRow}:J${currentRow}`)
+  worksheet.mergeCells(`H${currentRow}:L${currentRow}`)
   worksheet.getCell(`H${currentRow}`).value = `คะแนนที่ได้ (Score achieved): ${formatDecimal(totalScore)}`
   worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "right", vertical: "middle" }
   worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
   worksheet.getCell(`H${currentRow}`).border = cellBorder
   worksheet.getCell(`H${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
+
+  for (const col of ["H", "I", "J", "K", "L"] as const) {
+    worksheet.getCell(`${col}${currentRow}`).border = cellBorder
+    worksheet.getCell(`${col}${currentRow}`).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF0F7FF" },
+    }
+  }
+
+  currentRow += 2
+
+  // ========== OVERALL COMMENTS SECTION ==========
+  const commentSectionTitleRow = currentRow
+  worksheet.mergeCells(`A${commentSectionTitleRow}:${KPI_EXPORT_LAST_COL}${commentSectionTitleRow}`)
+  worksheet.getCell(`A${commentSectionTitleRow}`).value =
+    "ข้อคิดเห็น/ข้อเสนอแนะภาพรวม (Overall Comments / Recommendations)"
+  worksheet.getCell(`A${commentSectionTitleRow}`).font = { bold: true, color: { argb: "FF1E40AF" }, size: 12 }
+  worksheet.getCell(`A${commentSectionTitleRow}`).alignment = { vertical: "middle" }
+  for (const col of KPI_EXPORT_COLS) {
+    worksheet.getCell(`${col}${commentSectionTitleRow}`).border = cellBorder
+  }
+  currentRow++
+
+  const commentColGroups = splitKpiExportColumns(
+    KPI_EXPORT_COLS,
+    hasChecker ? 3 : 2,
+  )
+  const commentGroupLabels = hasChecker
+    ? [KPI_COMMENT_ROLE_LABELS.employee, KPI_COMMENT_ROLE_LABELS.evaluator1, KPI_COMMENT_ROLE_LABELS.evaluator2]
+    : [KPI_COMMENT_ROLE_LABELS.employee, KPI_COMMENT_ROLE_LABELS.evaluator2]
+
+  const getCommentValue = (index: number): string | null | undefined => {
+    if (!overallComment) return null
+    if (hasChecker) {
+      return [overallComment.commentOwner, overallComment.commentChecker, overallComment.commentApprover][index]
+    }
+    return [overallComment.commentOwner, overallComment.commentApprover][index]
+  }
+
+  const mergeColsInRow = (cols: string[], row: number) => {
+    if (cols.length > 1) {
+      worksheet.mergeCells(`${cols[0]}${row}:${cols[cols.length - 1]}${row}`)
+    }
+  }
+
+  const commentHeaderRow1 = currentRow
+  worksheet.mergeCells(`A${commentHeaderRow1}:${KPI_EXPORT_LAST_COL}${commentHeaderRow1}`)
+  worksheet.getCell(`A${commentHeaderRow1}`).value =
+    "การประเมินผลการปฏิบัติงานปลายปี (JAN - DEC) \n(Year-End Evaluation)"
+  worksheet.getCell(`A${commentHeaderRow1}`).alignment = {
+    horizontal: "center",
+    vertical: "middle",
+    wrapText: true,
+  }
+  for (const col of KPI_EXPORT_COLS) {
+    worksheet.getCell(`${col}${commentHeaderRow1}`).style = blueHeader
+  }
+  setKpiExportRowHeight(
+    worksheet,
+    commentHeaderRow1,
+    [{ text: worksheet.getCell(`A${commentHeaderRow1}`).value as string, cols: KPI_EXPORT_COLS }],
+    { minHeight: 28 },
+  )
+  currentRow++
+
+  const commentHeaderRow2 = currentRow
+  commentColGroups.forEach((cols, index) => {
+    mergeColsInRow(cols, commentHeaderRow2)
+    const cell = worksheet.getCell(`${cols[0]}${commentHeaderRow2}`)
+    cell.value = commentGroupLabels[index]
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true }
+  })
+  for (const col of KPI_EXPORT_COLS) {
+    worksheet.getCell(`${col}${commentHeaderRow2}`).style = blueHeader
+  }
+  setKpiExportRowHeight(
+    worksheet,
+    commentHeaderRow2,
+    commentColGroups.map((cols, index) => ({
+      text: commentGroupLabels[index],
+      cols,
+    })),
+    { minHeight: 28 },
+  )
+  currentRow++
+
+  const commentDataRow = currentRow
+  commentColGroups.forEach((cols, index) => {
+    mergeColsInRow(cols, commentDataRow)
+    const cell = worksheet.getCell(`${cols[0]}${commentDataRow}`)
+    cell.value = getCommentValue(index) ?? ""
+    cell.alignment = { vertical: "top", wrapText: true }
+    cell.border = cellBorder
+    cell.font = { size: 9 }
+  })
+  for (const col of KPI_EXPORT_COLS) {
+    worksheet.getCell(`${col}${commentDataRow}`).border = cellBorder
+  }
+  setKpiExportRowHeight(
+    worksheet,
+    commentDataRow,
+    commentColGroups.map((cols, index) => ({
+      text: getCommentValue(index),
+      cols,
+    })),
+    { minHeight: 40 },
+  )
 
   // Generate and download file
   const buffer = await workbook.xlsx.writeBuffer();

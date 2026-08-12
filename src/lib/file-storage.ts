@@ -12,7 +12,7 @@ export function sanitizeFileName(name: string): string {
   return `${stem.slice(0, 200)}.pdf`;
 }
 
-function buildFileUrl(key: string): string {
+export function buildFileUrl(key: string): string {
   return `${FILES_API_PREFIX}${encodeURIComponent(key)}`;
 }
 
