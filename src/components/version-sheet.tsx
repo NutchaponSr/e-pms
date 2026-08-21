@@ -27,6 +27,9 @@ export const VersionLogSheet = ({ version, history }: Props) => {
           type="button"
           className="flex w-full min-w-0 cursor-pointer flex-col items-start gap-1 rounded-sm text-left outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring lg:w-auto lg:max-w-xs lg:shrink-0 lg:items-end lg:text-right"
         >
+          <span className="font-mono text-sm font-semibold leading-5 text-primary">
+            {version.semver}
+          </span>
           <span className="flex max-w-full min-w-0 items-center gap-2 text-xs text-secondary">
             {version.branch ? (
               <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-sm bg-primary/6 px-1.5 py-0.5 font-medium">
@@ -49,7 +52,7 @@ export const VersionLogSheet = ({ version, history }: Props) => {
       </SheetTrigger>
       <SheetContent side="right" className="p-0">
         <SheetHeader className="border-b border-border">
-          <SheetTitle>Version history</SheetTitle>
+          <SheetTitle>Version {version.semver}</SheetTitle>
           <SheetDescription className="truncate">
             {history.repo}
             {version.branch ? ` · ${version.branch}` : ""}

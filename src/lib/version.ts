@@ -10,6 +10,10 @@ export type AppVersion = {
   committedAt: string;
   commitUrl: string;
   branchUrl: string;
+  major: number;
+  minor: number;
+  patch: number;
+  semver: string;
 };
 
 export type VersionCommit = {
@@ -37,6 +41,7 @@ export type VersionHistory = {
 };
 
 const COMMIT_LIMIT = 40;
+const MAJOR = 1;
 
 function git(...args: string[]) {
   try {
@@ -47,6 +52,26 @@ function git(...args: string[]) {
   } catch {
     return "";
   }
+}
+
+function minorFromBranch(branch: string) {
+  if (!branch || branch === "main" || branch === "master") return 0;
+  const match = branch.match(/^(\d+)/);
+  return match ? Number(match[1]) : 0;
+}
+
+function patchFromBranch(branch: string) {
+  if (!branch || branch === "main" || branch === "master") return 0;
+
+  const base =
+    git("merge-base", "origin/main", "HEAD") ||
+    git("merge-base", "main", "HEAD");
+
+  if (!base) return 0;
+
+  const count = git("rev-list", "--count", `${base}..HEAD`);
+  const patch = Number(count);
+  return Number.isFinite(patch) ? patch : 0;
 }
 
 function githubRepoSlug() {
@@ -87,6 +112,8 @@ export function getAppVersion(): AppVersion {
   const committedAt = git("log", "-1", "--pretty=%cI");
   const repo = githubRepoSlug();
   const repoUrl = `https://github.com/${repo}`;
+  const minor = minorFromBranch(branch);
+  const patch = patchFromBranch(branch);
 
   const version: AppVersion = {
     sha,
@@ -96,6 +123,10 @@ export function getAppVersion(): AppVersion {
     committedAt,
     commitUrl: sha ? `${repoUrl}/commit/${sha}` : repoUrl,
     branchUrl: branch ? `${repoUrl}/tree/${encodeURIComponent(branch)}` : repoUrl,
+    major: MAJOR,
+    minor,
+    patch,
+    semver: `${MAJOR}.${minor}.${patch}`,
   };
 
   cached = version;
