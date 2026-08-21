@@ -16,7 +16,7 @@ export const ApplicationsList = () => {
         </div>
       </div>
       <div className="w-full">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-5">
           {APP_CATEGORIES.flatMap((category) => (
             category.items.map((item) => (
               <ApplicationCard 
