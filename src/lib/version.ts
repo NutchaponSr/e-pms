@@ -47,6 +47,7 @@ function git(...args: string[]) {
   try {
     return execFileSync("git", args, {
       encoding: "utf-8",
+      cwd: process.cwd(),
       stdio: ["ignore", "pipe", "ignore"],
     }).trim();
   } catch {
@@ -54,24 +55,66 @@ function git(...args: string[]) {
   }
 }
 
-function minorFromBranch(branch: string) {
-  if (!branch || branch === "main" || branch === "master") return 0;
-  const match = branch.match(/^(\d+)/);
+function parseMinor(name: string) {
+  const normalized = name.replace(/^origin\//, "").trim();
+  if (!normalized || normalized === "main" || normalized === "master") return 0;
+  const match = normalized.match(/^(\d+)/);
   return match ? Number(match[1]) : 0;
 }
 
-function patchFromBranch(branch: string) {
-  if (!branch || branch === "main" || branch === "master") return 0;
+function maxMergedMinor() {
+  const refs = git(
+    "for-each-ref",
+    "--merged",
+    "HEAD",
+    "--format=%(refname:short)",
+  );
 
+  let max = 0;
+  for (const line of refs.split(/\r?\n/)) {
+    const minor = parseMinor(line);
+    if (minor > max) max = minor;
+  }
+  return max;
+}
+
+function patchAheadOfMain() {
   const base =
     git("merge-base", "origin/main", "HEAD") ||
     git("merge-base", "main", "HEAD");
 
   if (!base) return 0;
 
-  const count = git("rev-list", "--count", `${base}..HEAD`);
-  const patch = Number(count);
+  const patch = Number(git("rev-list", "--count", `${base}..HEAD`));
   return Number.isFinite(patch) ? patch : 0;
+}
+
+function patchFromNumberedMerge(minor: number) {
+  if (minor <= 0) return 0;
+
+  const log = git("log", "--merges", "-40", "--pretty=%H%x1f%s");
+  const marker = new RegExp(`(?:^|[/\\s])${minor}-`);
+
+  for (const line of log.split(/\r?\n/)) {
+    const [hash, subject = ""] = line.split("\x1f");
+    if (!hash || !marker.test(subject)) continue;
+
+    const patch = Number(git("rev-list", "--count", `${hash}^1..${hash}^2`));
+    if (Number.isFinite(patch) && patch > 0) return patch;
+  }
+
+  return 0;
+}
+
+function computeSemver(branch: string) {
+  const fromBranch = parseMinor(branch);
+  const minor = fromBranch || maxMergedMinor();
+  const patch = Math.max(
+    fromBranch ? patchAheadOfMain() : 0,
+    patchFromNumberedMerge(minor),
+  );
+
+  return { minor, patch };
 }
 
 function githubRepoSlug() {
@@ -112,8 +155,7 @@ export function getAppVersion(): AppVersion {
   const committedAt = git("log", "-1", "--pretty=%cI");
   const repo = githubRepoSlug();
   const repoUrl = `https://github.com/${repo}`;
-  const minor = minorFromBranch(branch);
-  const patch = patchFromBranch(branch);
+  const { minor, patch } = computeSemver(branch);
 
   const version: AppVersion = {
     sha,
