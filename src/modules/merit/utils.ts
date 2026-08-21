@@ -316,6 +316,25 @@ export function sumCultureByPeriod(
   }, 0);
 }
 
+/**
+ * คำนวณคะแนน KPI (เต็ม 40) จากผลประเมินของ approver ถ่วงด้วยสัดส่วน (portion) ตาม rank
+ */
+export function calculateKpiScore(
+  kpis: Array<{ achievementApprover: unknown; weight: unknown }>,
+  portion: number,
+): number {
+  const sum = kpis.reduce((acc, kpi) => {
+    const level = Number(kpi.achievementApprover ?? 0);
+    const weight = Number(kpi.weight ?? 0);
+
+    return acc + (level / 100) * weight;
+  }, 0);
+
+  const score = (sum * 40) / portion;
+
+  return score > 40 ? 40 : score;
+}
+
 export function formatMeritExport(meritForm: MeritFormWithInfo) {
   const calcPercentage = (weight: number, decimal: number, achievement?: number) =>
     formatDecimal(weight * ((achievement ?? 0) / 5));

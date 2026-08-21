@@ -91,15 +91,50 @@ model Employee {
   rank String
   department String
 
+  approval Approval? @relation("ApprovalOwner")
+  checkerFor Approval[] @relation("ApprovalChecker")
+  approverFor Approval[] @relation("ApprovalApprover")
+
   user User?
-  owner Task[] @relation("Owner")
-  checker Task[] @relation("Checker")
-  approver Task[] @relation("Approver")
   comments Comment[]
   forms Form[]
   attaches Attach[]
+  tasks Task[] @relation("TaskOwner")
 
   @@map("employee")
+}
+
+model Approval {
+  id         String   @id @default(cuid())
+  employeeId String   @unique
+  checkerId  String?
+  approverId String
+
+  employee Employee  @relation("ApprovalOwner", fields: [employeeId], references: [id], onDelete: Cascade)
+  checker  Employee? @relation("ApprovalChecker", fields: [checkerId], references: [id], onDelete: SetNull)
+  approver Employee  @relation("ApprovalApprover", fields: [approverId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks Task[]
+
+  @@map("approval")
+}
+
+// ช่วงเปิด/ปิดระบบต่อ form/period (วนทุกปี) — open/close เป็น JSON { month, day }
+model EvaluationWindow {
+  id String @id @default(cuid())
+  formType FormType
+  period Period
+  open Json
+  close Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([formType, period])
+  @@map("evaluationWindow")
 }
 
 enum Status {
@@ -115,22 +150,22 @@ model Task {
   context Json? @default("{}")
   status Status @default(NOT_STARTED)
   updatedAt DateTime @updatedAt
-
-  ownerId String 
   createdAt DateTime @default(now())
-  owner Employee  @relation("Owner", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  checkerId String?
   checkedAt DateTime?
-  checker Employee? @relation("Checker", fields: [checkerId], references: [id], onDelete: SetNull)
-
-  approverId String
   approvedAt DateTime?
-  approver Employee @relation("Approver", fields: [approverId], references: [id], onDelete: Cascade)
+
+  ownerId String @db.VarChar(10)
+  owner Employee @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  approvalId String
+  approval Approval @relation(fields: [approvalId], references: [id], onDelete: Restrict)
 
   formId String
   form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
 
+  @@index([ownerId])
+  @@index([approvalId])
   @@map("task")
 }
 

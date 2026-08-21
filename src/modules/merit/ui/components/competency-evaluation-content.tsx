@@ -1,16 +1,16 @@
-import { inferProcedureOutput } from "@trpc/server";
-
-import { AppRouter } from "@/trpc/routers/_app";
+import type { inferProcedureOutput } from "@trpc/server";
+import { type ReactNode, useRef } from "react";
+import { type UseFormReturn, useFormState } from "react-hook-form";
+import { AttachButton } from "@/components/attach-button";
 import { CardInfo } from "@/components/card-info";
-import { formatDecimal } from "@/lib/utils";
-import { MeritEvaluation } from "../../schemas/evaluation";
-import { UseFormReturn, useFormState } from "react-hook-form";
-import { Period } from "@/generated/prisma/enums";
-import { type ReactNode, useMemo, useRef } from "react";
-import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
 import { FormGenerator } from "@/components/form-generator";
-import { formRecord } from "@/types/form";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -18,22 +18,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { AttachButton } from "@/components/attach-button";
+import { Period } from "@/generated/prisma/enums";
+import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
+import { cn, formatDecimal } from "@/lib/utils";
+import type { AppRouter } from "@/trpc/routers/_app";
+import { formRecord } from "@/types/form";
 import { useDeleteCompetencyFile } from "../../api/use-delete-competency-file";
 import { useSyncCompetencyAttach } from "../../api/use-sync-competency-attach";
 import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../../constant";
+import type { MeritEvaluation } from "../../schemas/evaluation";
 
 interface Props {
   index: number;
   period: Period;
-  competencyRecord: inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"]["competencyRecords"][number];
+  competencyRecord: inferProcedureOutput<
+    AppRouter["merit"]["getOne"]
+  >["form"]["competencyRecords"][number];
   form: UseFormReturn<MeritEvaluation>;
   permissions: {
     canPerformOwner: boolean;
     canPerformChecker: boolean;
     canPerformApprover: boolean;
-  },
+  };
   formId: string;
   hasChecker: boolean;
 }
@@ -41,19 +47,27 @@ interface Props {
 type CompetencyEvaluation =
   Props["competencyRecord"]["competencyEvaluations"][number];
 
-export const CompetencyEvaluationContent = ({ 
-  index, 
-  competencyRecord, 
+export const CompetencyEvaluationContent = ({
+  index,
+  competencyRecord,
   form,
   permissions,
   formId,
   period,
   hasChecker,
 }: Props) => {
-  const { mutation: deleteCompetencyFile } = useDeleteCompetencyFile(formId, period);
-  const { mutation: syncCompetencyAttach } = useSyncCompetencyAttach(formId, period);
+  const { mutation: deleteCompetencyFile } = useDeleteCompetencyFile(
+    formId,
+    period,
+  );
+  const { mutation: syncCompetencyAttach } = useSyncCompetencyAttach(
+    formId,
+    period,
+  );
 
-  const eva1st = competencyRecord.competencyEvaluations.find((evaluation) => evaluation.period === Period.EVALUATION_1ST);
+  const eva1st = competencyRecord.competencyEvaluations.find(
+    (evaluation) => evaluation.period === Period.EVALUATION_1ST,
+  );
   const currentEvaluation = competencyRecord.competencyEvaluations.find(
     (evaluation) => evaluation.period === period,
   );
@@ -62,7 +76,7 @@ export const CompetencyEvaluationContent = ({
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const textareaRefs = useMemo(() => [ownerActualRef], []);
+  const textareaRefs = [ownerActualRef];
 
   const { groupSyncFunctions } = useSyncTextareaHeights([
     {
@@ -74,11 +88,15 @@ export const CompetencyEvaluationContent = ({
   const syncTextareaHeights = groupSyncFunctions[0];
 
   const evaluationSectionTitle =
-    period === Period.EVALUATION_1ST ? "Mid-year Evaluation" : "Year-end Evaluation";
+    period === Period.EVALUATION_1ST
+      ? "Mid-year Evaluation"
+      : "Year-end Evaluation";
 
   const evaluationGridClass = cn(
     "grid grid-cols-1 gap-2",
-    hasChecker ? "lg:grid-cols-3 lg:items-stretch" : "lg:grid-cols-2 lg:items-stretch",
+    hasChecker
+      ? "lg:grid-cols-3 lg:items-stretch"
+      : "lg:grid-cols-2 lg:items-stretch",
   );
 
   const blueFormClass = {
@@ -96,26 +114,24 @@ export const CompetencyEvaluationContent = ({
 
   const evaluationColumnClass =
     "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+  const midYearColumnClass =
+    "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#42230308] dark:bg-[#fcfcfc08] rounded-sm";
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-row items-center justify-between gap-2">
-        <div className="flex items-center grow gap-2"> 
+        <div className="flex items-center grow gap-2">
           <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
-            <div className="text-white text-xl font-semibold">
-              {index + 1}
-            </div>
+            <div className="text-white text-xl font-semibold">{index + 1}</div>
           </div>
 
           <h1 className="text-primary text-xl font-semibold whitespace-break-spaces overflow-hidden text-ellipsis leading-7">
-            {competencyRecord.competency?.name} 
+            {competencyRecord.competency?.name}
           </h1>
         </div>
 
         <div className="flex flex-row items-center gap-2 bg-[#0080d51c] dark:bg-[#298bfd10] p-2 rounded-sm">
-          <h4 className="text-sm text-marine">
-            น้ำหนัก (%)
-          </h4>
+          <h4 className="text-sm text-marine">น้ำหนัก (%)</h4>
           <p className="text-sm shadow-[0_4px_12px_0_rgba(25,25,25,0.029),0_1px_2px_0_rgba(25,25,25,0.019),0_0_0_1px_rgba(0,124,215,0.094)] dark:shadow-[0_4px_12px_0_rgba(25,25,25,0.4),0_0_0_1px_rgba(71,157,255,0.173)] bg-background py-1 px-2 rounded">
             {formatDecimal(Number(competencyRecord.weight))}
           </p>
@@ -123,20 +139,29 @@ export const CompetencyEvaluationContent = ({
       </div>
 
       <div className="grid grid-cols-6 gap-2">
-        <CardInfo 
-          label={`พฤติกรรมที่คาดหวัง\n(Expected Level)`} 
-          variant="default" 
+        <CardInfo
+          label={`พฤติกรรมที่คาดหวัง\n(Expected Level)`}
+          variant="default"
           className="col-span-2"
         >
           <div className="relative w-auto flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-            {competencyRecord.competency?.[`t${competencyRecord.expectedLevel}` as 't1' | 't2' | 't3' | 't4' | 't5'] as string | null}
+              {
+                competencyRecord.competency?.[
+                  `t${competencyRecord.expectedLevel}` as
+                    | "t1"
+                    | "t2"
+                    | "t3"
+                    | "t4"
+                    | "t5"
+                ] as string | null
+              }
             </p>
           </div>
         </CardInfo>
-        <CardInfo 
-          label={`การแสดงออกตามพฤติกรรมที่คาดหวัง\n(Demonstration of Expected Behavior)`} 
-          variant="default" 
+        <CardInfo
+          label={`การแสดงออกตามพฤติกรรมที่คาดหวัง\n(Demonstration of Expected Behavior)`}
+          variant="default"
           className="col-span-2"
         >
           <div className="relative w-auto flex items-center px-2.5 py-2">
@@ -145,9 +170,9 @@ export const CompetencyEvaluationContent = ({
             </p>
           </div>
         </CardInfo>
-        <CardInfo 
-          label={`โครงการ/กิจกรรมที่ใช้เป็นตัวแสดงออกตามพฤติกรรมที่คาดหวัง\n(Projects / Activities Demonstrating Expected Behavior)`} 
-          variant="default" 
+        <CardInfo
+          label={`โครงการ/กิจกรรมที่ใช้เป็นตัวแสดงออกตามพฤติกรรมที่คาดหวัง\n(Projects / Activities Demonstrating Expected Behavior)`}
+          variant="default"
           className="col-span-2"
         >
           <div className="relative w-auto flex items-center px-2.5 py-2">
@@ -163,12 +188,14 @@ export const CompetencyEvaluationContent = ({
           evaluation={eva1st}
           hasChecker={hasChecker}
           evaluationGridClass={evaluationGridClass}
-          evaluationColumnClass={evaluationColumnClass}
+          evaluationColumnClass={midYearColumnClass}
         />
       )}
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-marine">{evaluationSectionTitle}</h2>
+        <h2 className="text-sm font-medium text-marine">
+          {evaluationSectionTitle}
+        </h2>
         <div className={evaluationGridClass}>
           <div className={evaluationColumnClass}>
             <FormGenerator
@@ -192,8 +219,9 @@ export const CompetencyEvaluationContent = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center justify-between gap-0.5 text-xs text-secondary whitespace-normal">
-                        <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
-                        <span className="font-normal text-secondary">ไม่บังคับแนบไฟล์ (optional)</span>
+                        <span>
+                          ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)
+                        </span>
                       </FormLabel>
                       <FormControl>
                         <AttachButton
@@ -202,12 +230,17 @@ export const CompetencyEvaluationContent = ({
                           onChange={field.onChange}
                           onUpload={(url) => {
                             if (currentEvaluation) {
-                              syncCompetencyAttach({ id: currentEvaluation.id, fileUrl: url });
+                              syncCompetencyAttach({
+                                id: currentEvaluation.id,
+                                fileUrl: url,
+                              });
                             }
                           }}
                           onRemove={() => {
                             if (currentEvaluation) {
-                              deleteCompetencyFile({ id: currentEvaluation.id });
+                              deleteCompetencyFile({
+                                id: currentEvaluation.id,
+                              });
                             }
                           }}
                         />
@@ -298,7 +331,6 @@ const MidYearEvaluationSection = ({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-0.5 text-xs text-secondary whitespace-normal">
                   <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
-                  <span className="font-normal text-secondary">ไม่บังคับแนบไฟล์ (optional)</span>
                 </div>
                 <AttachButton
                   value={evaluation?.fileUrl ?? null}
@@ -366,7 +398,7 @@ const ReadOnlyTextBlock = ({
       <span className="text-xs text-secondary">{description}</span>
       <p
         className={cn(
-          formRecord.blue.input,
+          formRecord.default.input,
           "whitespace-pre-wrap [word-break:break-word]",
           fillHeight && "lg:min-h-10 lg:flex-1",
         )}
@@ -381,13 +413,22 @@ const ReadOnlyTextBlock = ({
 const formatScore = (level: number | null | undefined, empty = "") =>
   level != null ? `${level}` : empty;
 
-const ReadOnlyResultField = ({ level }: { level: number | null | undefined }) => {
+const ReadOnlyResultField = ({
+  level,
+}: {
+  level: number | null | undefined;
+}) => {
   return (
     <div className="flex flex-col gap-2 mt-auto pt-1">
       <span className="text-sm font-medium shrink-0 text-marine">
         ผลการประเมิน (Evaluation)
       </span>
-      <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
+      <p
+        className={cn(
+          formRecord.default.input,
+          "min-h-10 flex items-center justify-end px-2.5",
+        )}
+      >
         {formatScore(level, "-")}
       </p>
     </div>
@@ -413,7 +454,8 @@ const EvaluationResultField = ({
   const hasError = Boolean(form.getFieldState(name, formState).error);
 
   const resolveLevel = (fieldValue: unknown) => {
-    const value = fieldValue != null && fieldValue !== "" ? Number(fieldValue) : null;
+    const value =
+      fieldValue != null && fieldValue !== "" ? Number(fieldValue) : null;
     if (value != null && !Number.isNaN(value)) return value;
     return displayLevel ?? null;
   };
@@ -435,24 +477,41 @@ const EvaluationResultField = ({
         render={({ field }) => (
           <FormItem>
             {disabled ? (
-              <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
+              <p
+                className={cn(
+                  formRecord.blue.input,
+                  "min-h-10 flex items-center justify-end px-2.5",
+                )}
+              >
                 {formatScore(resolveLevel(field.value))}
               </p>
             ) : (
               <Select
-                value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
+                value={
+                  field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE
+                }
                 onValueChange={(value) => {
-                  field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
+                  field.onChange(
+                    value === CLEAR_LEVEL_VALUE ? null : Number(value),
+                  );
                   void form.trigger(name);
                 }}
               >
                 <FormControl>
-                  <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
+                  <SelectTrigger
+                    className={cn(
+                      formRecord.blue.input,
+                      "w-full min-h-10 h-10",
+                    )}
+                  >
                     <SelectValue placeholder="เลือกระดับความสำเร็จ" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
+                  <SelectItem
+                    value={CLEAR_LEVEL_VALUE}
+                    className="text-secondary"
+                  >
                     เลือกระดับความสำเร็จ
                   </SelectItem>
                   <SelectItem value="1">1</SelectItem>

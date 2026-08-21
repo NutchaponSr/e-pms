@@ -1,4 +1,3 @@
-import path from "path";
 import db from "@/lib/db";
 
 import { z } from "zod";
@@ -6,7 +5,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-import { FormType, KpiCategory, Period, Status } from "@/generated/prisma/enums";
+import { FormType, KpiCategory, Period, Status, UserRole } from "@/generated/prisma/enums";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
 import { kpiEvaluationSchema, overallCommentFieldsSchema } from "@/modules/kpi/schema/evaluation";
@@ -14,39 +13,26 @@ import {
   kpiDefinitionInputSchema,
   kpiDefinitionSchema,
 } from "@/modules/kpi/schema/definition";
-import { buildPermissionContext, canPerform, getUserRole } from "@/modules/tasks/permissions";
-import { assertAnyRoleOnForm, assertFormOwner } from "@/modules/tasks/access";
+import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
+import { getApprovalChain, taskChainInclude, withTaskChain } from "@/modules/tasks/chain";
+import { assertAnyRoleOnForm, assertFormOwner, requireTaskRole } from "@/modules/tasks/access";
 import { calculateSumAchievement, formatKpiExport } from "../utils";
 import { exportExcel, formatDecimal } from "@/lib/utils";
 import { columns } from "../constants";
-import { readCSV } from "@/seeds/lib/utils";
 import { generateTaskId } from "@/modules/tasks/utils";
+import { getWindows, isWindowOpen } from "@/modules/tasks/windows";
+import {
+  buildOverallCommentRoleUpdate,
+  groupByConnectId,
+  normalizeEmptyStringToNull,
+  type EvaluationRole,
+} from "@/modules/tasks/server/utils";
 
 import {
   collectReplacedFileUrls,
   deleteAttachIfUnreferenced,
   upsertAttach,
 } from "@/lib/attach";
-
-type EvaluationRole = "owner" | "checker" | "approver";
-
-function buildOverallCommentRoleUpdate(
-  comments: {
-    commentOwner: string | null;
-    commentChecker: string | null;
-    commentApprover: string | null;
-  },
-  role: EvaluationRole,
-) {
-  switch (role) {
-    case "owner":
-      return { commentOwner: comments.commentOwner };
-    case "checker":
-      return { commentChecker: comments.commentChecker };
-    case "approver":
-      return { commentApprover: comments.commentApprover };
-  }
-}
 
 function buildKpiRoleUpdate(
   kpi: {
@@ -80,12 +66,6 @@ function buildKpiRoleUpdate(
   }
 }
 
-interface ApprovalCSVProps {
-  employeeId: string;
-  checker?: string;
-  approver: string;
-}
-
 export const kpiProcedure = createTRPCRouter({
   getInfo: protectedProcedure
     .input(
@@ -94,19 +74,37 @@ export const kpiProcedure = createTRPCRouter({
       }),
     )
     .query(async ({ input, ctx }) => {
-      const form = await db.form.findFirst({
-        where: {
-          type: FormType.KPI,
-          year: input.year,
-          employeeId: ctx.user.username,
-        },
-        include: {
-          tasks: true,
-          kpis: true,
-        },
-      });
+      const employeeId = ctx.user.username;
+
+      const [form, windows] = await Promise.all([
+        db.form.findFirst({
+          where: {
+            type: FormType.KPI,
+            year: input.year,
+            employeeId,
+          },
+          include: {
+            tasks: true,
+            kpis: true,
+          },
+        }),
+        getWindows(input.year, FormType.KPI),
+      ]);
+
+      const kpis = form?.kpis ?? [];
+      const weights = kpis.map((kpi) => Number(kpi.weight));
+
+      const chartSeries = [
+        { label: "Employee", key: "achievementOwner" },
+        { label: "Evaluator 1", key: "achievementChecker" },
+        { label: "Evaluator 2", key: "achievementApprover" },
+      ] as const;
 
       return {
+        windows: {
+          draft: windows[Period.IN_DRAFT] ?? null,
+          evaluation: windows[Period.EVALUATION] ?? null,
+        },
         task: {
           draft: form?.tasks.find(
             (t) =>
@@ -117,29 +115,15 @@ export const kpiProcedure = createTRPCRouter({
               (t.context as { period: Period })?.period === Period.EVALUATION,
           ),
         },
-        chart: [
-          {
-            label: "Employee",
-            score: formatDecimal(calculateSumAchievement(
-              form?.kpis.map((kpi) => kpi.achievementOwner ?? 0) ?? [], 
-              form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
-            )),
-          },
-          {
-            label: "Evaluator 1",
-            score: formatDecimal(calculateSumAchievement(
-              form?.kpis.map((kpi) => kpi.achievementChecker ?? 0) ?? [], 
-              form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
-            )),
-          },
-          {
-            label: "Evaluator 2",
-            score: formatDecimal(calculateSumAchievement(
-              form?.kpis.map((kpi) => kpi.achievementApprover ?? 0) ?? [], 
-              form?.kpis.map((kpi) => Number(kpi.weight)) ?? []
-            )),
-          },
-        ]
+        chart: chartSeries.map(({ label, key }) => ({
+          label,
+          score: formatDecimal(
+            calculateSumAchievement(
+              kpis.map((kpi) => kpi[key] ?? 0),
+              weights,
+            ),
+          ),
+        })),
       };
     }),
   getOne: protectedProcedure
@@ -164,11 +148,7 @@ export const kpiProcedure = createTRPCRouter({
         },
         include: {
           tasks: {
-            include: {
-              owner: true,
-              checker: true,
-              approver: true,
-            },
+            include: taskChainInclude,
           },
           kpis: {
             orderBy: {
@@ -197,21 +177,16 @@ export const kpiProcedure = createTRPCRouter({
         },
       });
 
-      const plain = JSON.parse(JSON.stringify(kpi)) as typeof kpi;
-      const plainComments = JSON.parse(
-        JSON.stringify(kpiWithComments),
-      ) as typeof kpiWithComments;
+      // แปลง Prisma Decimal/Date เป็น plain values (superjson ไม่รองรับ Decimal
+      // และฝั่ง client คาดหวังค่าจาก JSON round-trip อยู่แล้ว)
+      const { form: plain, comments: plainComments } = JSON.parse(
+        JSON.stringify({ form: kpi, comments: kpiWithComments }),
+      ) as {
+        form: typeof kpi;
+        comments: typeof kpiWithComments;
+      };
 
-      const commentsByKpiId = plainComments.reduce(
-        (acc, comment) => {
-          if (!acc[comment.connectId]) {
-            acc[comment.connectId] = [];
-          }
-          acc[comment.connectId].push(comment);
-          return acc;
-        },
-        {} as Record<string, typeof plainComments>,
-      );
+      const commentsByKpiId = groupByConnectId(plainComments);
 
       const kpisWithComments = plain.kpis.map((kpi) => ({
         ...kpi,
@@ -226,9 +201,18 @@ export const kpiProcedure = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const permission = buildPermissionContext(ctx.user.username, task);
+      const chain = getApprovalChain(task);
+      const permission = buildPermissionContext(ctx.user.username, chain, task.status);
 
-      if (!getUserRole(permission)) {
+      let role = getUserRole(permission);
+
+      // Admin เปิดฟอร์มของพนักงานได้ในบทบาท owner (แก้ไขแทนตามคำร้องขอ)
+      if (!role && ctx.user.role === UserRole.ADMIN) {
+        role = "owner";
+        permission.employeeId = chain.ownerId;
+      }
+
+      if (!role) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
@@ -241,11 +225,11 @@ export const kpiProcedure = createTRPCRouter({
           ...plain,
           kpis: kpisWithComments,
           overallComment,
-          tasks: task,
+          tasks: withTaskChain(task, chain),
         },
         permission: {
           ...permission,
-          role: getUserRole(permission),
+          role,
         },
       };
     }),
@@ -286,16 +270,23 @@ export const kpiProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const file = path.join(process.cwd(), "src/data", "approval.csv");
+      const approval = await db.approval.findUnique({
+        where: { employeeId: ctx.user.username },
+      });
 
-      const record = readCSV<ApprovalCSVProps>(file).find(
-        (r) => r.employeeId === ctx.user.username,
-      );
-
-      if (!record) {
+      if (!approval?.approverId) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Record not found",
+          message: "Approval chain not configured for this employee",
+        });
+      }
+
+      const windowOpen = await isWindowOpen(input.year, FormType.KPI, input.period);
+
+      if (!windowOpen && process.env.NODE_ENV !== "development") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This evaluation window is currently closed",
         });
       }
 
@@ -303,11 +294,7 @@ export const kpiProcedure = createTRPCRouter({
         where: {
           type: FormType.KPI,
           year: input.year,
-          tasks: {
-            some: {
-              ownerId: ctx.user.username,
-            },
-          },
+          employeeId: ctx.user.username,
         },
         include: {
           competencyRecords: true,
@@ -315,19 +302,12 @@ export const kpiProcedure = createTRPCRouter({
         },
       });
 
-      const checkerId = record?.checker && record.checker.trim() !== "" 
-        ? record.checker 
-        : null;
-
-      let form = null;
-
       if (existingForm) {
         await db.task.create({
           data: {
             id: generateTaskId(),
             ownerId: ctx.user.username,
-            checkerId,
-            approverId: record.approver,
+            approvalId: approval.id,
             formId: existingForm.id,
             status: Status.IN_DRAFT,
             context: {
@@ -339,7 +319,7 @@ export const kpiProcedure = createTRPCRouter({
         return { id: existingForm.id };
       }
 
-      form = await db.form.create({
+      const form = await db.form.create({
         data: {
           employeeId: ctx.user.username,
           type: FormType.KPI,
@@ -348,8 +328,7 @@ export const kpiProcedure = createTRPCRouter({
             create: {
               id: generateTaskId(),
               ownerId: ctx.user.username,
-              checkerId,
-              approverId: record.approver,
+              approvalId: approval.id,
               status: Status.IN_DRAFT,
               context: {
                 period: input.period,
@@ -420,27 +399,13 @@ export const kpiProcedure = createTRPCRouter({
       const formIds = [...new Set(owningKpis.map((kpi) => kpi.formId))];
       await Promise.all(formIds.map((formId) => assertFormOwner(formId, ctx.user.username)));
 
-      const normalizeEmptyStringToNull = <T extends Record<string, unknown>>(
-        obj: T,
-      ): T => {
-        return Object.fromEntries(
-          Object.entries(obj).map(([k, v]) => [k, v === "" ? null : v]),
-        ) as T;
-      };
-
       await db.$transaction(
         input.kpis.map((kpi) => {
           const { id, ...data } = kpi;
-          const normalizedData = normalizeEmptyStringToNull(data);
-          
-          // Ensure category is properly typed as KpiCategory if present
-          if (normalizedData.category !== null && normalizedData.category !== undefined) {
-            normalizedData.category = normalizedData.category as KpiCategory;
-          }
-          
+
           return db.kpiEvaluation.update({
             where: { id },
-            data: normalizedData,
+            data: normalizeEmptyStringToNull(data),
           });
         }),
       );
@@ -457,26 +422,12 @@ export const kpiProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const task = await db.task.findFirst({
-        where: {
-          formId: input.formId,
-          context: {
-            path: ["period"],
-            equals: input.period,
-          },
-        },
-      });
-
-      if (!task) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
-      }
-
-      const permission = buildPermissionContext(ctx.user.username, task);
-      const role = getUserRole(permission);
-
-      if (!role || !canPerform(role, ["write"], task.status)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "No permission to evaluate" });
-      }
+      const { role } = await requireTaskRole(
+        input.formId,
+        input.period,
+        ctx.user.username,
+        ["write"],
+      );
 
       const overallCommentUpdate = buildOverallCommentRoleUpdate(input.overallComments, role);
 
@@ -547,17 +498,18 @@ export const kpiProcedure = createTRPCRouter({
 
       await assertFormOwner(existing.formId, ctx.user.username);
 
-      await db.kpiEvaluation.delete({
-        where: {
-          id: input.id,
-        },
-      });
-
-      await db.comment.deleteMany({
-        where: {
-          connectId: input.id,
-        },
-      });
+      await db.$transaction([
+        db.kpiEvaluation.delete({
+          where: {
+            id: input.id,
+          },
+        }),
+        db.comment.deleteMany({
+          where: {
+            connectId: input.id,
+          },
+        }),
+      ]);
 
       return { success: true };
     }),
@@ -641,11 +593,8 @@ export const kpiProcedure = createTRPCRouter({
         },
         include: {
           kpis: true,
-          tasks: {
-            include: {
-              owner: true,
-            },
-          },
+          employee: true,
+          tasks: true,
         },
       });
 
@@ -656,7 +605,7 @@ export const kpiProcedure = createTRPCRouter({
       const data = formatKpiExport({
         ...kpiForm,
         kpis: kpiForm.kpis,
-        employee: kpiForm.tasks[0].owner,
+        employee: kpiForm.employee,
       });
 
       const file = exportExcel([

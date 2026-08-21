@@ -1,17 +1,22 @@
 import { z } from "zod";
 
-import { OVERALL_COMMENT_MAX_LENGTH } from "../constants";
+import { KPI_ACTUAL_MAX_LENGTH, OVERALL_COMMENT_MAX_LENGTH } from "../constants";
+
+const kpiActualFieldSchema = z
+  .string()
+  .max(KPI_ACTUAL_MAX_LENGTH, `กรอกได้ไม่เกิน ${KPI_ACTUAL_MAX_LENGTH} ตัวอักษร`)
+  .nullable();
 
 export const kpiEvaluationSchema = z.object({
   id: z.string(),
   role: z.enum(["owner", "checker", "approver"]),
-  actualOwner: z.string().nullable(),
+  actualOwner: kpiActualFieldSchema,
   achievementOwner: z.coerce.number().nullable(),
-  actualChecker: z.string().nullable(),
+  actualChecker: kpiActualFieldSchema,
   achievementChecker: z.coerce.number().nullable(),
-  actualApprover: z.string().nullable(),
+  actualApprover: kpiActualFieldSchema,
   achievementApprover: z.coerce.number().nullable(),
-  fileUrl: z.string().nullish(),
+  fileUrl: z.string({ error: "File is required" }).nullish(),
 }).superRefine((data, ctx) => {
   switch (data.role) {
     case "owner":

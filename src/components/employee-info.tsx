@@ -134,7 +134,7 @@ export const EmployeeInfo = ({ owner, checker, approver, children }: Props) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2.5 md:grid md:grid-rows-[auto_1fr] md:content-start md:gap-2 md:border-t-0 md:border-l md:px-2 md:py-1.5">
+      <div className="flex flex-col gap-2 border-t border-border px-3 py-2.5 md:grid md:grid-rows-[auto_1fr] md:content-start md:gap-2 md:border-t-0 md:border-l md:px-2 md:py-1.5">
         <div className="flex shrink-0 items-center gap-1.5 md:grid md:grid-cols-[auto_1fr] md:items-center md:gap-1">
           <div className="rounded bg-marine p-1">
             <FaWeightHanging className="text-white size-3" />

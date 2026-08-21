@@ -1,8 +1,15 @@
 "use client";
 
+import { 
+  CheckIcon, 
+  ChevronDownIcon, 
+  FileIcon, 
+  Loader2Icon, 
+  SearchIcon,
+  XIcon
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CheckIcon, ChevronDownIcon, FileIcon, Loader2Icon, SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -101,13 +108,13 @@ export const SelectCompetencyPopover = ({
           type="button" 
           size="lg" 
           className={cn(
-            "w-full justify-between text-xl text-tertiary transition-all",
+            "w-full min-w-0 overflow-hidden justify-between text-xl text-tertiary transition-all px-2",
             isButtonSelected && "font-medium text-primary",
             !perform && "text-primary opacity-100!"
           )} 
           variant={!perform ? "ghost" :"outline"}
         >
-          <span className="truncate flex-1 text-left">{displayText}</span>
+          <span className="truncate min-w-0 flex-1 text-left">{displayText}</span>
           {perform && (
             <ChevronDownIcon 
               className={cn(

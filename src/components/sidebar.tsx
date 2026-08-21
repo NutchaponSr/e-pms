@@ -8,10 +8,17 @@ import { useSidebar } from "@/hooks/use-sidebar";
 
 import { APP_CATEGORIES } from "@/constants";
 
+import { authClient } from "@/lib/auth-client";
+import { UserRole } from "@/generated/prisma/enums";
+
 import { UserButton } from "@/modules/auth/ui/components/user-button";
 
 export const Sidebar = () => {
   const { sidebarRef, width, handleMouseDown, isMobile } = useSidebar();
+
+  const { data: session } = authClient.useSession();
+  const isAdmin =
+    (session?.user as { role?: string } | undefined)?.role === UserRole.ADMIN;
 
   return (
     <aside
@@ -54,6 +61,28 @@ export const Sidebar = () => {
                           )))}
                       </div>
                     </SidebarGroup>
+                    {isAdmin && (
+                      <SidebarGroup>
+                        <SidebarLabel>Administration</SidebarLabel>
+                        <div className="flex flex-col gap-px">
+                          <Link
+                            href="/admin"
+                            className="flex transition hover:bg-primary/6 rounded w-full"
+                          >
+                            <div className="flex items-center text-sm min-h-7 h-[30px] px-2 py-1 rounded text-secondary">
+                              <div className="flex items-center justify-center shrink-0 grow-0 w-6 h-4.5 mr-2 relative">
+                                <IoTriangle className="size-3 text-[#0003] dark:text-muted rotate-90" />
+                              </div>
+                              <div className="flex-1 whitespace-nowrap min-w-0 overflow-hidden text-clip flex items-center">
+                                <div className="whitespace-nowrap overflow-hidden text-ellipsis font-medium">
+                                  Admin Panel
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </div>
+                      </SidebarGroup>
+                    )}
                   </div>
                 </div>
                 <div className="sticky mt-auto bottom-0" />

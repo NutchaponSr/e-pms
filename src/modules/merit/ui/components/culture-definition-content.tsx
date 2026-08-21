@@ -1,101 +1,134 @@
-import { inferProcedureOutput } from "@trpc/server";
-import { UseFormReturn } from "react-hook-form";
-import { MeritDefinition } from "@/modules/merit/schemas/definition";
-import { AppRouter } from "@/trpc/routers/_app";
-import { FormGenerator } from "@/components/form-generator";
-import { formRecord } from "@/types/form";
-import { Separator } from "@/components/ui/separator";
-import { CommentSection } from "@/components/comment-section";
-import { Action } from "@/modules/tasks/permissions";
-import { useCreateComment } from "@/modules/comments/api/use-create-comment";
-import { Period } from "@/generated/prisma/enums";
-import { useRef } from "react";
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useWatch } from "react-hook-form";
+import type { UseFormReturn } from "react-hook-form";
+
+import { cn, formatDecimal } from "@/lib/utils";
+
 import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
+
+import { formRecord } from "@/types/form";
+import type { AppRouter } from "@/trpc/routers/_app";
+import type { Period } from "@/generated/prisma/enums";
+import type { inferProcedureOutput } from "@trpc/server";
+
+import { Separator } from "@/components/ui/separator";
+
 import { CardInfo } from "@/components/card-info";
-import { formatDecimal } from "@/lib/utils";
+import { FormGenerator } from "@/components/form-generator";
+import { CommentSection } from "@/components/comment-section";
+
+import { useCreateComment } from "@/modules/comments/api/use-create-comment";
+
+import type { Action } from "@/modules/tasks/permissions";
+import type { MeritDefinition } from "@/modules/merit/schemas/definition";
+
+const evidenceFieldClassName = {
+  ...formRecord.blue,
+  form: cn(
+    formRecord.blue.form,
+    "col-span-2 h-full min-h-0 lg:grid lg:grid-rows-[auto_1fr_auto]",
+  ),
+  input: cn(formRecord.blue.input, "min-h-20"),
+  label: cn(formRecord.blue.label, "whitespace-normal overflow-visible"),
+};
 
 interface Props {
   index: number;
   period: Period;
   formId: string;
   form: UseFormReturn<MeritDefinition>;
-  cultureRecord: inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"]["cultureRecords"][number];
+  cultureRecord: inferProcedureOutput<
+    AppRouter["merit"]["getOne"]
+  >["form"]["cultureRecords"][number];
   ownerRank: string;
   permissions: Record<Action, boolean>;
   weight: number;
 }
 
-export const CultureDefinitionContent = ({ 
-  index, 
-  form, 
+export const CultureDefinitionContent = ({
+  index,
+  form,
   period,
   formId,
   weight,
-  cultureRecord, 
+  cultureRecord,
   permissions,
 }: Props) => {
   const createComment = useCreateComment();
-
+  const canWrite = permissions.write;
   const evidenceRef = useRef<HTMLTextAreaElement>(null);
-
   const { groupSyncFunctions } = useSyncTextareaHeights([
-    {
-      refs: [evidenceRef],
-      breakpoint: "(min-width: 1024px)",
-    },
+    { refs: [evidenceRef], breakpoint: "(min-width: 1024px)" },
   ]);
-
   const syncTextareaHeights = groupSyncFunctions[0];
+
+  const evidenceValue = useWatch({
+    control: form.control,
+    name: `cultures.${index}.evidence`,
+  });
+
+  useEffect(() => {
+    syncTextareaHeights();
+  }, [evidenceValue, syncTextareaHeights]);
+
+  const { name, description, code, belief } = cultureRecord.culture;
+  const beliefs = Array.isArray(belief) ? belief.map(String) : [];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center grow gap-2"> 
-        <div className="shrink-0 grow-0 self-start mt-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
-          <div className="text-white text-xl font-semibold">
-            {cultureRecord.culture.code}
-          </div>
+      <div className="flex items-start gap-2 min-w-0 overflow-hidden">
+        <div className="shrink-0 size-10 flex justify-center items-center bg-marine rounded-full select-none">
+          <div className="text-white text-xl font-semibold">{code}</div>
         </div>
 
-        <div className="flex flex-col whitespace-nowrap overflow-hidden text-ellipsis">
-          <div className="text-base leading-5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-            {cultureRecord.culture.name}
-          </div>
-          <div className="text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis text-secondary">
-            {cultureRecord.culture.description}
+        <div className="flex min-w-0 flex-col overflow-hidden">
+          <div className="truncate text-base font-medium leading-5">{name}</div>
+          <div className="truncate text-sm leading-4 text-secondary">
+            {description}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
-        <CardInfo label="พฤติกรรมที่คาดหวัง (Expected Behavior)" variant="default" className="col-span-2">
-          <div className="relative w-auto flex items-center px-2.5 py-2">
-            <p className="max-w-full w-full whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-            {Array.isArray(cultureRecord.culture?.belief) ? cultureRecord.culture?.belief?.map((item, idx) => (
-                <li className="list-disc list-inside text-primary" key={idx}>{String(item)}</li>
-              )) : null}
-            </p>
+      <div className="grid grid-cols-5 gap-2 items-stretch min-w-0">
+        <CardInfo
+          label="พฤติกรรมที่คาดหวัง (Expected Behavior)"
+          variant="default"
+          className="col-span-2 min-w-0"
+        >
+          <div className="relative flex h-full items-start px-2.5 py-2">
+            {beliefs.length > 0 ? (
+              <ul className="max-w-full w-full grow list-disc list-inside text-sm leading-normal min-h-6 text-primary">
+                {beliefs.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="max-w-full w-full grow text-sm leading-normal min-h-6 text-primary">
+                -
+              </p>
+            )}
           </div>
         </CardInfo>
-        <FormGenerator 
+
+        <FormGenerator
           name={`cultures.${index}.evidence`}
           form={form}
           variant="bigText"
-          disabled={!permissions.write}
+          disabled={!canWrite}
           label="แนวทางในการประเมิน (Key Evidence Guideline)"
-          className={{
-            ...formRecord.blue,
-            form: "col-span-2 grow-0 shrink-0 basis-auto p-2 box-content h-max bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm flex flex-col gap-2",
-            input: "w-full dark:shadow-[0_0_0_1px_rgba(188,186,182,0.1)] shadow-[0_4px_12px_0_rgba(25,25,25,.029),0_1px_2px_0_rgba(25,25,25,.019),0_0_0_1.25px_#2a1c0012] bg-background hover:bg-[#42230308] dark:hover:bg-[#262626] transition text-primary focus:outline-none focus:ring-0 rounded-sm p-2.5 text-sm leading-tight h-full min-h-20",
-          }}
+          className={evidenceFieldClassName}
           textareaRef={(el) => {
             evidenceRef.current = el;
             syncTextareaHeights();
           }}
-          onInput={() => syncTextareaHeights()}
+          onInput={syncTextareaHeights}
         />
-        <CardInfo label="น้ำหนัก (Weight)" variant="default">
-          <div className="relative w-auto flex items-center px-2.5 py-2">
-            <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6">
+
+        <CardInfo label="น้ำหนัก (Weight)" variant="default" className="min-w-0">
+          <div className="relative flex h-full items-start px-2.5 py-2">
+            <p className="max-w-full grow whitespace-pre-wrap [word-break:break-word] text-sm leading-normal min-h-6">
               {formatDecimal(weight)}
             </p>
           </div>
@@ -103,17 +136,17 @@ export const CultureDefinitionContent = ({
       </div>
 
       <Separator />
-      <CommentSection 
+      <CommentSection
         permissions={permissions}
         comments={cultureRecord.comments}
         onCreate={(content) => {
-          createComment({ 
-            connectId: cultureRecord.id, 
-            content, 
-            period, 
+          createComment({
+            connectId: cultureRecord.id,
+            content,
+            period,
             formId,
-          })
-        }} 
+          });
+        }}
       />
     </div>
   );

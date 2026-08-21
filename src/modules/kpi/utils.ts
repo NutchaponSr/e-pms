@@ -668,12 +668,10 @@ export async function exportDefinitionKpi(
     const kpi = kpiForm.kpis[kpiIndex]
     const startRow = currentRow
     const kpiTitle = `${kpi.name} \n${kpiCategoies[kpi.category!] ?? ""}`
-    const achievementForScore =
-      kpi.achievementApprover ??
-      (hasChecker ? kpi.achievementChecker : null) ??
-      kpi.achievementOwner ??
-      0
-    const kpiScore = formatDecimal((Number(kpi.weight) * Number(achievementForScore)) / 100)
+    const kpiScore =
+      kpi.achievementApprover != null
+        ? formatDecimal((Number(kpi.weight) * Number(kpi.achievementApprover)) / 100)
+        : null
     const resultText = kpi.actualApprover || kpi.actualChecker || kpi.actualOwner || ""
 
     for (let levelIndex = 0; levelIndex < targetLevels.length; levelIndex++) {
@@ -743,17 +741,16 @@ export async function exportDefinitionKpi(
     )
   }
 
-  // Calculate total score: prefer Approver, then Checker, then Owner
-  const totalScore = calculateSumAchievement(
-    kpiForm.kpis.map(
-      (kpi) =>
-        kpi.achievementApprover ??
-        (hasChecker ? kpi.achievementChecker : null) ??
-        kpi.achievementOwner ??
-        0,
-    ),
-    kpiForm.kpis.map((kpi) => Number(kpi.weight)),
+  // Total score uses Evaluator 2 only; omit the number until every KPI is scored
+  const hasEvaluator2Score = kpiForm.kpis.every(
+    (kpi) => kpi.achievementApprover != null,
   )
+  const totalScore = hasEvaluator2Score
+    ? calculateSumAchievement(
+        kpiForm.kpis.map((kpi) => Number(kpi.achievementApprover ?? 0)),
+        kpiForm.kpis.map((kpi) => Number(kpi.weight)),
+      )
+    : null
 
   // Footer row
   worksheet.mergeCells(`A${currentRow}:B${currentRow}`)
@@ -776,7 +773,10 @@ export async function exportDefinitionKpi(
   }
 
   worksheet.mergeCells(`H${currentRow}:L${currentRow}`)
-  worksheet.getCell(`H${currentRow}`).value = `คะแนนที่ได้ (Score achieved): ${formatDecimal(totalScore)}`
+  worksheet.getCell(`H${currentRow}`).value =
+    totalScore != null
+      ? `คะแนนที่ได้ (Score achieved): ${formatDecimal(totalScore)}`
+      : "คะแนนที่ได้ (Score achieved):"
   worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "right", vertical: "middle" }
   worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
   worksheet.getCell(`H${currentRow}`).border = cellBorder

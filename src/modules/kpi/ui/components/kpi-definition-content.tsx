@@ -1,24 +1,92 @@
-import { KpiDefinition, KpiDefinitions } from "@/modules/kpi/schema/definition";
-import { UseFormReturn } from "react-hook-form";
-
-import { Period } from "@/generated/prisma/enums";
-import { CommentWithEmployee } from "@/modules/comments/types";
-import { Action } from "@/modules/tasks/permissions";
+import { Fragment } from "react";
 import { cva } from "class-variance-authority";
+import type { FieldPath, UseFormReturn } from "react-hook-form";
+
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/badge";
-import { Button } from "@/components/ui/button";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { kpiCategoies } from "../../constants";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useDeleteKpi } from "../../api/use-delete-kpi";
+
 import { useConfirm } from "@/hooks/use-confirm";
+
+import type { Period } from "@/generated/prisma/enums";
+
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+
+import { Badge } from "@/components/badge";
+import { FormGenerator } from "@/components/form-generator";
 import { CommentSection } from "@/components/comment-section";
+
+import { useDeleteKpi } from "@/modules/kpi/api/use-delete-kpi";
+import type { CommentWithEmployee } from "@/modules/comments/types";
 import { useCreateComment } from "@/modules/comments/api/use-create-comment";
+
+import type {
+  KpiDefinition,
+  KpiDefinitions,
+} from "@/modules/kpi/schema/definition";
+import type { Action } from "@/modules/tasks/permissions";
+import { KPI_TARGET_FIELDS, kpiCategoies } from "@/modules/kpi/constants";
+
+const CATEGORY_OPTIONS = Object.entries(kpiCategoies).map(([key, label]) => ({
+  key,
+  label,
+}));
+
+const DETAIL_FIELDS = [
+  {
+    name: "name",
+    label: "ตัวชี้วัดหลัก",
+    description: "(Key Performance Indicator (KPI))",
+  },
+  {
+    name: "definition",
+    label: "คำจำกัดความและสูตรคำนวณ",
+    description: "(Definition and Calculation Formula)",
+  },
+  {
+    name: "method",
+    label: "รูปแบบและวิธีการรายงานผลสำเร็จ",
+    description: "(Format/Method of Reporting Achievement)",
+  },
+] as const;
+
+const labelClassName = {
+  form: "gap-1",
+  label:
+    "text-xs font-medium text-secondary whitespace-normal overflow-visible",
+  description:
+    "text-[10px] leading-4 text-tertiary font-normal whitespace-normal overflow-visible",
+};
+
+const fieldClassName = {
+  ...labelClassName,
+  input:
+    "min-h-0 h-auto w-full rounded border border-border bg-transparent px-3 py-2 text-sm",
+};
+
+const bigTextClassName = {
+  ...labelClassName,
+  input:
+    "h-auto w-full field-sizing-content overflow-hidden rounded border border-border bg-transparent px-3 py-2 text-sm",
+};
+
+const targetFieldClassName = {
+  ...labelClassName,
+  form: "gap-1 flex-1 h-full min-h-0",
+  input:
+    "min-h-full h-auto lg:h-auto lg:min-h-full w-full overflow-hidden rounded border border-border bg-transparent px-3 py-2 text-sm",
+};
+
+const readFieldClassName = {
+  ...labelClassName,
+  input: "text-sm text-primary whitespace-pre-wrap wrap-break-word",
+};
+
+const readBigTextClassName = {
+  ...labelClassName,
+  form: "gap-1 flex-1 h-full min-h-0",
+  input:
+    "min-h-full h-auto overflow-hidden text-sm text-primary whitespace-pre-wrap wrap-break-word",
+};
 
 interface Props {
   kpi: KpiDefinition;
@@ -31,311 +99,199 @@ interface Props {
   onLocalDelete?: () => void;
 }
 
-const header = cva("h-8 border-r border-border bg-sidebar shadow-[inset_0_1.25px_0_rgba(42,28,0,0.07),inset_0_-1.25px_0_rgba(42,28,0,0.07)] dark:shadow-[inset_0_1.25px_0_rgba(255,255,243,0.082),inset_0_-1.25px_0_rgba(255,255,243,0.082)] px-2");
+const header = cva(
+  "h-8 border-r border-border bg-sidebar shadow-[inset_0_1.25px_0_rgba(42,28,0,0.07),inset_0_-1.25px_0_rgba(42,28,0,0.07)] dark:shadow-[inset_0_1.25px_0_rgba(255,255,243,0.082),inset_0_-1.25px_0_rgba(255,255,243,0.082)] px-2",
+);
 
-export const KpiDefinitionContent = ({ index, form, onLocalDelete, ...props }: Props) => {
+const TARGET_LG_ROWS = [
+  "lg:row-start-2",
+  "lg:row-start-3",
+  "lg:row-start-4",
+  "lg:row-start-5",
+] as const;
+
+export const KpiDefinitionContent = ({
+  index,
+  form,
+  onLocalDelete,
+  kpi,
+  formId,
+  period,
+  comments,
+  permissions,
+}: Props) => {
   const createComment = useCreateComment();
   const [ConfirmationDialog, confirm] = useConfirm({
     title: "Delete KPI",
     description: "Are you sure you want to delete this KPI?",
   });
-
-  const { mutation: deleteKpi } = useDeleteKpi(props.formId, props.period);
-
-  const [rowHeights, setRowHeights] = useState<number[]>([]);
-  const targetRanges = ["70%", "80%", "90%", "100%"];
-
-  const detailRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useLayoutEffect(() => {
-    const updateHeights = () => {
-      const heights = detailRefs.current.map((ref) => {
-        if (!ref) return 81; // Default min height
-        // offsetHeight already includes padding and border
-        return ref.offsetHeight;
-      });
-      setRowHeights(heights);
-    }
-
-    // Initial update with a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      updateHeights();
-    }, 0);
-
-    // Use requestAnimationFrame for immediate update after render
-    const rafId = requestAnimationFrame(() => {
-      updateHeights();
-    });
-
-    const observers: ResizeObserver[] = [];
-    detailRefs.current.forEach((ref) => {
-      if (ref) {
-        const observer = new ResizeObserver(() => {
-          updateHeights();
-        });
-        observer.observe(ref);
-        observers.push(observer);
-      }
-    });
-
-    return () => {
-      clearTimeout(timeoutId);
-      cancelAnimationFrame(rafId);
-      observers.forEach((observer) => observer.disconnect());
-    };
-  }, []);
+  const { mutation: deleteKpi } = useDeleteKpi(formId, period);
+  const canWrite = permissions.write;
+  const valueClassName = canWrite ? fieldClassName : readFieldClassName;
+  const detailClassName = canWrite ? bigTextClassName : readFieldClassName;
+  const targetClassName = canWrite ? targetFieldClassName : readBigTextClassName;
+  const fieldName = (name: string) =>
+    `kpis.${index}.${name}` as FieldPath<KpiDefinitions>;
 
   const onDelete = async () => {
     const ok = await confirm();
-
-    if (ok) {
-      deleteKpi({ id: props.kpi.id });
-      onLocalDelete?.();
-    }
-  }
+    if (!ok) return;
+    deleteKpi({ id: kpi.id });
+    onLocalDelete?.();
+  };
 
   return (
     <>
       <div className="mt-0 min-w-full border-b relative overflow-hidden">
         <ConfirmationDialog />
-        <div className="grid grid-cols-[1fr_100px_160px_1fr] divide-x divide-border">
-          <div className={cn(header())}>
-            <div className="flex items-center h-full gap-2">
-              <Badge color="orange" label={(index + 1).toString()} />
-              <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis text-start grow">
-                Individual KPI
-              </div>
-              {props.permissions.delete && (
-                <Button type="button" variant="dangerOutline" size="xxs" onClick={onDelete}>
-                  Delete
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className={cn(header())}>
-            <div className="flex items-center h-full">
-              <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-                น้ำหนัก (Weight)
-              </div>
-            </div>
-          </div>
-          <div className={cn(header())}>
-            <div className="flex items-center h-full">
-              <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-                เป้าหมาย (Target)
+        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_120px_120px_minmax(0,1fr)] lg:gap-0">
+          <div className="grid grid-cols-[minmax(0,1fr)_120px] lg:contents">
+            <div className={cn(header(), "lg:col-start-1 lg:row-start-1")}>
+              <div className="flex items-center h-full gap-2">
+                <Badge color="orange" label={(index + 1).toString()} />
+                <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis text-start grow">
+                  Individual KPI
+                </div>
+                {permissions.delete && (
+                  <Button
+                    type="button"
+                    variant="dangerOutline"
+                    size="xxs"
+                    onClick={onDelete}
+                  >
+                    Delete
+                  </Button>
+                )}
               </div>
             </div>
-          </div>
-          <div className={cn("border-none", header())}>
-            <div className="flex items-center h-full">
-              <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-                รายละเอียดเป้าหมาย (Target Detail)
+            <ColumnHeader
+              title="น้ำหนัก (Weight)"
+              className="max-lg:border-r-0 lg:col-start-2 lg:row-start-1"
+            />
+
+            <div className="min-w-0 border-r border-border p-2 lg:col-start-1 lg:row-start-2 lg:row-span-4">
+              <div className="flex flex-col gap-4">
+                <FormGenerator
+                  name={fieldName("category")}
+                  form={form}
+                  variant="selection"
+                  disabled={!canWrite}
+                  label="มุมมอง KPI ตามกลยุทธ์องค์กร"
+                  description="(Link to Strategy)"
+                  placeholder="Select an individual KPI"
+                  selectOptions={CATEGORY_OPTIONS}
+                  className={valueClassName}
+                />
+                {DETAIL_FIELDS.map((item) => (
+                  <FormGenerator
+                    key={item.name}
+                    name={fieldName(item.name)}
+                    form={form}
+                    variant="bigText"
+                    disabled={!canWrite}
+                    label={item.label}
+                    description={item.description}
+                    className={detailClassName}
+                  />
+                ))}
               </div>
+            </div>
+            <div className="min-w-0 p-2 lg:col-start-2 lg:row-start-2 lg:row-span-4 lg:border-r lg:border-border">
+              <FormGenerator
+                name={fieldName("weight")}
+                form={form}
+                variant="numeric"
+                disabled={!canWrite}
+                className={
+                  canWrite
+                    ? {
+                        ...fieldClassName,
+                        input:
+                          "w-full text-sm min-h-9! border border-border rounded px-3",
+                      }
+                    : readFieldClassName
+                }
+              />
             </div>
           </div>
 
-          <div className="p-2 overflow-hidden">
-            <div className="flex flex-col gap-2">
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.category`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">
-                      มุมมอง KPI ตามกลยุทธ์องค์กร<br /> 
-                      (Link to Strategy)
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!props.permissions.write}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an individual KPI" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(kpiCategoies).map(([key, value]) => (
-                          <SelectItem key={key} value={key}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.name`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">ตัวชี้วัดหลัก <br /> (Key Performance Indicator (KPI))</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} disabled={!props.permissions.write} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.definition`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">คำจำกัดความและสูตรคำนวณ <br /> (Definition and Calculation Formula)</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} disabled={!props.permissions.write} />
-                    </FormControl>  
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.method`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">รูปแบบและวิธีการรายงานผลสำเร็จ <br /> (Format/Method of Reporting Achievement)</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} disabled={!props.permissions.write} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-          <div className="p-2">
-            <FormField 
-              control={form.control}
-              name={`kpis.${index}.weight`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs">Weight</FormLabel>
-                  <FormControl>
-                    <Input 
-                      {...field}
-                      type="number"
-                      min={0}
-                      max={100}
-                      className="text-xs"
-                      disabled={!props.permissions.write}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="grid grid-cols-[6.25rem_minmax(0,1fr)] max-lg:border-t max-lg:border-border lg:contents">
+            <ColumnHeader
+              title="เป้าหมาย (Target)"
+              className="lg:col-start-3 lg:row-start-1"
             />
-          </div>
-          <div className="flex flex-col divide-y divide-border">
-            {targetRanges.map((item, rangeIndex) => (
-              <div 
-                key={rangeIndex}
-                className="flex items-center justify-center p-3"
-                style={{ 
-                  height: rowHeights[rangeIndex] ? `${rowHeights[rangeIndex]}px` : "auto",
-                  minHeight: rowHeights[rangeIndex] ? `${rowHeights[rangeIndex]}px` : "81px"
-                }}
-              >
-                <div className="flex flex-col items-center justify-center gap-1">
-                  <span className="text-sm font-medium font-mono">{item}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col divide-y divide-border">
-            <div ref={(el) => { detailRefs.current[0] = el }} className="p-2">
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.target70`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        value={field.value ?? ""}  
-                        className="min-h-25"
-                        disabled={!props.permissions.write}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div ref={(el) => { detailRefs.current[1] = el }} className="p-2">
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.target80`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        value={field.value ?? ""}  
-                        className="min-h-25"
-                        disabled={!props.permissions.write}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div ref={(el) => { detailRefs.current[2] = el }} className="p-2">
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.target90`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        value={field.value ?? ""}  
-                        className="min-h-25"
-                        disabled={!props.permissions.write}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div ref={(el) => { detailRefs.current[3] = el }} className="p-2">
-              <FormField 
-                control={form.control}
-                name={`kpis.${index}.target100`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        value={field.value ?? ""}
-                        className="min-h-25"
-                        disabled={!props.permissions.write}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <ColumnHeader
+              title="รายละเอียดเป้าหมาย (Target Detail)"
+              className="border-none lg:col-start-4 lg:row-start-1"
+            />
+            {KPI_TARGET_FIELDS.map((item, rowIndex) => {
+              const isLast = rowIndex === KPI_TARGET_FIELDS.length - 1;
+              return (
+                <Fragment key={item.name}>
+                  <div
+                    className={cn(
+                      "flex items-center justify-center border-r border-border px-3 py-2 lg:col-start-3",
+                      TARGET_LG_ROWS[rowIndex],
+                      !isLast && "border-b border-border",
+                    )}
+                  >
+                    <span className="text-sm font-medium font-mono">
+                      {item.percent}
+                    </span>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex h-full min-h-0 min-w-0 flex-col p-2 lg:col-start-4",
+                      TARGET_LG_ROWS[rowIndex],
+                      !isLast && "border-b border-border",
+                    )}
+                  >
+                    <FormGenerator
+                      name={fieldName(item.name)}
+                      form={form}
+                      variant="bigText"
+                      disabled={!canWrite}
+                      fillHeight
+                      className={targetClassName}
+                    />
+                  </div>
+                </Fragment>
+              );
+            })}
           </div>
         </div>
-
       </div>
-      <CommentSection 
-        permissions={props.permissions}
-        comments={props.comments}
+      <CommentSection
+        permissions={permissions}
+        comments={comments}
         onCreate={(content) => {
-          createComment({ 
-            connectId: props.kpi.id, 
-            content, 
-            period: props.period, 
-            formId: props.formId,
-          })
-        }} 
+          createComment({
+            connectId: kpi.id,
+            content,
+            period,
+            formId,
+          });
+        }}
       />
       <Separator />
     </>
   );
 };
+
+function ColumnHeader({
+  title,
+  className,
+}: {
+  title: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn(header(), className)}>
+      <div className="flex items-center h-full">
+        <div className="text-xs font-normal text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
+          {title}
+        </div>
+      </div>
+    </div>
+  );
+}

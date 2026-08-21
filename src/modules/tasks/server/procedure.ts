@@ -1,21 +1,14 @@
 import z from "zod/v4";
-import path from "path";
 import db from "@/lib/db";
 
-import { readCSV } from "@/seeds/lib/utils";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { FormType, Period, Status } from "@/generated/prisma/enums";
 
 import { TRPCError } from "@trpc/server";
 
 import { STATUSES } from "@/modules/tasks/constant";
+import { getApprovalChain, taskChainInclude } from "@/modules/tasks/chain";
 import { buildPermissionContext, canPerform, getUserRole } from "@/modules/tasks/permissions";
-
-interface ApprovalCSVProps {
-  employeeId: string;
-  checker?: string;
-  approver: string;
-}
 
 function emptyTrackerResult() {
   return {
@@ -27,16 +20,6 @@ function emptyTrackerResult() {
     },
     employees: [],
   };
-}
-
-let approvalRecordsCache: ApprovalCSVProps[] | null = null;
-
-function getApprovalRecords() {
-  if (!approvalRecordsCache) {
-    const approvalFile = path.join(process.cwd(), "src/data", "approval.csv");
-    approvalRecordsCache = readCSV<ApprovalCSVProps>(approvalFile);
-  }
-  return approvalRecordsCache;
 }
 
 export const taskProcedure = createTRPCRouter({
@@ -52,11 +35,7 @@ export const taskProcedure = createTRPCRouter({
         where: {
           type: input.type,
           year: input.year,
-          tasks: {
-            some: {
-              ownerId: ctx.user.username,
-            },
-          },
+          employeeId: ctx.user.username,
         },
         include: {
           tasks: true,
@@ -93,11 +72,11 @@ export const taskProcedure = createTRPCRouter({
           OR: [
             {
               status: Status.WAITING_APPROVER_1,
-              checkerId: ctx.user.username,
+              approval: { checkerId: ctx.user.username },
             },
             {
               status: Status.WAITING_APPROVER_2,
-              approverId: ctx.user.username,
+              approval: { approverId: ctx.user.username },
             },
           ],
         },
@@ -134,6 +113,10 @@ export const taskProcedure = createTRPCRouter({
         where: {
           id: input.id,
         },
+        include: {
+          ...taskChainInclude,
+          form: true,
+        },
       });
 
       if (!task) {
@@ -143,7 +126,8 @@ export const taskProcedure = createTRPCRouter({
         });
       }
 
-      const role = getUserRole(buildPermissionContext(ctx.user.username, task));
+      const chain = getApprovalChain(task);
+      const role = getUserRole(buildPermissionContext(ctx.user.username, chain, task.status));
 
       if (role !== "owner" || !canPerform(role, ["start-workflow"], task.status)) {
         throw new TRPCError({
@@ -152,7 +136,14 @@ export const taskProcedure = createTRPCRouter({
         });
       }
 
-      const hasChecker = task.checkerId !== null;
+      if (!chain.approverId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Approval chain not configured for this employee",
+        });
+      }
+
+      const hasChecker = chain.checkerId !== null;
 
       const res = await db.task.update({
         where: {
@@ -162,19 +153,19 @@ export const taskProcedure = createTRPCRouter({
           status: hasChecker ? Status.WAITING_APPROVER_1 : Status.WAITING_APPROVER_2,
         },
         include: {
+          ...taskChainInclude,
           form: true,
-          checker: true,
-          approver: true,
-          owner: true,
         },
       });
 
+      const next = getApprovalChain(res);
+
       return {
         id: res.id,
-        toEmail: res.checker?.email || res.approver?.email,
-        fromEmail: res.owner?.email,
-        checkerName: res.checker?.name || res.approver?.name,
-        ownerName: res.owner?.name,
+        toEmail: next.checker?.email || next.approver?.email,
+        fromEmail: next.owner.email,
+        checkerName: next.checker?.name || next.approver?.name || "",
+        ownerName: next.owner.name,
         status: STATUSES[res.status],
         app: res.form.type,
         period: (res.context as { period: Period })?.period,
@@ -190,7 +181,11 @@ export const taskProcedure = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const task = await db.task.findUnique({
         where: {
-          id: input.id
+          id: input.id,
+        },
+        include: {
+          ...taskChainInclude,
+          form: true,
         },
       });
 
@@ -201,7 +196,8 @@ export const taskProcedure = createTRPCRouter({
         });
       }
 
-      const permissionContext = buildPermissionContext(ctx.user.username, task);
+      const chain = getApprovalChain(task);
+      const permissionContext = buildPermissionContext(ctx.user.username, chain, task.status);
       const role = getUserRole(permissionContext);
 
       if (!role || !canPerform(role, ["approve"], task.status)) {
@@ -210,6 +206,11 @@ export const taskProcedure = createTRPCRouter({
           message: "No permission to confirm this task",
         });
       }
+
+      const taskInclude = {
+        ...taskChainInclude,
+        form: true,
+      } as const;
 
       let res = null;
 
@@ -223,12 +224,7 @@ export const taskProcedure = createTRPCRouter({
               status: Status.WAITING_APPROVER_2,
               checkedAt: new Date(),
             },
-            include: {
-              checker: true,
-              approver: true,
-              owner: true,
-              form: true,
-            },
+            include: taskInclude,
           });
         } else {
           res = await db.task.update({
@@ -238,12 +234,7 @@ export const taskProcedure = createTRPCRouter({
             data: {
               status: Status.IN_DRAFT,
             },
-            include: {
-              owner: true,
-              checker: true,
-              approver: true,
-              form: true,
-            },
+            include: taskInclude,
           });
         }
       } else if (role === "approver") {
@@ -256,12 +247,7 @@ export const taskProcedure = createTRPCRouter({
               status: Status.COMPLETED,
               approvedAt: new Date(),
             },
-            include: {
-              checker: true,
-              approver: true,
-              owner: true,
-              form: true,
-            },
+            include: taskInclude,
           });
         } else {
           res = await db.task.update({
@@ -271,12 +257,7 @@ export const taskProcedure = createTRPCRouter({
             data: {
               status: Status.IN_DRAFT,
             },
-            include: {
-              owner: true,
-              checker: true,
-              approver: true,
-              form: true,
-            },
+            include: taskInclude,
           });
         }
       }
@@ -288,19 +269,21 @@ export const taskProcedure = createTRPCRouter({
         });
       }
 
+      const next = getApprovalChain(res);
+
       return {
         id: res.formId,
         owner: {
-          email: res.owner?.email,
-          name: res.owner?.name,
+          email: next.owner.email,
+          name: next.owner.name,
         },
         checker: {
-          email: res.checker?.email,
-          name: res.checker?.name,
+          email: next.checker?.email,
+          name: next.checker?.name ?? "",
         },
         approver: {
-          email: res.approver?.email,
-          name: res.approver?.name,
+          email: next.approver?.email,
+          name: next.approver?.name ?? "",
         },
         declinedBy: role === "checker" ? "Evaluator 1" : "Evaluator 2",
         status: STATUSES[res.status],
@@ -308,7 +291,7 @@ export const taskProcedure = createTRPCRouter({
         approvedAt: res.approvedAt,
         checkedAt: res.checkedAt,
         isApproved: res.status === Status.COMPLETED,
-        checkedBy: res.status === Status.WAITING_APPROVER_1 ? res.checker?.name : res.status === Status.WAITING_APPROVER_2 ? res.approver?.name : undefined,
+        checkedBy: res.status === Status.WAITING_APPROVER_1 ? next.checker?.name : res.status === Status.WAITING_APPROVER_2 ? next.approver?.name : undefined,
         period: (res.context as { period: Period })?.period,
       };
     }),
@@ -324,12 +307,14 @@ export const taskProcedure = createTRPCRouter({
         return emptyTrackerResult();
       }
 
-      const targetApproval = getApprovalRecords()
-        .filter(
-          (f) =>
-            f.checker === employee.id || f.approver === employee.id,
-        )
-        .map((record) => record.employeeId);
+      const subordinates = await db.approval.findMany({
+        where: {
+          OR: [{ checkerId: employee.id }, { approverId: employee.id }],
+        },
+        select: { employeeId: true },
+      });
+
+      const targetApproval = subordinates.map((record) => record.employeeId);
 
       if (targetApproval.length === 0) {
         return emptyTrackerResult();
@@ -338,31 +323,18 @@ export const taskProcedure = createTRPCRouter({
       const [forms, employees] = await Promise.all([
         db.form.findMany({
           where: {
-            AND: [
-              {
-                tasks: {
-                  some: {
-                    ownerId: {
-                      in: targetApproval,
-                    },
-                  },
-                },
-              },
-              {
-                year: {
-                  gte: input.year - 1,
-                  lte: input.year,
-                },
-              },
-            ],
+            employeeId: {
+              in: targetApproval,
+            },
+            year: {
+              gte: input.year - 1,
+              lte: input.year,
+            },
           },
           include: {
             tasks: {
               orderBy: {
                 updatedAt: "asc",
-              },
-              include: {
-                owner: true,
               },
             },
           },
@@ -380,7 +352,7 @@ export const taskProcedure = createTRPCRouter({
         forms
           .filter((f) => f.type === type && f.tasks.length > 0)
           .reduce<Record<string, (typeof forms)[0][]>>((acc, form) => {
-            const ownerId = form.tasks[0].ownerId;
+            const ownerId = form.employeeId;
             acc[ownerId] ??= [];
             acc[ownerId].push(form);
             return acc;

@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { initTRPC, TRPCError } from "@trpc/server";
 
 import { auth } from "@/lib/auth";
+import { UserRole } from "@/generated/prisma/enums";
 
 export const createTRPCContext = cache(async () => {
   const session = await auth.api.getSession({
@@ -51,3 +52,11 @@ export const protectedProcedure = t.procedure.use(async function isAuthed(opts) 
     },
   });
 })
+
+export const adminProcedure = protectedProcedure.use(async function isAdmin(opts) {
+  if (opts.ctx.user.role !== UserRole.ADMIN) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+  }
+
+  return opts.next();
+});

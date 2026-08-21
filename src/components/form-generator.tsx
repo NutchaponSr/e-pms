@@ -1,18 +1,18 @@
-import {
+import { ScrollArea } from "@radix-ui/react-scroll-area";
+import type { CSSProperties } from "react";
+import type {
   ControllerRenderProps,
   FieldPath,
   FieldValues,
   UseFormReturn,
 } from "react-hook-form";
-import { CSSProperties } from "react";
-
 import {
+  FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -21,10 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { InputVariants } from "@/types/form";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@radix-ui/react-scroll-area";
+import type { InputVariants } from "@/types/form";
 
 type TextareaRefCallback = (element: HTMLTextAreaElement | null) => void;
 
@@ -117,20 +115,32 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
         <FormItem
           className={cn(
             className?.form,
-            fillHeight && "lg:flex lg:flex-1 lg:flex-col lg:min-h-0",
+            fillHeight && "flex flex-1 flex-col min-h-0 lg:flex lg:flex-1 lg:flex-col lg:min-h-0",
           )}
         >
           <div className="flex items-center justify-between">
             <div className="flex flex-col overflow-hidden">
-              {label ? <FormLabel className={cn("whitespace-nowrap text-ellipsis overflow-hidden", className?.label)}>{label}</FormLabel> : null}
-              {description ? <FormDescription className={cn(
-                  "text-xs text- whitespace-nowrap text-ellipsis overflow-hidden", className?.description,
-                  isError && "text-destructive"
-                )}
-              >
-                {description}
-              </FormDescription> : null
-              }
+              {label ? (
+                <FormLabel
+                  className={cn(
+                    "whitespace-nowrap text-ellipsis overflow-hidden",
+                    className?.label,
+                  )}
+                >
+                  {label}
+                </FormLabel>
+              ) : null}
+              {description ? (
+                <FormDescription
+                  className={cn(
+                    "text-xs text- whitespace-nowrap text-ellipsis overflow-hidden",
+                    className?.description,
+                    isError && "text-destructive",
+                  )}
+                >
+                  {description}
+                </FormDescription>
+              ) : null}
             </div>
 
             {children}
@@ -139,7 +149,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
             <div
               className={cn(
                 "flex flex-col gap-1",
-                fillHeight && "lg:flex-1 lg:min-h-0",
+                fillHeight && "min-h-0 flex-1 lg:flex-1 lg:min-h-0",
               )}
             >
               {render({
@@ -187,15 +197,28 @@ const BigText = <TFieldValues extends FieldValues>({
   maxLength,
   fillHeight,
   scrollAreaClassName,
+  style,
 }: RenderProps<TFieldValues>) => {
   const useScrollArea = Boolean(scrollAreaClassName);
-  const fillHeightClass = fillHeight && !useScrollArea ? "lg:h-full lg:min-h-10 lg:flex-1" : undefined;
-  const overflowClass = fillHeight && !useScrollArea ? "lg:overflow-auto" : "overflow-hidden";
+  const fillsParent =
+    Boolean(fillHeight) ||
+    /\b(?:h-full|min-h-full|flex-1)\b/.test(className ?? "");
+  const fillHeightClass =
+    fillHeight && !useScrollArea
+      ? "lg:h-full lg:min-h-10 lg:flex-1"
+      : undefined;
+  const overflowClass = useScrollArea
+    ? undefined
+    : fillHeight && !/\boverflow-hidden\b/.test(className ?? "")
+      ? "lg:overflow-auto"
+      : "overflow-hidden scrollbar-hide";
 
   const growTextarea = (el: HTMLTextAreaElement | null) => {
     if (!el || !useScrollArea) return;
 
-    const viewport = el.closest('[data-slot="scroll-area-viewport"]') as HTMLElement | null;
+    const viewport = el.closest(
+      '[data-slot="scroll-area-viewport"]',
+    ) as HTMLElement | null;
     const minHeight = viewport?.clientHeight ?? SCROLL_AREA_MIN_HEIGHT_PX;
 
     el.style.height = "0px";
@@ -238,7 +261,10 @@ const BigText = <TFieldValues extends FieldValues>({
       value={field.value ?? ""}
       maxLength={maxLength}
       onChange={(e) => {
-        const value = maxLength != null ? e.target.value.slice(0, maxLength) : e.target.value;
+        const value =
+          maxLength != null
+            ? e.target.value.slice(0, maxLength)
+            : e.target.value;
         field.onChange(value);
       }}
       placeholder={placeholder}
@@ -254,6 +280,12 @@ const BigText = <TFieldValues extends FieldValues>({
     );
   }
 
+  const sizeToContent = (el: HTMLTextAreaElement | null) => {
+    if (!el || fillsParent || useScrollArea) return;
+    el.style.height = "0px";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
   if (disabled) {
     return (
       <div
@@ -261,7 +293,7 @@ const BigText = <TFieldValues extends FieldValues>({
           className,
           fillHeightClass,
           "min-w-0 whitespace-pre-wrap wrap-break-word",
-          fillHeight ? "lg:overflow-auto" : "overflow-hidden",
+          fillHeight ? "lg:overflow-auto" : "overflow-visible",
         )}
       >
         {field.value ?? ""}
@@ -277,23 +309,31 @@ const BigText = <TFieldValues extends FieldValues>({
         if (fillHeight && el) {
           el.style.height = "";
         }
+        sizeToContent(el);
         if (textareaRef) {
           textareaRef(el);
         }
         field.ref(el);
       }}
-      onInput={onInput}
+      onInput={(event) => {
+        sizeToContent(event.currentTarget);
+        onInput?.();
+      }}
       value={field.value ?? ""}
       maxLength={maxLength}
       onChange={(e) => {
-        const value = maxLength != null ? e.target.value.slice(0, maxLength) : e.target.value;
+        const value =
+          maxLength != null
+            ? e.target.value.slice(0, maxLength)
+            : e.target.value;
         field.onChange(value);
       }}
       placeholder={placeholder}
+      style={{ ...style, overflow: "hidden" }}
       className={cn(
-        className,
+        "field-sizing-content resize-none whitespace-pre-wrap wrap-break-word",
         fillHeightClass,
-        "resize-none whitespace-pre-wrap wrap-break-word",
+        className,
         overflowClass,
       )}
     />
@@ -305,13 +345,9 @@ const Numeric = <TFieldValues extends FieldValues>({
   placeholder,
   className,
   disabled,
-}: RenderProps<TFieldValues>) => {  
+}: RenderProps<TFieldValues>) => {
   if (disabled) {
-    return (
-      <div className={className}>
-        {field.value ?? ""}
-      </div>
-    );
+    return <div className={className}>{field.value ?? ""}</div>;
   }
 
   return (
@@ -321,7 +357,10 @@ const Numeric = <TFieldValues extends FieldValues>({
       value={field.value ?? ""}
       onChange={(e) => field.onChange(e.target.value)}
       placeholder={placeholder}
-      className={cn(className, "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-0 min-h-10")}
+      className={cn(
+        className,
+        "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-0 min-h-10",
+      )}
       disabled={disabled}
     />
   );
@@ -334,11 +373,7 @@ const Text = <TFieldValues extends FieldValues>({
   disabled,
 }: RenderProps<TFieldValues>) => {
   if (disabled) {
-    return (
-      <div className={className}>
-        {field.value ?? ""}
-      </div>
-    );
+    return <div className={className}>{field.value ?? ""}</div>;
   }
 
   return (
@@ -362,11 +397,13 @@ const Selection = <TFieldValues extends FieldValues>({
   selectOptions,
 }: RenderProps<TFieldValues>) => {
   if (disabled) {
-    return (
-      <div className={className}>
-        {field.value ?? ""}
-      </div>
-    );
+    const selectedLabel =
+      selectOptions?.find((option) => option.key === String(field.value ?? ""))
+        ?.label ??
+      field.value ??
+      "";
+
+    return <div className={className}>{selectedLabel}</div>;
   }
 
   return (

@@ -1,4 +1,3 @@
-import { Task } from "@/generated/prisma/client";
 import { Status } from "@/generated/prisma/enums";
 
 export interface PermissionContext {
@@ -8,6 +7,11 @@ export interface PermissionContext {
   approverId: string;
   status: Status;
 }
+
+type ApprovalChainIds = Pick<
+  PermissionContext,
+  "ownerId" | "checkerId" | "approverId"
+>;
 
 
 export type Approval = "owner" | "checker" | "approver";
@@ -89,12 +93,16 @@ export function canPerforms(
   );
 }
 
-export function buildPermissionContext(employeeId: string, task: Task): PermissionContext {
+export function buildPermissionContext(
+  employeeId: string,
+  chain: ApprovalChainIds,
+  status: Status,
+): PermissionContext {
   return {
     employeeId,
-    ownerId: task.ownerId,
-    checkerId: task.checkerId,
-    approverId: task.approverId,
-    status: task.status,
+    ownerId: chain.ownerId,
+    checkerId: chain.checkerId,
+    approverId: chain.approverId,
+    status,
   };
 }

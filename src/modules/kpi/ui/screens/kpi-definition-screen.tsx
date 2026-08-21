@@ -1,17 +1,19 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { inferProcedureOutput } from "@trpc/server";
 import { useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
+import {
+  type FieldPath,
+  type Resolver,
+  useFieldArray,
+  useForm,
+  useWatch,
+} from "react-hook-form";
 import { BsFileEarmarkText, BsPlusLg } from "react-icons/bs";
-import { Resolver, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-
-import { Button } from "@/components/ui/button";
-
+import { EmployeeInfo } from "@/components/employee-info";
 import { Toolbar } from "@/components/toolbar";
-import { inferProcedureOutput } from "@trpc/server";
-import { appRouter } from "@/trpc/routers/_app";
-import { useCreateKpi } from "../../api/use-create-kpi";
-import { Period } from "@/generated/prisma/enums";
-import { Card } from "@/components/card";
-import { KpiDefinitionContent } from "../components/kpi-definition-content";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyContent,
@@ -21,53 +23,74 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Form } from "@/components/ui/form";
-import { KpiDefinitions, kpiDefinitionsSchema } from "../../schema/definition";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { exportDefinitionKpi, kpiDefinitionMap, validateWeight } from "../../utils";
-import { useUpdateBulkKpis } from "../../api/use-update-bulk-kpis";
+import type { Employee, Task } from "@/generated/prisma/client";
+import type { Period } from "@/generated/prisma/enums";
+import { useWeight } from "@/modules/kpi/stores/use-weight";
 import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
 import { STATUS_VARIANTS } from "@/modules/tasks/constant";
-import { useWeight } from "@/modules/kpi/stores/use-weight";
-import { Action } from "@/modules/tasks/permissions";
+import type { Action } from "@/modules/tasks/permissions";
 import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
-import { createPortal } from "react-dom";
-import { useSearchParams } from "@/hooks/use-search-params";
-import { Rank } from "@/types/employees";
-import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
-import { KpiUpload } from "../components/kpi-upload";
-import { EmployeeInfo } from "@/components/employee-info";
-import { Employee, Task } from "@/generated/prisma/client";
+import type { AppRouter } from "@/trpc/routers/_app";
+import type { Rank } from "@/types/employees";
+
+import { useCreateKpi } from "../../api/use-create-kpi";
+import { useUpdateBulkKpis } from "../../api/use-update-bulk-kpis";
+import {
+  type KpiDefinitions,
+  kpiDefinitionsSchema,
+} from "../../schema/definition";
+import {
+  exportDefinitionKpi,
+  kpiDefinitionMap,
+  validateWeight,
+} from "../../utils";
+import { KpiDefinitionContent } from "../components/kpi-definition-content";
 import { KpiDefinitionWeightSummary } from "../components/kpi-definition-weight-summary";
+import { KpiUpload } from "../components/kpi-upload";
 
 interface Props {
   id: string;
   period: Period;
   year: number;
-  form: inferProcedureOutput<(typeof appRouter)["kpi"]["getOne"]>["form"];
+  form: inferProcedureOutput<AppRouter["kpi"]["getOne"]>["form"];
   permissions: Record<Action, boolean>;
 }
 
-export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Props) => {
+function applySchemaIssues(
+  setError: ReturnType<typeof useForm<KpiDefinitions>>["setError"],
+  issues: { path: PropertyKey[]; message: string }[],
+) {
+  for (const issue of issues) {
+    const path = issue.path.join(".") as FieldPath<KpiDefinitions>;
+    setError(path, { type: "validation", message: issue.message });
+  }
+}
+
+export const KpiDefinitionScreen = ({
+  form,
+  period,
+  id,
+  year,
+  permissions,
+}: Props) => {
   const createKpi = useCreateKpi();
-  const { mutate: updateBulkKpis, mutateAsync: updateBulkKpisAsync } = useUpdateBulkKpis(id, period);
+  const { mutate: updateBulkKpis, mutateAsync: updateBulkKpisAsync } =
+    useUpdateBulkKpis(id, period);
   const startWorkflow = useStartWorkflow(form.id, period);
   const { setWeight } = useWeight();
-  const { save } = useSaveForm();
-
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const kpisPopulated =
-    form?.kpis?.map((kpi) => ({
-      ...kpi,
-      year,
-    })) ?? [];
+  const kpisMapped = useMemo(
+    () => (form.kpis ?? []).map((kpi) => kpiDefinitionMap({ ...kpi, year })),
+    [form.kpis, year],
+  );
 
-  const kpisMapped = kpisPopulated.map((kpi) => kpiDefinitionMap(kpi));
+  const expectedWeight = validateWeight(form.tasks?.owner.rank as Rank);
 
   const f = useForm<KpiDefinitions>({
     resolver: zodResolver(kpiDefinitionsSchema) as Resolver<KpiDefinitions>,
     defaultValues: {
-      kpis: kpisMapped || [],
+      kpis: kpisMapped,
       saved: false,
     },
   });
@@ -83,35 +106,81 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
     name: "kpis",
   });
 
-  const totalWeight = useMemo(() => {
-    return watchedKpis?.reduce((sum, kpi) => sum + (Number(kpi?.weight) || 0), 0) ?? 0;
-  }, [watchedKpis]);
+  const totalWeight = useMemo(
+    () =>
+      watchedKpis?.reduce((sum, kpi) => sum + (Number(kpi?.weight) || 0), 0) ??
+      0,
+    [watchedKpis],
+  );
 
   useEffect(() => {
-    const incoming = kpisMapped;
     const current = f.getValues("kpis") ?? [];
 
     if (!f.formState.isDirty) {
-      f.reset({ kpis: incoming });
-      replace(incoming);
+      f.reset({ kpis: kpisMapped });
+      replace(kpisMapped);
       return;
     }
 
-    const currentIds = new Set(current.map((k) => k.id));
-    const newOnes = incoming.filter((k) => !currentIds.has(k.id));
+    const currentIds = new Set(current.map((kpi) => kpi.id));
+    const newOnes = kpisMapped.filter((kpi) => !currentIds.has(kpi.id));
 
     if (newOnes.length) {
       append(newOnes);
     }
-  }, [form?.kpis, year, kpisMapped, f, replace, append]); 
+  }, [kpisMapped, f, replace, append]);
 
   useEffect(() => {
     setWeight(totalWeight);
   }, [totalWeight, setWeight]);
 
+  const addKpi = () => createKpi({ formId: id, period });
+
   const onSubmit = (data: KpiDefinitions) => {
     updateBulkKpis({ ...data, saved: true });
-  }
+  };
+
+  const saveDraft = () => {
+    f.setValue("saved", false);
+    updateBulkKpis({ ...f.getValues(), saved: false });
+  };
+
+  const saveForConfirmation = async () => {
+    f.setValue("saved", true);
+    const ok = await f.trigger();
+    if (!ok) return false;
+    return updateBulkKpisAsync({ ...f.getValues(), saved: true });
+  };
+
+  const onWorkflow = async () => {
+    f.setValue("saved", true);
+
+    const isValid = await f.trigger();
+    if (!isValid) {
+      toast.error("Please fix validation errors before starting the workflow");
+      return;
+    }
+
+    const formValues = f.getValues();
+    const schemaResult = kpiDefinitionsSchema.safeParse(formValues);
+    if (!schemaResult.success) {
+      toast.error("Please fix validation errors before starting the workflow");
+      applySchemaIssues(f.setError, schemaResult.error.issues);
+      return;
+    }
+
+    if (expectedWeight !== totalWeight) {
+      toast.error(
+        "The total weight of the KPI Bonus is not equal to the owner's rank weight",
+      );
+      return;
+    }
+
+    const okSave = await updateBulkKpisAsync({ ...formValues, saved: true });
+    if (!okSave) return;
+
+    startWorkflow({ id: form.tasks.id });
+  };
 
   return (
     <Form {...f}>
@@ -123,75 +192,32 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
         >
           <KpiDefinitionWeightSummary
             actual={totalWeight}
-            full={validateWeight(form.tasks?.owner.rank as Rank)}
+            full={expectedWeight}
           />
         </EmployeeInfo>
 
-        <KpiUpload 
-          id={id} 
-          period={period} 
-          fileRef={fileRef as React.RefObject<HTMLInputElement>} 
-        />
-        <Toolbar 
+        <KpiUpload id={id} period={period} fileRef={fileRef} />
+        <Toolbar
           onUpload={() => fileRef.current?.click()}
           permissions={permissions}
-          status={STATUS_VARIANTS[form.tasks?.status!]}
-          onCreate={() => createKpi({ formId: id, period })} 
+          status={STATUS_VARIANTS[form.tasks.status]}
+          onCreate={addKpi}
           onExport={async () => {
             await exportDefinitionKpi({
               ...form,
               kpis: form.kpis,
               employee: form.tasks?.owner,
-              task: form.tasks as Task & { checker?: Employee; approver: Employee },
+              task: form.tasks as Task & {
+                checker?: Employee;
+                approver: Employee;
+              },
             });
           }}
-          onWorkflow={async () => {
-            // Set saved=true for validation
-            f.setValue("saved", true);
-            
-            // Validate form schema - trigger all fields
-            const isValid = await f.trigger();
-            if (!isValid) {
-              toast.error("Please fix validation errors before starting the workflow");
-              return;
-            }
-            
-            // Also validate using schema directly to ensure all rules are checked
-            const formValues = f.getValues();
-            const schemaResult = kpiDefinitionsSchema.safeParse(formValues);
-            if (!schemaResult.success) {
-              toast.error("Please fix validation errors before starting the workflow");
-              // Set form errors from schema validation
-              schemaResult.error.issues.forEach((issue) => {
-                // Convert path array to react-hook-form path format
-                const path = issue.path as (string | number)[];
-                f.setError(path as any, { 
-                  type: "validation",
-                  message: issue.message 
-                });
-              });
-              return;
-            }
-            
-            // Validate weight
-            if (validateWeight(form.tasks?.owner.rank as Rank) !== totalWeight) {
-              toast.error("The total weight of the KPI Bonus is not equal to the owner's rank weight");
-              return;
-            }
-
-            // Save form with saved=true before starting workflow
-            const okSave = await updateBulkKpisAsync({ ...formValues, saved: true });
-            if (!okSave) return;
-
-            startWorkflow({ id: form.tasks!.id });
-          }}
-          onSaveDraft={() => {
-            f.setValue("saved", false);
-            updateBulkKpis({ ...f.getValues(), saved: false });
-          }}
+          onWorkflow={onWorkflow}
+          onSaveDraft={saveDraft}
         />
         <div className="px-3 mx-auto w-full flex flex-col justify-start grow pb-45">
-          <Empty data-empty={form?.kpis && form?.kpis.length > 0}>
+          <Empty data-empty={Boolean(form.kpis?.length)}>
             <EmptyHeader>
               <EmptyMedia variant="icon" className="size-16">
                 <BsFileEarmarkText className="size-10 text-primary" />
@@ -200,16 +226,7 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
               <EmptyDescription>create your first KPI</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Button
-                variant="outline"
-                size="lg"
-                type="button"
-                disabled={!permissions.write}
-                onClick={() => createKpi({ formId: id, period })}
-              >
-                <BsPlusLg />
-                New KPI
-              </Button>
+              {permissions.write && <NewKpiButton onClick={addKpi} />}
             </EmptyContent>
           </Empty>
 
@@ -218,48 +235,55 @@ export const KpiDefinitionScreen = ({ form, period, id, year, permissions }: Pro
             className="grid grid-cols-1 gap-y-2 data-[empty=true]:hidden"
           >
             {fields.map((field, index) => (
-              <KpiDefinitionContent 
-                kpi={field} 
+              <KpiDefinitionContent
+                kpi={field}
                 index={index}
-                key={field.id} 
-                form={f} 
-                formId={id} 
-                period={period} 
+                key={field.id}
+                form={f}
+                formId={id}
+                period={period}
                 permissions={permissions}
                 onLocalDelete={() => remove(index)}
-                comments={form?.kpis.find((kpi) => kpi.id === field.id)?.comments || []}
+                comments={
+                  form.kpis.find((kpi) => kpi.id === field.id)?.comments || []
+                }
               />
             ))}
-            <Button
-              variant="outline"
-              size="lg"
-              type="button"
-              disabled={!permissions.write}
-              onClick={() => createKpi({ formId: id, period })}
-            >
-              <BsPlusLg />
-              New KPI
-            </Button>
+            {permissions.write && <NewKpiButton onClick={addKpi} />}
           </div>
         </div>
 
-        {permissions.approve && createPortal(
-          <Confirmation 
-            id={id} 
-            app="KPI Bonus"
-            taskId={form.tasks.id} 
-            period={period} 
-            confirmTitle="Confirm KPI Bonus"
-            onSave={async () => {
-              f.setValue("saved", true);
-              const ok = await f.trigger();
-              if (!ok) return false;
-              return await updateBulkKpisAsync({ ...f.getValues(), saved: true });
-            }}
-          />,
-          document.body
-        )}
+        {permissions.approve &&
+          createPortal(
+            <Confirmation
+              id={id}
+              app="KPI Bonus"
+              taskId={form.tasks.id}
+              period={period}
+              confirmTitle="Confirm KPI Bonus"
+              onSave={saveForConfirmation}
+            />,
+            document.body,
+          )}
       </form>
     </Form>
   );
 };
+
+function NewKpiButton({
+  onClick,
+}: {
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      variant="outline"
+      size="lg"
+      type="button"
+      onClick={onClick}
+    >
+      <BsPlusLg />
+      New KPI
+    </Button>
+  );
+}

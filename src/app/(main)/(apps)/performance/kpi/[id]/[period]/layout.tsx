@@ -1,27 +1,23 @@
-import { Suspense } from "react";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { Loader } from "@/components/loader";
+import { parseKpiPeriodParam } from "@/modules/kpi/constants";
 import { getQueryClient, trpc } from "@/trpc/server";
 
-import { Period } from "@/generated/prisma/client";
-
-const PERIODS: Record<string, Period> = {
-  definition: Period.IN_DRAFT,
-  evaluation: Period.EVALUATION,
-};
-
-const Layout = async (props: {
-  params: Promise<{ id: string; period: string }>;
-  children: React.ReactNode;
-}) => {
-  const queryClient = getQueryClient();
+const Layout = async (props: LayoutProps<"/performance/kpi/[id]/[period]">) => {
   const params = await props.params;
+  const period = parseKpiPeriodParam(params.period);
 
-  const periodValue = PERIODS[params.period] || Period.IN_DRAFT;
+  if (!period) {
+    notFound();
+  }
+
+  const queryClient = getQueryClient();
 
   void queryClient.prefetchQuery(
-    trpc.kpi.getOne.queryOptions({ id: params.id, period: periodValue }),
+    trpc.kpi.getOne.queryOptions({ id: params.id, period }),
   );
 
   return (

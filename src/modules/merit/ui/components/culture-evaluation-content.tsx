@@ -1,16 +1,16 @@
-import { inferProcedureOutput } from "@trpc/server";
-import { type ReactNode, useMemo, useRef } from "react";
-
-import { Period } from "@/generated/prisma/enums";
-import { AppRouter } from "@/trpc/routers/_app";
-import { UseFormReturn, useFormState } from "react-hook-form";
-import { MeritEvaluation } from "../../schemas/evaluation";
+import type { inferProcedureOutput } from "@trpc/server";
+import { type ReactNode, useRef } from "react";
+import { type UseFormReturn, useFormState } from "react-hook-form";
+import { AttachButton } from "@/components/attach-button";
 import { CardInfo } from "@/components/card-info";
-import { formatDecimal } from "@/lib/utils";
 import { FormGenerator } from "@/components/form-generator";
-import { formRecord } from "@/types/form";
-import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -18,16 +18,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { AttachButton } from "@/components/attach-button";
+import { Period } from "@/generated/prisma/enums";
+import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
+import { cn, formatDecimal } from "@/lib/utils";
+import type { AppRouter } from "@/trpc/routers/_app";
+import { formRecord } from "@/types/form";
 import { useDeleteCultureFile } from "../../api/use-delete-culture-file";
 import { useSyncCultureAttach } from "../../api/use-sync-culture-attach";
 import { COMPETENCY_ACTUAL_MAX_LENGTH } from "../../constant";
+import type { MeritEvaluation } from "../../schemas/evaluation";
 
 interface Props {
   index: number;
   period: Period;
-  cultureRecord: inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"]["cultureRecords"][number];
+  cultureRecord: inferProcedureOutput<
+    AppRouter["merit"]["getOne"]
+  >["form"]["cultureRecords"][number];
   form: UseFormReturn<MeritEvaluation>;
   permissions: {
     canPerformOwner: boolean;
@@ -39,8 +45,7 @@ interface Props {
   weight: number;
 }
 
-type CultureEvaluation =
-  Props["cultureRecord"]["cultureEvaluations"][number];
+type CultureEvaluation = Props["cultureRecord"]["cultureEvaluations"][number];
 
 export const CultureEvaluationContent = ({
   index,
@@ -55,16 +60,21 @@ export const CultureEvaluationContent = ({
   const { mutation: deleteCultureFile } = useDeleteCultureFile(formId, period);
   const { mutation: syncCultureAttach } = useSyncCultureAttach(formId, period);
 
-  const eva1st = cultureRecord.cultureEvaluations.find((eva) => eva.period === Period.EVALUATION_1ST);
+  const eva1st = cultureRecord.cultureEvaluations.find(
+    (eva) => eva.period === Period.EVALUATION_1ST,
+  );
   const currentEvaluation = cultureRecord.cultureEvaluations.find(
     (evaluation) => evaluation.period === period,
   );
 
   const isYearEnd = period === Period.EVALUATION_2ND;
+  const beliefs = Array.isArray(cultureRecord.culture?.belief)
+    ? cultureRecord.culture.belief.map(String)
+    : [];
 
   const ownerActualRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const textareaRefs = useMemo(() => [ownerActualRef], []);
+  const textareaRefs = [ownerActualRef];
 
   const { groupSyncFunctions } = useSyncTextareaHeights([
     {
@@ -76,11 +86,15 @@ export const CultureEvaluationContent = ({
   const syncTextareaHeights = groupSyncFunctions[0];
 
   const evaluationSectionTitle =
-    period === Period.EVALUATION_1ST ? "Mid-year Evaluation" : "Year-end Evaluation";
+    period === Period.EVALUATION_1ST
+      ? "Mid-year Evaluation"
+      : "Year-end Evaluation";
 
   const evaluationGridClass = cn(
     "grid grid-cols-1 gap-2",
-    hasChecker ? "lg:grid-cols-3 lg:items-stretch" : "lg:grid-cols-2 lg:items-stretch",
+    hasChecker
+      ? "lg:grid-cols-3 lg:items-stretch"
+      : "lg:grid-cols-2 lg:items-stretch",
   );
 
   const blueFormClass = {
@@ -98,6 +112,8 @@ export const CultureEvaluationContent = ({
 
   const evaluationColumnClass =
     "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+  const midYearColumnClass =
+    "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#42230308] dark:bg-[#fcfcfc08] rounded-sm";
 
   return (
     <div className="flex flex-col gap-4">
@@ -120,9 +136,7 @@ export const CultureEvaluationContent = ({
         </div>
 
         <div className="flex flex-row items-center gap-2 shrink-0 bg-[#0080d51c] dark:bg-[#298bfd10] p-2 rounded-sm">
-          <h4 className="text-sm text-marine">
-            น้ำหนัก (%)
-          </h4>
+          <h4 className="text-sm text-marine">น้ำหนัก (%)</h4>
           <p className="text-sm shadow-[0_4px_12px_0_rgba(25,25,25,0.029),0_1px_2px_0_rgba(25,25,25,0.019),0_0_0_1px_rgba(0,124,215,0.094)] dark:shadow-[0_4px_12px_0_rgba(25,25,25,0.4),0_0_0_1px_rgba(71,157,255,0.173)] bg-background py-1 px-2 rounded">
             {formatDecimal(weight)}
           </p>
@@ -130,16 +144,32 @@ export const CultureEvaluationContent = ({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <CardInfo label="พฤติกรรมที่คาดหวัง (Key Behavior)" variant="default" className="h-auto">
+        <CardInfo
+          label="พฤติกรรมที่คาดหวัง (Key Behavior)"
+          variant="default"
+          className="h-auto"
+        >
           <div className="relative w-auto flex items-center px-2.5 py-2">
-            <p className="max-w-full w-full whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
-              {Array.isArray(cultureRecord.culture?.belief) ? cultureRecord.culture?.belief?.map((item, idx) => (
-                <li className="list-disc list-inside text-primary" key={idx}>{String(item)}</li>
-              )) : null}
-            </p>
+            {beliefs.length > 0 ? (
+              <ul className="max-w-full w-full grow list-disc list-inside text-sm leading-normal min-h-6 text-primary">
+                {beliefs.map((item) => (
+                  <li className="text-primary" key={item}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="max-w-full w-full grow text-sm leading-normal min-h-6 text-primary">
+                -
+              </p>
+            )}
           </div>
         </CardInfo>
-        <CardInfo label="แนวทางในการประเมิน (Key Evidence)" variant="default" className="h-auto">
+        <CardInfo
+          label="แนวทางในการประเมิน (Key Evidence)"
+          variant="default"
+          className="h-auto"
+        >
           <div className="relative w-full flex items-center px-2.5 py-2">
             <p className="max-w-full w-auto whitespace-pre-wrap [word-break:break-word] grow text-sm leading-normal min-h-6 text-primary">
               {cultureRecord.evidence}
@@ -153,12 +183,14 @@ export const CultureEvaluationContent = ({
           evaluation={eva1st}
           hasChecker={hasChecker}
           evaluationGridClass={evaluationGridClass}
-          evaluationColumnClass={evaluationColumnClass}
+          evaluationColumnClass={midYearColumnClass}
         />
       )}
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-marine">{evaluationSectionTitle}</h2>
+        <h2 className="text-sm font-medium text-marine">
+          {evaluationSectionTitle}
+        </h2>
         <div className={evaluationGridClass}>
           <div className={evaluationColumnClass}>
             <FormGenerator
@@ -182,8 +214,9 @@ export const CultureEvaluationContent = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center justify-between gap-0.5 text-xs text-marine whitespace-normal">
-                        <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
-                        <span className="font-normal text-secondary">ไม่บังคับแนบไฟล์ (optional)</span>
+                        <span>
+                          ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)
+                        </span>
                       </FormLabel>
                       <FormControl>
                         <AttachButton
@@ -192,7 +225,10 @@ export const CultureEvaluationContent = ({
                           onChange={field.onChange}
                           onUpload={(url) => {
                             if (currentEvaluation) {
-                              syncCultureAttach({ id: currentEvaluation.id, fileUrl: url });
+                              syncCultureAttach({
+                                id: currentEvaluation.id,
+                                fileUrl: url,
+                              });
                             }
                           }}
                           onRemove={() => {
@@ -288,7 +324,6 @@ const MidYearEvaluationSection = ({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-0.5 text-xs text-marine whitespace-normal">
                   <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
-                  <span className="font-normal text-secondary">ไม่บังคับแนบไฟล์ (optional)</span>
                 </div>
                 <AttachButton
                   value={evaluation?.fileUrl ?? null}
@@ -356,7 +391,7 @@ const ReadOnlyTextBlock = ({
       <span className="text-xs text-secondary">{description}</span>
       <p
         className={cn(
-          formRecord.blue.input,
+          formRecord.default.input,
           "whitespace-pre-wrap [word-break:break-word]",
           fillHeight && "lg:min-h-10 lg:flex-1",
         )}
@@ -371,13 +406,22 @@ const ReadOnlyTextBlock = ({
 const formatScore = (level: number | null | undefined, empty = "") =>
   level != null ? `${level}` : empty;
 
-const ReadOnlyResultField = ({ level }: { level: number | null | undefined }) => {
+const ReadOnlyResultField = ({
+  level,
+}: {
+  level: number | null | undefined;
+}) => {
   return (
     <div className="flex flex-col gap-2 mt-auto pt-1">
       <span className="text-sm font-medium shrink-0 text-marine">
         ผลการประเมิน (Evaluation)
       </span>
-      <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
+      <p
+        className={cn(
+          formRecord.default.input,
+          "min-h-10 flex items-center justify-end px-2.5",
+        )}
+      >
         {formatScore(level, "-")}
       </p>
     </div>
@@ -403,7 +447,8 @@ const EvaluationResultField = ({
   const hasError = Boolean(form.getFieldState(name, formState).error);
 
   const resolveLevel = (fieldValue: unknown) => {
-    const value = fieldValue != null && fieldValue !== "" ? Number(fieldValue) : null;
+    const value =
+      fieldValue != null && fieldValue !== "" ? Number(fieldValue) : null;
     if (value != null && !Number.isNaN(value)) return value;
     return displayLevel ?? null;
   };
@@ -425,24 +470,41 @@ const EvaluationResultField = ({
         render={({ field }) => (
           <FormItem>
             {disabled ? (
-              <p className={cn(formRecord.blue.input, "min-h-10 flex items-center justify-end px-2.5")}>
+              <p
+                className={cn(
+                  formRecord.blue.input,
+                  "min-h-10 flex items-center justify-end px-2.5",
+                )}
+              >
                 {formatScore(resolveLevel(field.value))}
               </p>
             ) : (
               <Select
-                value={field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE}
+                value={
+                  field.value != null ? String(field.value) : CLEAR_LEVEL_VALUE
+                }
                 onValueChange={(value) => {
-                  field.onChange(value === CLEAR_LEVEL_VALUE ? null : Number(value));
+                  field.onChange(
+                    value === CLEAR_LEVEL_VALUE ? null : Number(value),
+                  );
                   void form.trigger(name);
                 }}
               >
                 <FormControl>
-                  <SelectTrigger className={cn(formRecord.blue.input, "w-full min-h-10 h-10")}>
+                  <SelectTrigger
+                    className={cn(
+                      formRecord.blue.input,
+                      "w-full min-h-10 h-10",
+                    )}
+                  >
                     <SelectValue placeholder="เลือกระดับความสำเร็จ" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={CLEAR_LEVEL_VALUE} className="text-secondary">
+                  <SelectItem
+                    value={CLEAR_LEVEL_VALUE}
+                    className="text-secondary"
+                  >
                     เลือกระดับความสำเร็จ
                   </SelectItem>
                   <SelectItem value="1">1</SelectItem>

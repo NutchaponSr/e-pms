@@ -1,21 +1,33 @@
 import { ChevronDownIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { BsFiletypeCsv, BsFloppy2Fill, BsSave, BsUpload } from "react-icons/bs";
-
-import { useConfirm } from "@/hooks/use-confirm";
-
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-
-import { StatusBadge } from "@/components/status-badge";
 import { EMPLOYEE_INFO_HEIGHT_VAR } from "@/components/employee-info";
+import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { useConfirm } from "@/hooks/use-confirm";
+import { cn } from "@/lib/utils";
+import type { Action } from "@/modules/tasks/permissions";
+import type { StatusVariant } from "@/modules/tasks/types";
 
-import { StatusVariant } from "@/modules/tasks/types";
-import { Action } from "@/modules/tasks/permissions";
+function getScrollParent(node: HTMLElement | null) {
+  let parent = node?.parentElement ?? null;
+
+  while (parent) {
+    const { overflowY } = getComputedStyle(parent);
+    if (overflowY === "auto" || overflowY === "scroll") {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+
+  return null;
+}
 
 interface Props {
   status: {
@@ -31,9 +43,9 @@ interface Props {
   permissions: Record<Action, boolean>;
 }
 
-export const Toolbar = ({ 
+export const Toolbar = ({
   status,
-  onCreate, 
+  onCreate,
   onWorkflow,
   onSaveDraft,
   onUpload,
@@ -42,7 +54,7 @@ export const Toolbar = ({
 }: Props) => {
   const [ConfirmationDialog, confirm] = useConfirm({
     title: "Start Workflow",
-    confirmVariant: "primary"
+    confirmVariant: "primary",
   });
 
   const onStartWorkflow = async () => {
@@ -51,12 +63,32 @@ export const Toolbar = ({
     if (ok) {
       await onWorkflow();
     }
-  }
+  };
+
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const scrollParent = getScrollParent(toolbarRef.current);
+    if (!scrollParent) return;
+
+    const onScroll = () => {
+      setIsScrolled(scrollParent.scrollTop > 0);
+    };
+
+    onScroll();
+    scrollParent.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollParent.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div
-      className="flex items-center gap-1.5 w-full min-w-[420px] max-w-full mx-auto py-4 px-3 sticky z-100 bg-background"
-      style={{ top: `var(${EMPLOYEE_INFO_HEIGHT_VAR}, 0px)` }}
+      ref={toolbarRef}
+      className={cn(
+        "flex items-center gap-1.5 w-full min-w-105 max-w-full mx-auto py-2 px-3 sticky z-100 bg-background",
+        isScrolled && "border-b border-border",
+      )}
+      style={{ top: `calc(var(${EMPLOYEE_INFO_HEIGHT_VAR}, 0px) - 0.75px)` }}
     >
       <div className="grow h-full">
         <div className="flex flex-row justify-between items-center h-full gap-0.5">
@@ -68,9 +100,9 @@ export const Toolbar = ({
             <div className="inline-flex gap-1">
               {permissions.write && (
                 <>
-                  <Button 
+                  <Button
                     type="button"
-                    variant="primary" 
+                    variant="primary"
                     size="sm"
                     onClick={onSaveDraft}
                     className="rounded gap-1.5"
@@ -82,7 +114,7 @@ export const Toolbar = ({
                     <Button
                       size="sm"
                       type="button"
-                      variant="primary" 
+                      variant="primary"
                       className="rounded"
                       onClick={onStartWorkflow}
                     >
@@ -94,7 +126,7 @@ export const Toolbar = ({
               {onExport && (
                 <Button
                   type="button"
-                  variant="primary" 
+                  variant="primary"
                   size="sm"
                   onClick={onExport}
                   className="rounded gap-1.5 px-2"
@@ -157,4 +189,4 @@ export const Toolbar = ({
       </div>
     </div>
   );
-}
+};

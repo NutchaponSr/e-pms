@@ -1,30 +1,34 @@
-import path from "path";
 import db from "@/lib/db";
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { FormType, Period, Status } from "@/generated/prisma/enums";
+import { FormType, Period, Status, UserRole } from "@/generated/prisma/enums";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-import { buildPermissionContext, canPerform, getUserRole } from "@/modules/tasks/permissions";
-import { assertAnyRoleOnForm, assertFormOwner } from "@/modules/tasks/access";
+import { buildPermissionContext, getUserRole } from "@/modules/tasks/permissions";
+import { getApprovalChain, taskChainInclude, withTaskChain } from "@/modules/tasks/chain";
+import { assertAnyRoleOnForm, assertFormOwner, requireTaskRole } from "@/modules/tasks/access";
 import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/merit/schemas/definition";
-import { formatMeritExport, sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
+import { calculateKpiScore, formatMeritExport, sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
 import { comepetencyEvaluationSchema, cultureEvaluationSchema, overallCommentFieldsSchema } from "../schemas/evaluation";
 import { exportExcel } from "@/lib/utils";
 import { columns } from "../constant";
-import { readCSV } from "@/seeds/lib/utils";
 import { generateTaskId } from "@/modules/tasks/utils";
+import { getWindows, isWindowOpen } from "@/modules/tasks/windows";
+import {
+  buildOverallCommentRoleUpdate,
+  groupByConnectId,
+  normalizeEmptyStringToNull,
+  type EvaluationRole,
+} from "@/modules/tasks/server/utils";
 
 import {
   collectReplacedFileUrls,
   deleteAttachIfUnreferenced,
   upsertAttach,
 } from "@/lib/attach";
-
-type EvaluationRole = "owner" | "checker" | "approver";
 
 function buildCompetencyRoleUpdate(
   competency: {
@@ -94,27 +98,82 @@ function buildCultureRoleUpdate(
   }
 }
 
-function buildOverallCommentRoleUpdate(
-  comments: {
-    commentOwner: string | null;
-    commentChecker: string | null;
-    commentApprover: string | null;
-  },
-  role: EvaluationRole,
-) {
-  switch (role) {
-    case "owner":
-      return { commentOwner: comments.commentOwner };
-    case "checker":
-      return { commentChecker: comments.commentChecker };
-    case "approver":
-      return { commentApprover: comments.commentApprover };
-  }
+/** ดึง fileUrl + meritFormId ของ evaluation เพื่อเช็คสิทธิ์เจ้าของฟอร์ม */
+type EvaluationOwnership = { fileUrl: string | null; meritFormId: string };
+
+async function findCompetencyEvaluationOwnership(
+  id: string,
+): Promise<EvaluationOwnership | null> {
+  const existing = await db.competencyEvaluation.findUnique({
+    where: { id },
+    select: { fileUrl: true, competencyRecord: { select: { meritFormId: true } } },
+  });
+
+  return existing
+    ? { fileUrl: existing.fileUrl, meritFormId: existing.competencyRecord.meritFormId }
+    : null;
 }
-interface ApprovalCSVProps {
-  employeeId: string;
-  checker?: string;
-  approver: string;
+
+async function findCultureEvaluationOwnership(
+  id: string,
+): Promise<EvaluationOwnership | null> {
+  const existing = await db.cultureEvaluation.findUnique({
+    where: { id },
+    select: { fileUrl: true, cultureRecord: { select: { meritFormId: true } } },
+  });
+
+  return existing
+    ? { fileUrl: existing.fileUrl, meritFormId: existing.cultureRecord.meritFormId }
+    : null;
+}
+
+async function deleteEvaluationFile<T>(opts: {
+  id: string;
+  username: string;
+  findOwnership: (id: string) => Promise<EvaluationOwnership | null>;
+  clearFileUrl: (id: string) => Promise<T>;
+}): Promise<T> {
+  const existing = await opts.findOwnership(opts.id);
+
+  if (!existing) {
+    throw new TRPCError({ code: "NOT_FOUND" });
+  }
+
+  await assertFormOwner(existing.meritFormId, opts.username);
+
+  const record = await opts.clearFileUrl(opts.id);
+
+  if (existing.fileUrl) {
+    await deleteAttachIfUnreferenced(db, existing.fileUrl);
+  }
+
+  return record;
+}
+
+async function syncEvaluationAttach(opts: {
+  id: string;
+  fileUrl: string;
+  username: string;
+  findOwnership: (id: string) => Promise<EvaluationOwnership | null>;
+  setFileUrl: (id: string, fileUrl: string) => Promise<unknown>;
+}) {
+  const existing = await opts.findOwnership(opts.id);
+
+  if (!existing) {
+    throw new TRPCError({ code: "NOT_FOUND" });
+  }
+
+  await assertFormOwner(existing.meritFormId, opts.username);
+
+  await upsertAttach(db, opts.fileUrl, opts.username);
+
+  await opts.setFileUrl(opts.id, opts.fileUrl);
+
+  if (existing.fileUrl && existing.fileUrl !== opts.fileUrl) {
+    await deleteAttachIfUnreferenced(db, existing.fileUrl);
+  }
+
+  return { success: true };
 }
 
 export const meritProcedure = createTRPCRouter({
@@ -125,32 +184,38 @@ export const meritProcedure = createTRPCRouter({
       }),
     )
     .query(async ({ input, ctx }) => {
-      const form = await db.form.findFirst({
-        where: {
-          type: FormType.MERIT,
-          year: input.year,
-          tasks: {
-            some: {
-              ownerId: ctx.user.username,
+      const employeeId = ctx.user.username;
+
+      const [form, windows] = await Promise.all([
+        db.form.findFirst({
+          where: {
+            type: FormType.MERIT,
+            year: input.year,
+            employeeId,
+          },
+          include: {
+            tasks: true,
+            competencyRecords: {
+              include: {
+                competencyEvaluations: true,
+              },
+            },
+            cultureRecords: {
+              include: {
+                cultureEvaluations: true,
+              },
             },
           },
-        },
-        include: {
-          tasks: true,
-          competencyRecords: {
-            include: {
-              competencyEvaluations: true,
-            },
-          },
-          cultureRecords: {
-            include: {
-              cultureEvaluations: true,
-            },
-          },
-        },
-      });
+        }),
+        getWindows(input.year, FormType.MERIT),
+      ]);
 
       return {
+        windows: {
+          draft: windows[Period.IN_DRAFT] ?? null,
+          evaluation1st: windows[Period.EVALUATION_1ST] ?? null,
+          evaluation2nd: windows[Period.EVALUATION_2ND] ?? null,
+        },
         task: {
           draft: form?.tasks.find(
             (t) =>
@@ -219,11 +284,7 @@ export const meritProcedure = createTRPCRouter({
         },
         include: {
           tasks: {
-            include: {
-              owner: true,
-              checker: true,
-              approver: true,
-            },
+            include: taskChainInclude,
           },
           competencyRecords: {
             include: {
@@ -259,77 +320,74 @@ export const meritProcedure = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const kpi = await db.form.findFirst({
-        where: {
-          year: merit.year,
-          employeeId: merit.employeeId,
-          type: FormType.KPI,
-        },
-        include: {
-          kpis: true,
-        },
-      });
-
-      const competencyWithComments = await db.comment.findMany({
-        where: {
-          connectId: {
-            in: merit.competencyRecords.map((record) => record.id),
+      const [kpi, competencyWithComments, cultureWithComments] = await Promise.all([
+        db.form.findFirst({
+          where: {
+            year: merit.year,
+            employeeId: merit.employeeId,
+            type: FormType.KPI,
           },
-        },
-        include: {
-          employee: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
-      });
-
-      const cultureWithComments = await db.comment.findMany({
-        where: {
-          connectId: {
-            in: merit.cultureRecords.map((record) => record.id),
+          include: {
+            kpis: true,
           },
-        },
-        include: {
-          employee: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
-      });
+        }),
+        db.comment.findMany({
+          where: {
+            connectId: {
+              in: merit.competencyRecords.map((record) => record.id),
+            },
+          },
+          include: {
+            employee: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        }),
+        db.comment.findMany({
+          where: {
+            connectId: {
+              in: merit.cultureRecords.map((record) => record.id),
+            },
+          },
+          include: {
+            employee: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        }),
+      ]);
 
-      const plain = JSON.parse(JSON.stringify(merit)) as typeof merit;
-      const plainCompetencyComments = JSON.parse(
-        JSON.stringify(competencyWithComments),
-      ) as typeof competencyWithComments;
-      const plainCultureComments = JSON.parse(
-        JSON.stringify(cultureWithComments),
-      ) as typeof cultureWithComments;
+      // แปลง Prisma Decimal/Date เป็น plain values (superjson ไม่รองรับ Decimal
+      // และฝั่ง client คาดหวังค่า weight เป็น string อยู่แล้ว)
+      const {
+        merit: plain,
+        competencyComments: plainCompetencyComments,
+        cultureComments: plainCultureComments,
+      } = JSON.parse(
+        JSON.stringify({
+          merit,
+          competencyComments: competencyWithComments,
+          cultureComments: cultureWithComments,
+        }),
+      ) as {
+        merit: typeof merit;
+        competencyComments: typeof competencyWithComments;
+        cultureComments: typeof cultureWithComments;
+      };
 
-      const plainCompetencyWithCommentsByRecordId = plainCompetencyComments.reduce((acc, comment) => {
-        if (!acc[comment.connectId]) {
-          acc[comment.connectId] = [];
-        }
-        acc[comment.connectId].push(comment);
-        return acc;
-      }, {} as Record<string, typeof plainCompetencyComments>);
+      const competencyCommentsByRecordId = groupByConnectId(plainCompetencyComments);
+      const cultureCommentsByRecordId = groupByConnectId(plainCultureComments);
 
-      const plainCultureWithCommentsByRecordId = plainCultureComments.reduce((acc, comment) => {
-        if (!acc[comment.connectId]) {
-          acc[comment.connectId] = [];
-        }
-        acc[comment.connectId].push(comment);
-        return acc;
-      }, {} as Record<string, typeof plainCultureComments>);
-
-      const competencyRecordsWithComments = plain.competencyRecords.map((record, index) => ({
+      const competencyRecordsWithComments = plain.competencyRecords.map((record) => ({
         ...record,
-        comments: plainCompetencyWithCommentsByRecordId[record.id] || [],
+        comments: competencyCommentsByRecordId[record.id] || [],
       }));
 
       const cultureRecordsWithComments = plain.cultureRecords.map((record) => ({
         ...record,
-        comments: plainCultureWithCommentsByRecordId[record.id] || [],
+        comments: cultureCommentsByRecordId[record.id] || [],
       }));
 
       const task = plain.tasks.find(
@@ -340,13 +398,22 @@ export const meritProcedure = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const permission = buildPermissionContext(ctx.user.username, task);
+      const chain = getApprovalChain(task);
+      const permission = buildPermissionContext(ctx.user.username, chain, task.status);
 
-      if (!getUserRole(permission)) {
+      let role = getUserRole(permission);
+
+      // Admin เปิดฟอร์มของพนักงานได้ในบทบาท owner (แก้ไขแทนตามคำร้องขอ)
+      if (!role && ctx.user.role === UserRole.ADMIN) {
+        role = "owner";
+        permission.employeeId = chain.ownerId;
+      }
+
+      if (!role) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      const portion = validateWeight(task.owner.rank as Rank);
+      const portion = validateWeight(chain.owner.rank as Rank);
 
       const overallComment = plain.overallComments.find(
         (c) => c.period === input.period,
@@ -358,25 +425,14 @@ export const meritProcedure = createTRPCRouter({
           competencyRecords: competencyRecordsWithComments,
           cultureRecords: cultureRecordsWithComments,
           overallComment,
-          tasks: task,
-          kpi:  (task.context as { period: Period })?.period === Period.EVALUATION_2ND 
-            ? (() => {
-              const sum = kpi?.kpis.reduce((acc, comp, idx) => {
-                const level = Number(comp.achievementApprover ?? 0);
-                const weight = Number(comp.weight ?? 0);
-
-                return acc + (level / 100) * weight;
-              }, 0) || 0;
-
-              const res = (sum * 40) / portion > 40 ? 40 : (sum * 40) / portion;
-
-              return res;
-            })()
+          tasks: withTaskChain(task, chain),
+          kpi: (task.context as { period: Period })?.period === Period.EVALUATION_2ND
+            ? calculateKpiScore(kpi?.kpis ?? [], portion)
             : 0
         },
         permission: {
           ...permission,
-          role: getUserRole(permission),
+          role,
         },
       };
     }),
@@ -388,29 +444,33 @@ export const meritProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const file = path.join(process.cwd(), "src/data", "approval.csv");
+      const approval = await db.approval.findUnique({
+        where: { employeeId: ctx.user.username },
+      });
 
-      const record = readCSV<ApprovalCSVProps>(file).find(
-        (r) => r.employeeId === ctx.user.username,
-      );
-
-      if (!record) {
+      if (!approval?.approverId) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Record not found",
+          message: "Approval chain not configured for this employee",
         });
       }
 
-      const { existingForm, existingMeritTask, cultures } = await db.$transaction(async (tx) => {
-        const existingForm = await tx.form.findFirst({
+      const windowOpen = await isWindowOpen(input.year, FormType.MERIT, input.period);
+
+      if (!windowOpen && process.env.NODE_ENV !== "development") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This evaluation window is currently closed",
+        });
+      }
+
+      // หมายเหตุ: Year-end / evaluation ไม่ต้องรอ KPI Bonus เสร็จก่อนอีกต่อไป
+      const [existingForm, cultures] = await Promise.all([
+        db.form.findFirst({
           where: {
             type: FormType.MERIT,
             year: input.year,
-            tasks: {
-              some: {
-                ownerId: ctx.user.username,
-              },
-            },
+            employeeId: ctx.user.username,
           },
           include: {
             competencyRecords: {
@@ -425,51 +485,14 @@ export const meritProcedure = createTRPCRouter({
             },
             tasks: true,
           },
-        });
+        }),
+        db.culture.findMany(),
+      ]);
 
-        // find existing merit task with the same period
-        const existingMeritTask = existingForm?.tasks.find(
-          (task) => (task.context as { period: Period })?.period === input.period,
-        );
-
-        const cultures = await tx.culture.findMany();
-
-        // Year-end / evaluation no longer requires KPI Bonus completed.
-        // Keep previous gate for reference:
-        // const approvedKpiTask = await db.form.findFirst({
-        //   where: {
-        //     year: input.year,
-        //     type: FormType.KPI,
-        //     tasks: {
-        //       some: {
-        //         ownerId: ctx.user.username,
-        //         status: Status.COMPLETED,
-        //       },
-        //     },
-        //   },
-        //   include: {
-        //     tasks: true,
-        //   },
-        // });
-
-        return { existingForm, existingMeritTask, cultures };
-      });
-
-      // find merit task with period EVALUATION_1ST
-      // const evaluationKpiTask = approvedKpiTask?.tasks.find((f) => (f.context as { period: Period }).period === Period.EVALUATION);
-
-      // //  && meritTask.context.period === EVALUATION_1ST
-      // if ((!evaluationKpiTask || evaluationKpiTask.status !== Status.COMPLETED) && (existingMeritTask?.context as { period: Period })?.period === Period.EVALUATION_1ST) {
-      //
-      //   throw new TRPCError({
-      //     code: "BAD_REQUEST",
-      //     message: "You must finish KPI evaluation and get done first!",
-      //   });
-      // }
-
-      const checkerId = record?.checker && record.checker.trim() !== "" 
-        ? record.checker 
-        : null;
+      // find existing merit task with the same period
+      const existingMeritTask = existingForm?.tasks.find(
+        (task) => (task.context as { period: Period })?.period === input.period,
+      );
 
       let form = null;
 
@@ -485,8 +508,7 @@ export const meritProcedure = createTRPCRouter({
           data: {
             id: generateTaskId(),
             ownerId: ctx.user.username,
-            checkerId,
-            approverId: record.approver,
+            approvalId: approval.id,
             formId: existingForm.id,
             status: Status.IN_DRAFT,
             context: {
@@ -578,8 +600,7 @@ export const meritProcedure = createTRPCRouter({
               create: {
                 id: generateTaskId(),
                 ownerId: ctx.user.username,
-                checkerId,
-                approverId: record.approver,
+                approvalId: approval.id,
                 status: Status.IN_DRAFT,
                 context: {
                   period: input.period,
@@ -666,14 +687,6 @@ export const meritProcedure = createTRPCRouter({
       ];
       await Promise.all(formIds.map((formId) => assertFormOwner(formId, ctx.user.username)));
 
-      const normalizeEmptyStringToNull = <T extends Record<string, unknown>>(
-        obj: T,
-      ): T => {
-        return Object.fromEntries(
-          Object.entries(obj).map(([k, v]) => [k, v === "" ? null : v]),
-        ) as T;
-      };
-
       await Promise.all(input.competencies.map((competency) => {
           const { id, ...data } = competency;
           return db.competencyRecord.update({
@@ -705,26 +718,12 @@ export const meritProcedure = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const task = await db.task.findFirst({
-        where: {
-          formId: input.formId,
-          context: {
-            path: ["period"],
-            equals: input.period,
-          },
-        },
-      });
-
-      if (!task) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
-      }
-
-      const permission = buildPermissionContext(ctx.user.username, task);
-      const role = getUserRole(permission);
-
-      if (!role || !canPerform(role, ["write"], task.status)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "No permission to evaluate" });
-      }
+      const { role } = await requireTaskRole(
+        input.formId,
+        input.period,
+        ctx.user.username,
+        ["write"],
+      );
 
       const overallCommentUpdate = buildOverallCommentRoleUpdate(input.overallComments, role);
 
@@ -747,8 +746,12 @@ export const meritProcedure = createTRPCRouter({
         return { success: true };
       }
 
-      const competencyIds = input.competencies.map((competency) => competency.id).filter(Boolean);
-      const cultureIds = input.cultures.map((culture) => culture.id).filter(Boolean);
+      const competencyIds = input.competencies.flatMap((competency) =>
+        competency.id ? [competency.id] : [],
+      );
+      const cultureIds = input.cultures.flatMap((culture) =>
+        culture.id ? [culture.id] : [],
+      );
 
       const [existingCompetencies, existingCultures] = await Promise.all([
         competencyIds.length > 0
@@ -772,41 +775,42 @@ export const meritProcedure = createTRPCRouter({
         existingCultures.map((culture) => [culture.id, culture.fileUrl]),
       );
 
-      await Promise.all(
-        input.competencies
-          .filter((competency) => competency.id)
-          .map(async (competency) => {
-            const data = buildCompetencyRoleUpdate(competency, role);
-            const fileUrl = "fileUrl" in data ? data.fileUrl : null;
+      const updateCompetency = async (competency: (typeof input.competencies)[number]) => {
+        const data = buildCompetencyRoleUpdate(competency, role);
+        const fileUrl = "fileUrl" in data ? data.fileUrl : null;
 
-            if (fileUrl != null) {
-              await upsertAttach(db, fileUrl, ctx.user.username);
-            }
+        if (fileUrl != null) {
+          await upsertAttach(db, fileUrl, ctx.user.username);
+        }
 
-            return db.competencyEvaluation.update({
-              where: { id: competency.id },
-              data,
-            });
-          }),
-      );
+        return db.competencyEvaluation.update({
+          where: { id: competency.id },
+          data,
+        });
+      };
 
-      await Promise.all(
-        input.cultures
-          .filter((culture) => culture.id)
-          .map(async (culture) => {
-            const data = buildCultureRoleUpdate(culture, role);
-            const fileUrl = "fileUrl" in data ? data.fileUrl : null;
+      const updateCulture = async (culture: (typeof input.cultures)[number]) => {
+        const data = buildCultureRoleUpdate(culture, role);
+        const fileUrl = "fileUrl" in data ? data.fileUrl : null;
 
-            if (fileUrl != null) {
-              await upsertAttach(db, fileUrl, ctx.user.username);
-            }
+        if (fileUrl != null) {
+          await upsertAttach(db, fileUrl, ctx.user.username);
+        }
 
-            return db.cultureEvaluation.update({
-              where: { id: culture.id },
-              data,
-            });
-          }),
-      );
+        return db.cultureEvaluation.update({
+          where: { id: culture.id },
+          data,
+        });
+      };
+
+      await Promise.all([
+        ...input.competencies.flatMap((competency) =>
+          competency.id ? [updateCompetency(competency)] : [],
+        ),
+        ...input.cultures.flatMap((culture) =>
+          culture.id ? [updateCulture(culture)] : [],
+        ),
+      ]);
 
       if (role === "owner") {
         const replacedUrls = [
@@ -824,66 +828,36 @@ export const meritProcedure = createTRPCRouter({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      const existing = await db.competencyEvaluation.findUnique({
-        where: { id: input.id },
-        select: { fileUrl: true, competencyRecord: { select: { meritFormId: true } } },
-      });
-
-      if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      await assertFormOwner(existing.competencyRecord.meritFormId, ctx.user.username);
-
-      const record = await db.competencyEvaluation.update({
-        where: {
-          id: input.id,
-        },
-        data: {
-          fileUrl: null,
-        },
-      });
-
-      if (existing?.fileUrl) {
-        await deleteAttachIfUnreferenced(db, existing.fileUrl);
-      }
-
-      return record;
-    }),
+    .mutation(async ({ input, ctx }) =>
+      deleteEvaluationFile({
+        id: input.id,
+        username: ctx.user.username,
+        findOwnership: findCompetencyEvaluationOwnership,
+        clearFileUrl: (id) =>
+          db.competencyEvaluation.update({
+            where: { id },
+            data: { fileUrl: null },
+          }),
+      }),
+    ),
   deleteCultureFile: protectedProcedure
     .input(
       z.object({
         id: z.string(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      const existing = await db.cultureEvaluation.findUnique({
-        where: { id: input.id },
-        select: { fileUrl: true, cultureRecord: { select: { meritFormId: true } } },
-      });
-
-      if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      await assertFormOwner(existing.cultureRecord.meritFormId, ctx.user.username);
-
-      const record = await db.cultureEvaluation.update({
-        where: {
-          id: input.id,
-        },
-        data: {
-          fileUrl: null,
-        },
-      });
-
-      if (existing?.fileUrl) {
-        await deleteAttachIfUnreferenced(db, existing.fileUrl);
-      }
-
-      return record;
-    }),
+    .mutation(async ({ input, ctx }) =>
+      deleteEvaluationFile({
+        id: input.id,
+        username: ctx.user.username,
+        findOwnership: findCultureEvaluationOwnership,
+        clearFileUrl: (id) =>
+          db.cultureEvaluation.update({
+            where: { id },
+            data: { fileUrl: null },
+          }),
+      }),
+    ),
   syncCompetencyAttach: protectedProcedure
     .input(
       z.object({
@@ -891,31 +865,19 @@ export const meritProcedure = createTRPCRouter({
         fileUrl: z.string(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      const existing = await db.competencyEvaluation.findUnique({
-        where: { id: input.id },
-        select: { fileUrl: true, competencyRecord: { select: { meritFormId: true } } },
-      });
-
-      if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      await assertFormOwner(existing.competencyRecord.meritFormId, ctx.user.username);
-
-      await upsertAttach(db, input.fileUrl, ctx.user.username);
-
-      await db.competencyEvaluation.update({
-        where: { id: input.id },
-        data: { fileUrl: input.fileUrl },
-      });
-
-      if (existing?.fileUrl && existing.fileUrl !== input.fileUrl) {
-        await deleteAttachIfUnreferenced(db, existing.fileUrl);
-      }
-
-      return { success: true };
-    }),
+    .mutation(async ({ input, ctx }) =>
+      syncEvaluationAttach({
+        id: input.id,
+        fileUrl: input.fileUrl,
+        username: ctx.user.username,
+        findOwnership: findCompetencyEvaluationOwnership,
+        setFileUrl: (id, fileUrl) =>
+          db.competencyEvaluation.update({
+            where: { id },
+            data: { fileUrl },
+          }),
+      }),
+    ),
   syncCultureAttach: protectedProcedure
     .input(
       z.object({
@@ -923,31 +885,19 @@ export const meritProcedure = createTRPCRouter({
         fileUrl: z.string(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      const existing = await db.cultureEvaluation.findUnique({
-        where: { id: input.id },
-        select: { fileUrl: true, cultureRecord: { select: { meritFormId: true } } },
-      });
-
-      if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      await assertFormOwner(existing.cultureRecord.meritFormId, ctx.user.username);
-
-      await upsertAttach(db, input.fileUrl, ctx.user.username);
-
-      await db.cultureEvaluation.update({
-        where: { id: input.id },
-        data: { fileUrl: input.fileUrl },
-      });
-
-      if (existing?.fileUrl && existing.fileUrl !== input.fileUrl) {
-        await deleteAttachIfUnreferenced(db, existing.fileUrl);
-      }
-
-      return { success: true };
-    }),
+    .mutation(async ({ input, ctx }) =>
+      syncEvaluationAttach({
+        id: input.id,
+        fileUrl: input.fileUrl,
+        username: ctx.user.username,
+        findOwnership: findCultureEvaluationOwnership,
+        setFileUrl: (id, fileUrl) =>
+          db.cultureEvaluation.update({
+            where: { id },
+            data: { fileUrl },
+          }),
+      }),
+    ),
   export: protectedProcedure
     .input(
       z.object({
@@ -975,11 +925,8 @@ export const meritProcedure = createTRPCRouter({
               cultureEvaluations: true,
             },
           },
-          tasks: {
-            include: {
-              owner: true,
-            },
-          },
+          employee: true,
+          tasks: true,
         },
       });
 
@@ -989,7 +936,7 @@ export const meritProcedure = createTRPCRouter({
 
       const data = formatMeritExport({
         ...meritForm,
-        employee: meritForm.tasks[0].owner,
+        employee: meritForm.employee,
       });
 
       const file = exportExcel([

@@ -1,68 +1,220 @@
-import { inferProcedureOutput } from "@trpc/server";
+"use client";
 
-import { AppRouter } from "@/trpc/routers/_app";
-import { Period } from "@/generated/prisma/enums";
-
-import { Action, Approval } from "@/modules/tasks/permissions";
-import { exportMeritDefinition, meritEvaluationsMap, sumCompetencyByPeriod, sumCultureByPeriod } from "../../utils";
-import { useEffect, useMemo, useRef } from "react";
-import { MeritEvaluation, meritEvaluationsSchema } from "../../schemas/evaluation";
-import { Resolver, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
-import { EmployeeInfo } from "@/components/employee-info";
-import { Toolbar } from "@/components/toolbar";
-import { STATUS_VARIANTS } from "@/modules/tasks/constant";
-import { Button } from "@/components/ui/button";
-import { BsTriangleFill } from "react-icons/bs";
-import { Accordion, AccordionTrigger, AccordionItem } from "@/components/ui/accordion";
 import { AccordionContent } from "@radix-ui/react-accordion";
-import { CompetencyEvaluationContent } from "../components/competency-evaluation-content";
-import { Card } from "@/components/card";
-import { CultureEvaluationContent } from "../components/culture-evaluation-content";
-import { useEvaluateBulkMerit } from "../../api/use-evaluation-bulk-merit";
-import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
+import type { inferProcedureOutput } from "@trpc/server";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import type { Resolver } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
+import { BsTriangleFill } from "react-icons/bs";
 import { toast } from "sonner";
+
+import { Card } from "@/components/card";
+import { EmployeeInfo } from "@/components/employee-info";
+import { FormGenerator } from "@/components/form-generator";
+import { Toolbar } from "@/components/toolbar";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+import type { Employee, Task } from "@/generated/prisma/client";
+import type { Period as PeriodType } from "@/generated/prisma/enums";
+import { Period } from "@/generated/prisma/enums";
+import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
+import { cn } from "@/lib/utils";
+import { useStartWorkflow } from "@/modules/tasks/api/use-start-workflow";
+import { STATUS_VARIANTS } from "@/modules/tasks/constant";
+import type { Action, Approval } from "@/modules/tasks/permissions";
+import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
+import type { AppRouter } from "@/trpc/routers/_app";
+import { formRecord } from "@/types/form";
+
+import { useEvaluateBulkMerit } from "../../api/use-evaluation-bulk-merit";
 import {
   COMPETENCY_ACTUAL_MAX_LENGTH,
   competencyAchievementLevels,
   cultureLevels,
   MERIT_EVALUATION_PERIOD_LABELS,
 } from "../../constant";
-import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
-import { FormGenerator } from "@/components/form-generator";
-import { cn } from "@/lib/utils";
-import { formRecord } from "@/types/form";
-import { Confirmation } from "@/modules/tasks/ui/components/confirmation";
-import { createPortal } from "react-dom";
-import { Employee, Task } from "@/generated/prisma/client";
-import { MeritEvaluationSummaryTable } from "../components/merit-evaluation-summary-table";
+import type { MeritEvaluation } from "../../schemas/evaluation";
+import { meritEvaluationsSchema } from "../../schemas/evaluation";
+import {
+  exportMeritDefinition,
+  meritEvaluationsMap,
+  sumCompetencyByPeriod,
+  sumCultureByPeriod,
+} from "../../utils";
+import { CompetencyEvaluationContent } from "../components/competency-evaluation-content";
+import { CultureEvaluationContent } from "../components/culture-evaluation-content";
 import { MeritEvaluationCriteriaGuide } from "../components/merit-evaluation-criteria-guide";
+import { MeritEvaluationSummaryTable } from "../components/merit-evaluation-summary-table";
+
+const CULTURE_TOTAL_WEIGHT = 30;
+
+const BLUE_FORM_CLASS = {
+  input: formRecord.blue.input,
+  label: formRecord.blue.label,
+  description: "text-xs text-secondary",
+  form: "flex flex-col gap-2 flex-1 min-h-0 bg-transparent p-0 h-auto",
+};
+
+const FILL_HEIGHT_FORM_CLASS = {
+  ...BLUE_FORM_CLASS,
+  form: cn(BLUE_FORM_CLASS.form, "lg:flex-1 lg:min-h-0"),
+  input: cn(BLUE_FORM_CLASS.input, "lg:min-h-10"),
+};
+
+const EVALUATION_COLUMN_CLASS =
+  "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
+const MID_YEAR_COLUMN_CLASS =
+  "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#42230308] dark:bg-[#fcfcfc08] rounded-sm";
+
+const OVERALL_COMMENT_SCROLL_AREA_CLASS_NAME = "lg:flex-1 lg:min-h-48 w-full";
+
+const OVERALL_COMMENT_FIELDS = [
+  {
+    role: "owner" as const,
+    name: "overallComments.commentOwner" as const,
+    label: "พนักงาน (Employee)",
+    midYearKey: "commentOwner" as const,
+  },
+  {
+    role: "checker" as const,
+    name: "overallComments.commentChecker" as const,
+    label: "ผู้ประเมินลำดับที่ 1 (Evaluator 1)",
+    midYearKey: "commentChecker" as const,
+  },
+  {
+    role: "approver" as const,
+    name: "overallComments.commentApprover" as const,
+    label: "ผู้ประเมินลำดับที่ 2 (Evaluator 2)",
+    midYearKey: "commentApprover" as const,
+  },
+];
 
 interface Props {
   id: string;
-  period: Period;
+  period: PeriodType;
   role: Approval;
   hasChecker: boolean;
   data: inferProcedureOutput<AppRouter["merit"]["getOne"]>["form"];
   permissions: Record<Action, boolean>;
 }
 
-export const MeritEvaluationScreen = ({ id, period, data, permissions, role, hasChecker }: Props) => {
-  const sortedCompetencyRecords = useMemo(
-    () => [...data.competencyRecords].sort((a, b) => a.order - b.order),
-    [data.competencyRecords],
-  );
+type MeritForm = Props["data"];
+type OverallComment = NonNullable<MeritForm["overallComments"]>[number];
 
-  const sortedCultureRecords = useMemo(
-    () => [...data.cultureRecords].sort((a, b) => a.order - b.order),
-    [data.cultureRecords],
-  );
+function subscribeToDocument() {
+  return () => {};
+}
 
+function getDocumentBody() {
+  return document.body;
+}
+
+function getServerDocumentBody(): HTMLElement | null {
+  return null;
+}
+
+function evaluationGridClass(hasChecker: boolean) {
+  return cn(
+    "grid grid-cols-1 gap-2",
+    hasChecker
+      ? "lg:grid-cols-3 lg:items-stretch"
+      : "lg:grid-cols-2 lg:items-stretch",
+  );
+}
+
+function toEvaluationPayload(values: MeritEvaluation, saved: boolean) {
+  const {
+    requireEvaluationResults: _requireEvaluationResults,
+    ...evaluationValues
+  } = values;
+  return { ...evaluationValues, saved };
+}
+
+function weightedScore(achievement: unknown, weight: number, maxLevel = 5) {
+  return (Number(achievement ?? 0) / maxLevel) * weight;
+}
+
+function computeLiveScores(
+  competencies: MeritEvaluation["competencies"] | undefined,
+  cultures: MeritEvaluation["cultures"] | undefined,
+  competencyRecords: MeritForm["competencyRecords"],
+  cultureCount: number,
+) {
+  const competencyFull = competencyRecords.reduce(
+    (acc, record) => acc + Number(record.weight ?? 0),
+    0,
+  );
+  const cultureWeight =
+    cultureCount === 0 ? 0 : CULTURE_TOTAL_WEIGHT / cultureCount;
+
+  const competencyByRole = (
+    key: "achievementOwner" | "achievementChecker" | "achievementApprover",
+  ) =>
+    competencies?.reduce((acc, competency, index) => {
+      const weight = Number(competencyRecords[index]?.weight ?? 0);
+      return acc + weightedScore(competency?.[key], weight);
+    }, 0) ?? 0;
+
+  const cultureByRole = (
+    key:
+      | "levelBehaviorOwner"
+      | "levelBehaviorChecker"
+      | "levelBehaviorApprover",
+  ) =>
+    cultures?.reduce(
+      (acc, culture) => acc + weightedScore(culture?.[key], cultureWeight),
+      0,
+    ) ?? 0;
+
+  return {
+    competencyFull,
+    cultureFull: CULTURE_TOTAL_WEIGHT,
+    owner: {
+      competency: competencyByRole("achievementOwner"),
+      culture: cultureByRole("levelBehaviorOwner"),
+    },
+    checker: {
+      competency: competencyByRole("achievementChecker"),
+      culture: cultureByRole("levelBehaviorChecker"),
+    },
+    approver: {
+      competency: competencyByRole("achievementApprover"),
+      culture: cultureByRole("levelBehaviorApprover"),
+    },
+  };
+}
+
+export const MeritEvaluationScreen = ({
+  id,
+  period,
+  data,
+  permissions,
+  role,
+  hasChecker,
+}: Props) => {
+  const sortedCompetencyRecords = [...data.competencyRecords].sort(
+    (a, b) => a.order - b.order,
+  );
+  const sortedCultureRecords = [...data.cultureRecords].sort(
+    (a, b) => a.order - b.order,
+  );
   const evaluations = meritEvaluationsMap(data, period, role);
-  
+
   const startWorkflow = useStartWorkflow(id, period);
-  const { mutation: evaluateBulkMerit, mutationAsync: evaluateBulkMeritAsync } = useEvaluateBulkMerit(id, period);
+  const { mutation: evaluateBulkMerit, mutationAsync: evaluateBulkMeritAsync } =
+    useEvaluateBulkMerit(id, period);
+  const portalTarget = useSyncExternalStore(
+    subscribeToDocument,
+    getDocumentBody,
+    getServerDocumentBody,
+  );
 
   const form = useForm<MeritEvaluation>({
     resolver: zodResolver(meritEvaluationsSchema) as Resolver<MeritEvaluation>,
@@ -88,80 +240,28 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
   }, [data, form, period, role]);
 
   const submitEvaluation = (values: MeritEvaluation, saved: boolean) => {
-    const { requireEvaluationResults: _requireEvaluationResults, ...evaluationValues } = values;
-
     evaluateBulkMerit({
       formId: id,
       period,
-      ...evaluationValues,
-      saved,
+      ...toEvaluationPayload(values, saved),
     });
   };
 
-  const submitEvaluationAsync = async (values: MeritEvaluation, saved: boolean) => {
-    const { requireEvaluationResults: _requireEvaluationResults, ...evaluationValues } = values;
-
+  const submitEvaluationAsync = async (
+    values: MeritEvaluation,
+    saved: boolean,
+  ) => {
     await evaluateBulkMeritAsync({
       formId: id,
       period,
-      ...evaluationValues,
-      saved,
+      ...toEvaluationPayload(values, saved),
     });
   };
 
-  const onSubmit = (data: MeritEvaluation) => {
-    submitEvaluation(data, true);
+  const onSubmit = (values: MeritEvaluation) => {
+    submitEvaluation(values, true);
   };
 
-  const blueFormClass = {
-    input: formRecord.blue.input,
-    label: formRecord.blue.label,
-    description: "text-xs text-secondary",
-    form: "flex flex-col gap-2 flex-1 min-h-0 bg-transparent p-0 h-auto",
-  };
-
-  const fillHeightFormClass = {
-    ...blueFormClass,
-    form: cn(blueFormClass.form, "lg:flex-1 lg:min-h-0"),
-    input: cn(blueFormClass.input, "lg:min-h-10"),
-  };
-
-  const overallCommentScrollAreaClassName = "lg:flex-1 lg:min-h-48 w-full";
-
-  const evaluationGridClass = cn(
-    "grid grid-cols-1 gap-2",
-    hasChecker ? "lg:grid-cols-3 lg:items-stretch" : "lg:grid-cols-2 lg:items-stretch",
-  );
-
-  const evaluationColumnClass =
-    "flex flex-col gap-2 min-h-0 min-w-0 h-full p-2 bg-[#0080d51c] dark:bg-[#298bfd10] rounded-sm";
-
-  const overallOwnerCommentRef = useRef<HTMLTextAreaElement | null>(null);
-  const overallCheckerCommentRef = useRef<HTMLTextAreaElement | null>(null);
-  const overallApproverCommentRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const overallCommentTextareaRefs = useMemo(
-    () =>
-      hasChecker
-        ? [overallOwnerCommentRef, overallCheckerCommentRef, overallApproverCommentRef]
-        : [overallOwnerCommentRef, overallApproverCommentRef],
-    [hasChecker],
-  );
-
-  const { groupSyncFunctions: overallCommentSyncFunctions } = useSyncTextareaHeights([
-    { refs: overallCommentTextareaRefs, breakpoint: "(min-width: 1024px)" },
-  ]);
-
-  const syncOverallCommentTextareaHeights = overallCommentSyncFunctions[0];
-
-  const periodLabel = MERIT_EVALUATION_PERIOD_LABELS[period];
-  const isYearEnd = period === Period.EVALUATION_2ND;
-  const midYearOverallComment = useMemo(
-    () => data.overallComments?.find((comment) => comment.period === Period.EVALUATION_1ST),
-    [data.overallComments],
-  );
-
-  // useWatch find total competency and culture achievement for each role
   const competencies = useWatch({
     control: form.control,
     name: "competencies",
@@ -172,87 +272,56 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
     name: "cultures",
   });
 
-  const scores = useMemo(() => {
-    // Calculate competency achievement for each role
-    const competencyOwner = competencies?.reduce((acc, competency, index) => {
-      const achievement = Number(competency?.achievementOwner ?? 0);
-      const weight = Number(sortedCompetencyRecords[index]?.weight ?? 0);
-      return acc + (achievement / 5) * weight;
-    }, 0) ?? 0;
-
-    const competencyChecker = competencies?.reduce((acc, competency, index) => {
-      const achievement = Number(competency?.achievementChecker ?? 0);
-      const weight = Number(sortedCompetencyRecords[index]?.weight ?? 0);
-      return acc + (achievement / 5) * weight;
-    }, 0) ?? 0;
-
-    const competencyApprover = competencies?.reduce((acc, competency, index) => {
-      const achievement = Number(competency?.achievementApprover ?? 0);
-      const weight = Number(sortedCompetencyRecords[index]?.weight ?? 0);
-      return acc + (achievement / 5) * weight;
-    }, 0) ?? 0;
-
-    // Calculate culture achievement for each role
-    const cultureWeight = 30 / sortedCultureRecords.length;
-    const cultureOwner = cultures?.reduce((acc, culture) => {
-      const achievement = Number(culture?.levelBehaviorOwner ?? 0);
-      return acc + (achievement / 5) * cultureWeight;
-    }, 0) ?? 0;
-
-    const cultureChecker = cultures?.reduce((acc, culture) => {
-      const achievement = Number(culture?.levelBehaviorChecker ?? 0);
-      return acc + (achievement / 5) * cultureWeight;
-    }, 0) ?? 0;
-
-    const cultureApprover = cultures?.reduce((acc, culture) => {
-      const achievement = Number(culture?.levelBehaviorApprover ?? 0);
-      return acc + (achievement / 5) * cultureWeight;
-    }, 0) ?? 0;
-
-    const competencyFull = sortedCompetencyRecords.reduce(
-      (acc, record) => acc + Number(record.weight ?? 0),
-      0,
-    );
-    const cultureFull = 30;
-
-    return {
-      competencyFull,
-      cultureFull,
-      owner: {
-        competency: competencyOwner,
-        culture: cultureOwner,
-      },
-      checker: {
-        competency: competencyChecker,
-        culture: cultureChecker,
-      },
-      approver: {
-        competency: competencyApprover,
-        culture: cultureApprover,
-      },
-    };
-  }, [competencies, cultures, sortedCompetencyRecords, sortedCultureRecords.length]);
-
-  const midYearOverall = useMemo(
-    () => ({
-      competency: sumCompetencyByPeriod(
-        sortedCompetencyRecords,
-        Period.EVALUATION_1ST,
-        "levelOwner",
-      ),
-      culture: sumCultureByPeriod(
-        sortedCultureRecords,
-        Period.EVALUATION_1ST,
-        "levelBehaviorOwner",
-      ),
-    }),
-    [sortedCompetencyRecords, sortedCultureRecords],
+  const scores = computeLiveScores(
+    competencies,
+    cultures,
+    sortedCompetencyRecords,
+    sortedCultureRecords.length,
   );
+
+  const midYearOverall = {
+    competency: sumCompetencyByPeriod(
+      sortedCompetencyRecords,
+      Period.EVALUATION_1ST,
+      "levelOwner",
+    ),
+    culture: sumCultureByPeriod(
+      sortedCultureRecords,
+      Period.EVALUATION_1ST,
+      "levelBehaviorOwner",
+    ),
+  };
+
+  const rolePermissions = {
+    canPerformOwner: permissions.write && role === "owner",
+    canPerformChecker: permissions.write && role === "checker",
+    canPerformApprover: permissions.write && role === "approver",
+  };
+
+  const validateThenSave = async (errorMessage: string, saved: boolean) => {
+    form.setValue("requireEvaluationResults", true);
+    const ok = await form.trigger();
+    form.setValue("requireEvaluationResults", false);
+
+    if (!ok) {
+      toast.error(errorMessage);
+      return false;
+    }
+
+    const values = form.getValues();
+    await submitEvaluationAsync(values, saved);
+    form.reset(values);
+    return true;
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <EmployeeInfo owner={data.tasks?.owner} checker={data.tasks?.checker} approver={data.tasks?.approver}>
+        <EmployeeInfo
+          owner={data.tasks?.owner}
+          checker={data.tasks?.checker}
+          approver={data.tasks?.approver}
+        >
           <MeritEvaluationSummaryTable
             period={period}
             hasChecker={hasChecker}
@@ -263,24 +332,19 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               checker: scores.checker,
               approver: scores.approver,
             }}
-            midYearOverall={period === Period.EVALUATION_2ND ? midYearOverall : undefined}
+            midYearOverall={
+              period === Period.EVALUATION_2ND ? midYearOverall : undefined
+            }
           />
         </EmployeeInfo>
 
-        <Toolbar 
+        <Toolbar
           onWorkflow={async () => {
-            form.setValue("requireEvaluationResults", true);
-            const ok = await form.trigger();
-            form.setValue("requireEvaluationResults", false);
-
-            if (!ok) {
-              toast.error("Please fix validation errors before starting the workflow");
-              return;
-            }
-
-            const values = form.getValues();
-            await submitEvaluationAsync(values, true);
-            form.reset(values);
+            const ok = await validateThenSave(
+              "Please fix validation errors before starting the workflow",
+              true,
+            );
+            if (!ok) return;
             startWorkflow({ id: data.tasks.id });
           }}
           onExport={async () => {
@@ -289,7 +353,10 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
               competencyRecords: data.competencyRecords,
               cultureRecords: data.cultureRecords,
               employee: data.tasks?.owner,
-              task: data.tasks as Task & { checker?: Employee; approver: Employee },
+              task: data.tasks as Task & {
+                checker?: Employee;
+                approver: Employee;
+              },
             });
           }}
           onSaveDraft={async () => {
@@ -298,7 +365,7 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             form.reset(values);
           }}
           permissions={permissions}
-          status={STATUS_VARIANTS[data.tasks?.status!]}
+          status={STATUS_VARIANTS[data.tasks.status]}
         />
 
         <div className="px-3 mx-auto w-full flex flex-col justify-start grow pb-45">
@@ -307,275 +374,305 @@ export const MeritEvaluationScreen = ({ id, period, data, permissions, role, has
             type="multiple"
             className="space-y-4"
           >
-            <AccordionItem value="competency">
-              <div className="h-10.5 z-87 relative text-sm">
-                <div className="flex items-center h-full pt-0 mb-2">
-                  <div className="flex items-center h-full overflow-hidden gap-1">
-                    <AccordionTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xsIcon"
-                        className="group rounded"
-                      >
-                        <BsTriangleFill className="text-primary rotate-90 size-3 transition-transform group-data-[state=open]:rotate-180" />
-                      </Button>
-                    </AccordionTrigger>
-
-                    <h2 className="text-primary text-lg font-semibold">
-                      สมรรถนะ (Competency)  
-                    </h2>
-                  </div>
-                </div>
-              </div>
-              <AccordionContent>
-                <MeritEvaluationCriteriaGuide 
-                  description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expectation Behavior) กับผลลัพธ์ของโครงการ กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง (Project/Activities Demonstrating Expected Behavior)"
-                  levels={competencyAchievementLevels}
-                />
-                <div className="grid grid-cols-1 gap-y-6">
-                  {sortedCompetencyRecords.map((competencyRecord, index) => (
-                      <Card key={competencyRecord.id}>
-                        <CompetencyEvaluationContent 
-                          index={index} 
-                          period={period} 
-                          competencyRecord={competencyRecord} 
-                          form={form} 
-                          permissions={{
-                            canPerformOwner: permissions.write && role === "owner",
-                            canPerformChecker: permissions.write && role === "checker",
-                            canPerformApprover: permissions.write && role === "approver",
-                          }}
-                          hasChecker={hasChecker}
-                          formId={id}
-                        />
-                      </Card>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="culture">
-              <div className="h-10.5 z-87 relative text-sm">
-                <div className="flex items-center h-full pt-0 mb-2">
-                  <div className="flex items-center h-full overflow-hidden gap-1">
-                    <AccordionTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xsIcon"
-                        className="group rounded"
-                      >
-                        <BsTriangleFill className="text-primary rotate-90 size-3 transition-transform group-data-[state=open]:rotate-180" />
-                      </Button>
-                    </AccordionTrigger>
-                    <h2 className="text-primary text-lg font-semibold">
-                      วัฒนธรรม (Culture)
-                    </h2>
-                  </div>
-                </div>
-              </div>
-              <AccordionContent>
-                <MeritEvaluationCriteriaGuide 
-                  description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง ตามแนวทางในการประเมิน (Key Evidence Guideline) ที่กาหนดโดย N-1 ของแต่ละสายงาน"
-                  levels={cultureLevels}
-                />
-                <div className="grid grid-cols-1 gap-y-6">
-                  {sortedCultureRecords.map((cultureRecord, index) => (
-                    <Card key={cultureRecord.id}>
-                      <CultureEvaluationContent 
-                        index={index}
-                        period={period}
-                        cultureRecord={cultureRecord}
-                        form={form}
-                        permissions={{
-                          canPerformOwner: permissions.write && role === "owner",
-                          canPerformChecker: permissions.write && role === "checker",
-                          canPerformApprover: permissions.write && role === "approver",
-                        }}
-                        weight={30 / sortedCultureRecords.length}
-                        hasChecker={hasChecker}
-                        formId={id}
-                      />
-                    </Card>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="overall-comments">
-              <div className="h-10.5 z-87 relative text-sm">
-                <div className="flex items-center h-full pt-0 mb-2">
-                  <div className="flex items-center h-full overflow-hidden gap-1">
-                    <AccordionTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xsIcon"
-                        className="group rounded"
-                      >
-                        <BsTriangleFill className="text-primary rotate-90 size-3 transition-transform group-data-[state=open]:rotate-180" />
-                      </Button>
-                    </AccordionTrigger>
-                    <h2 className="text-primary text-lg font-semibold">
-                      ข้อคิดเห็น/ข้อเสนอแนะภาพรวม (Overall Comments / Recommendations)
-                    </h2>
-                  </div>
-                </div>
-              </div>
-              <AccordionContent>
-                <div className="flex flex-col gap-4">
-                  {isYearEnd && (
-                    <div className="flex flex-col gap-2">
-                      <h2 className="text-sm font-medium text-marine">
-                        {MERIT_EVALUATION_PERIOD_LABELS[Period.EVALUATION_1ST]}
-                      </h2>
-                      <div className={evaluationGridClass}>
-                        <div className={evaluationColumnClass}>
-                          <ReadOnlyOverallComment
-                            label="พนักงาน (Employee)"
-                            value={midYearOverallComment?.commentOwner}
-                          />
-                        </div>
-                        {hasChecker && (
-                          <div className={evaluationColumnClass}>
-                            <ReadOnlyOverallComment
-                              label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
-                              value={midYearOverallComment?.commentChecker}
-                            />
-                          </div>
-                        )}
-                        <div className={evaluationColumnClass}>
-                          <ReadOnlyOverallComment
-                            label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
-                            value={midYearOverallComment?.commentApprover}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-2">
-                    {periodLabel && (
-                      <h2 className="text-sm font-medium text-marine">
-                        {periodLabel}
-                      </h2>
-                    )}
-                    <div className={evaluationGridClass}>
-                      <div className={evaluationColumnClass}>
-                        <FormGenerator
-                          name="overallComments.commentOwner"
-                          form={form}
-                          variant="bigText"
-                          label="พนักงาน (Employee)"
-                          disabled={!(permissions.write && role === "owner")}
-                          maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                          fillHeight
-                          className={fillHeightFormClass}
-                          scrollAreaClassName={overallCommentScrollAreaClassName}
-                          textareaRef={(el) => {
-                            overallOwnerCommentRef.current = el;
-                            syncOverallCommentTextareaHeights();
-                          }}
-                          onInput={() => {
-                            revalidateOverallComments();
-                            syncOverallCommentTextareaHeights();
-                          }}
-                        />
-                      </div>
-                      {hasChecker && (
-                        <div className={evaluationColumnClass}>
-                          <FormGenerator
-                            name="overallComments.commentChecker"
-                            form={form}
-                            variant="bigText"
-                            label="ผู้ประเมินลำดับที่ 1 (Evaluator 1)"
-                            disabled={!(permissions.write && role === "checker")}
-                            maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                            fillHeight
-                            className={fillHeightFormClass}
-                            scrollAreaClassName={overallCommentScrollAreaClassName}
-                            textareaRef={(el) => {
-                              overallCheckerCommentRef.current = el;
-                              syncOverallCommentTextareaHeights();
-                            }}
-                            onInput={() => {
-                              revalidateOverallComments();
-                              syncOverallCommentTextareaHeights();
-                            }}
-                          />
-                        </div>
-                      )}
-                      <div className={evaluationColumnClass}>
-                        <FormGenerator
-                          name="overallComments.commentApprover"
-                          form={form}
-                          variant="bigText"
-                          label="ผู้ประเมินลำดับที่ 2 (Evaluator 2)"
-                          disabled={!(permissions.write && role === "approver")}
-                          maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
-                          fillHeight
-                          className={fillHeightFormClass}
-                          scrollAreaClassName={overallCommentScrollAreaClassName}
-                          textareaRef={(el) => {
-                            overallApproverCommentRef.current = el;
-                            syncOverallCommentTextareaHeights();
-                          }}
-                          onInput={() => {
-                            revalidateOverallComments();
-                            syncOverallCommentTextareaHeights();
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+            <CompetencyEvaluationSection
+              records={sortedCompetencyRecords}
+              period={period}
+              form={form}
+              permissions={rolePermissions}
+              hasChecker={hasChecker}
+              formId={id}
+            />
+            <CultureEvaluationSection
+              records={sortedCultureRecords}
+              period={period}
+              form={form}
+              permissions={rolePermissions}
+              hasChecker={hasChecker}
+              formId={id}
+            />
+            <OverallCommentsSection
+              form={form}
+              period={period}
+              hasChecker={hasChecker}
+              role={role}
+              write={permissions.write}
+              overallComments={data.overallComments}
+              revalidateOverallComments={revalidateOverallComments}
+            />
           </Accordion>
         </div>
 
-        {permissions.approve && createPortal(
-          <Confirmation 
-            id={id} 
-            app="Merit"
-            taskId={data.tasks.id} 
-            period={period} 
-            confirmTitle="Confirm Merit Evaluation"
-            onSave={async () => {
-              form.setValue("requireEvaluationResults", true);
-              const ok = await form.trigger();
-              form.setValue("requireEvaluationResults", false);
-
-              if (!ok) {
-                toast.error("Please fix validation errors before confirming");
-                return false;
+        {permissions.approve &&
+          portalTarget &&
+          createPortal(
+            <Confirmation
+              id={id}
+              app="Merit"
+              taskId={data.tasks.id}
+              period={period}
+              confirmTitle="Confirm Merit Evaluation"
+              onSave={() =>
+                validateThenSave(
+                  "Please fix validation errors before confirming",
+                  false,
+                )
               }
-
-              const values = form.getValues();
-              await submitEvaluationAsync(values, false);
-              form.reset(values);
-              return true;
-            }}
-          />,
-          document.body
-        )}
+            />,
+            portalTarget,
+          )}
       </form>
     </Form>
   );
+};
+
+function EvaluationAccordionHeader({ title }: { title: string }) {
+  return (
+    <div className="h-10.5 z-87 relative text-sm">
+      <div className="flex items-center h-full pt-0 mb-2">
+        <div className="flex items-center h-full overflow-hidden gap-1">
+          <AccordionTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xsIcon"
+              className="group rounded"
+            >
+              <BsTriangleFill className="text-primary rotate-90 size-3 transition-transform group-data-[state=open]:rotate-180" />
+            </Button>
+          </AccordionTrigger>
+          <h2 className="text-primary text-lg font-semibold">{title}</h2>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const ReadOnlyOverallComment = ({
+function CompetencyEvaluationSection({
+  records,
+  period,
+  form,
+  permissions,
+  hasChecker,
+  formId,
+}: {
+  records: MeritForm["competencyRecords"];
+  period: PeriodType;
+  form: ReturnType<typeof useForm<MeritEvaluation>>;
+  permissions: {
+    canPerformOwner: boolean;
+    canPerformChecker: boolean;
+    canPerformApprover: boolean;
+  };
+  hasChecker: boolean;
+  formId: string;
+}) {
+  return (
+    <AccordionItem value="competency">
+      <EvaluationAccordionHeader title="สมรรถนะ (Competency)" />
+      <AccordionContent>
+        <MeritEvaluationCriteriaGuide
+          description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง (Demonstration of Expectation Behavior) กับผลลัพธ์ของโครงการ กิจกรรมที่ใช้เป็นตัวประเมินการแสดงออกตามพฤติกรรมที่คาดหวัง (Project/Activities Demonstrating Expected Behavior)"
+          levels={competencyAchievementLevels}
+        />
+        <div className="grid grid-cols-1 gap-y-6">
+          {records.map((competencyRecord, index) => (
+            <Card key={competencyRecord.id}>
+              <CompetencyEvaluationContent
+                index={index}
+                period={period}
+                competencyRecord={competencyRecord}
+                form={form}
+                permissions={permissions}
+                hasChecker={hasChecker}
+                formId={formId}
+              />
+            </Card>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+function CultureEvaluationSection({
+  records,
+  period,
+  form,
+  permissions,
+  hasChecker,
+  formId,
+}: {
+  records: MeritForm["cultureRecords"];
+  period: PeriodType;
+  form: ReturnType<typeof useForm<MeritEvaluation>>;
+  permissions: {
+    canPerformOwner: boolean;
+    canPerformChecker: boolean;
+    canPerformApprover: boolean;
+  };
+  hasChecker: boolean;
+  formId: string;
+}) {
+  const cultureWeight =
+    records.length === 0 ? 0 : CULTURE_TOTAL_WEIGHT / records.length;
+
+  return (
+    <AccordionItem value="culture">
+      <EvaluationAccordionHeader title="วัฒนธรรม (Culture)" />
+      <AccordionContent>
+        <MeritEvaluationCriteriaGuide
+          description="พิจารณาจากการแสดงออกตามพฤติกรรมที่คาดหวัง ตามแนวทางในการประเมิน (Key Evidence Guideline) ที่กาหนดโดย N-1 ของแต่ละสายงาน"
+          levels={cultureLevels}
+        />
+        <div className="grid grid-cols-1 gap-y-6">
+          {records.map((cultureRecord, index) => (
+            <Card key={cultureRecord.id}>
+              <CultureEvaluationContent
+                index={index}
+                period={period}
+                cultureRecord={cultureRecord}
+                form={form}
+                permissions={permissions}
+                weight={cultureWeight}
+                hasChecker={hasChecker}
+                formId={formId}
+              />
+            </Card>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+function OverallCommentsSection({
+  form,
+  period,
+  hasChecker,
+  role,
+  write,
+  overallComments,
+  revalidateOverallComments,
+}: {
+  form: ReturnType<typeof useForm<MeritEvaluation>>;
+  period: PeriodType;
+  hasChecker: boolean;
+  role: Approval;
+  write: boolean;
+  overallComments: MeritForm["overallComments"];
+  revalidateOverallComments: () => void;
+}) {
+  const periodLabel = MERIT_EVALUATION_PERIOD_LABELS[period];
+  const isYearEnd = period === Period.EVALUATION_2ND;
+  const midYearOverallComment = overallComments?.find(
+    (comment) => comment.period === Period.EVALUATION_1ST,
+  );
+  const fields = hasChecker
+    ? OVERALL_COMMENT_FIELDS
+    : OVERALL_COMMENT_FIELDS.filter((field) => field.role !== "checker");
+
+  const overallOwnerCommentRef = useRef<HTMLTextAreaElement | null>(null);
+  const overallCheckerCommentRef = useRef<HTMLTextAreaElement | null>(null);
+  const overallApproverCommentRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const commentRefs = {
+    owner: overallOwnerCommentRef,
+    checker: overallCheckerCommentRef,
+    approver: overallApproverCommentRef,
+  };
+
+  const overallCommentTextareaRefs = hasChecker
+    ? [
+        overallOwnerCommentRef,
+        overallCheckerCommentRef,
+        overallApproverCommentRef,
+      ]
+    : [overallOwnerCommentRef, overallApproverCommentRef];
+
+  const { groupSyncFunctions: overallCommentSyncFunctions } =
+    useSyncTextareaHeights([
+      { refs: overallCommentTextareaRefs, breakpoint: "(min-width: 1024px)" },
+    ]);
+
+  const syncOverallCommentTextareaHeights = overallCommentSyncFunctions[0];
+  const gridClass = evaluationGridClass(hasChecker);
+
+  return (
+    <AccordionItem value="overall-comments">
+      <EvaluationAccordionHeader title="ข้อคิดเห็น/ข้อเสนอแนะภาพรวม (Overall Comments / Recommendations)" />
+      <AccordionContent>
+        <div className="flex flex-col gap-4">
+          {isYearEnd && (
+            <div className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-marine">
+                {MERIT_EVALUATION_PERIOD_LABELS[Period.EVALUATION_1ST]}
+              </h2>
+              <div className={gridClass}>
+                {fields.map((field) => (
+                  <div key={field.role} className={MID_YEAR_COLUMN_CLASS}>
+                    <ReadOnlyOverallComment
+                      label={field.label}
+                      value={
+                        midYearOverallComment?.[
+                          field.midYearKey as keyof OverallComment
+                        ] as string | null | undefined
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            {periodLabel && (
+              <h2 className="text-sm font-medium text-marine">{periodLabel}</h2>
+            )}
+            <div className={gridClass}>
+              {fields.map((field) => (
+                <div key={field.role} className={EVALUATION_COLUMN_CLASS}>
+                  <FormGenerator
+                    name={field.name}
+                    form={form}
+                    variant="bigText"
+                    label={field.label}
+                    disabled={!(write && role === field.role)}
+                    maxLength={COMPETENCY_ACTUAL_MAX_LENGTH}
+                    fillHeight
+                    className={FILL_HEIGHT_FORM_CLASS}
+                    scrollAreaClassName={OVERALL_COMMENT_SCROLL_AREA_CLASS_NAME}
+                    textareaRef={(el) => {
+                      commentRefs[field.role].current = el;
+                      syncOverallCommentTextareaHeights();
+                    }}
+                    onInput={() => {
+                      revalidateOverallComments();
+                      syncOverallCommentTextareaHeights();
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+function ReadOnlyOverallComment({
   label,
   value,
 }: {
   label: string;
   value: string | null | undefined;
-}) => {
+}) {
   return (
     <div className="flex flex-col gap-2 min-h-0 bg-transparent p-0 h-auto lg:flex-1 lg:min-h-0">
       <span className={formRecord.blue.label}>{label}</span>
       <p
         className={cn(
-          formRecord.blue.input,
+          formRecord.default.input,
           "whitespace-pre-wrap [word-break:break-word] lg:min-h-48 lg:flex-1",
         )}
       >
@@ -583,4 +680,4 @@ const ReadOnlyOverallComment = ({
       </p>
     </div>
   );
-};
+}
