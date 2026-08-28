@@ -7,7 +7,7 @@ const competencyActualFieldSchema = z
   .max(COMPETENCY_ACTUAL_MAX_LENGTH, `กรอกได้ไม่เกิน ${COMPETENCY_ACTUAL_MAX_LENGTH} ตัวอักษร`)
   .nullable();
 
-export const comepetencyEvaluationSchema = z.object({
+export const competencyEvaluationFieldsSchema = z.object({
   id: z.string(),
   role: z.enum(["owner", "checker", "approver"]),
   actualOwner: competencyActualFieldSchema,
@@ -18,7 +18,9 @@ export const comepetencyEvaluationSchema = z.object({
   achievementApprover: z.coerce.number().nullable(),
   fileUrl: z.string().nullable(),
   result: z.string().nullable(),
-}).superRefine((data, ctx) => {
+});
+
+export const comepetencyEvaluationSchema = competencyEvaluationFieldsSchema.superRefine((data, ctx) => {
   switch (data.role) {
     case "owner":
       if (!data.actualOwner?.trim()) {
@@ -38,7 +40,7 @@ export const comepetencyEvaluationSchema = z.object({
   }
 });
 
-export const cultureEvaluationSchema = z.object({
+export const cultureEvaluationFieldsSchema = z.object({
   id: z.string(),
   role: z.enum(["owner", "checker", "approver"]),
   actualOwner: competencyActualFieldSchema,
@@ -49,7 +51,9 @@ export const cultureEvaluationSchema = z.object({
   levelBehaviorApprover: z.coerce.number().nullable(),
   fileUrl: z.string().nullable(),
   result: z.string().nullable(),
-}).superRefine((data, ctx) => {
+});
+
+export const cultureEvaluationSchema = cultureEvaluationFieldsSchema.superRefine((data, ctx) => {
   switch (data.role) {
     case "owner":
       if (!data.actualOwner?.trim()) {
@@ -190,6 +194,12 @@ export const meritEvaluationsSchema = z.object({
   }
 });
 
+export const competencyEvaluationInputSchema = competencyEvaluationFieldsSchema.omit({
+  role: true,
+});
+export const cultureEvaluationInputSchema = cultureEvaluationFieldsSchema.omit({
+  role: true,
+});
 export type MeritEvaluation = z.infer<typeof meritEvaluationsSchema>;
 export type OverallComment = z.infer<typeof overallCommentWithRoleSchema>;
 export type CultureEvaluation = z.infer<typeof cultureEvaluationSchema>;

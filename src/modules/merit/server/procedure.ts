@@ -12,7 +12,7 @@ import { assertAnyRoleOnForm, assertFormOwner, requireTaskRole } from "@/modules
 import { competencyDefinitionSchema, cultureDefinitionSchema } from "@/modules/merit/schemas/definition";
 import { calculateKpiScore, formatMeritExport, sumCompetencyByPeriod, sumCultureByPeriod, validateWeight } from "../utils";
 import { Rank } from "@/types/employees";
-import { comepetencyEvaluationSchema, cultureEvaluationSchema, overallCommentFieldsSchema } from "../schemas/evaluation";
+import { competencyEvaluationInputSchema, cultureEvaluationInputSchema, overallCommentFieldsSchema } from "../schemas/evaluation";
 import { exportExcel } from "@/lib/utils";
 import { columns } from "../constant";
 import { generateTaskId } from "@/modules/tasks/utils";
@@ -712,8 +712,8 @@ export const meritProcedure = createTRPCRouter({
       z.object({
         formId: z.string(),
         period: z.enum(Period),
-        competencies: z.array(comepetencyEvaluationSchema.omit({ role: true })),
-        cultures: z.array(cultureEvaluationSchema.omit({ role: true })),
+        competencies: z.array(competencyEvaluationInputSchema),
+        cultures: z.array(cultureEvaluationInputSchema),
         overallComments: overallCommentFieldsSchema,
       }),
     )

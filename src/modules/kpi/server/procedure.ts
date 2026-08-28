@@ -8,7 +8,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { FormType, KpiCategory, Period, Status, UserRole } from "@/generated/prisma/enums";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
-import { kpiEvaluationSchema, overallCommentFieldsSchema } from "@/modules/kpi/schema/evaluation";
+import { kpiEvaluationInputSchema, overallCommentFieldsSchema } from "@/modules/kpi/schema/evaluation";
 import {
   kpiDefinitionInputSchema,
   kpiDefinitionSchema,
@@ -417,7 +417,7 @@ export const kpiProcedure = createTRPCRouter({
       z.object({
         formId: z.string(),
         period: z.enum(Period),
-        kpis: z.array(kpiEvaluationSchema.omit({ role: true })),
+        kpis: z.array(kpiEvaluationInputSchema),
         overallComments: overallCommentFieldsSchema,
       }),
     )

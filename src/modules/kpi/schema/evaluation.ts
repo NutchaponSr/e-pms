@@ -7,7 +7,7 @@ const kpiActualFieldSchema = z
   .max(KPI_ACTUAL_MAX_LENGTH, `กรอกได้ไม่เกิน ${KPI_ACTUAL_MAX_LENGTH} ตัวอักษร`)
   .nullable();
 
-export const kpiEvaluationSchema = z.object({
+export const kpiEvaluationFieldsSchema = z.object({
   id: z.string(),
   role: z.enum(["owner", "checker", "approver"]),
   actualOwner: kpiActualFieldSchema,
@@ -17,7 +17,9 @@ export const kpiEvaluationSchema = z.object({
   actualApprover: kpiActualFieldSchema,
   achievementApprover: z.coerce.number().nullable(),
   fileUrl: z.string({ error: "File is required" }).nullish(),
-}).superRefine((data, ctx) => {
+});
+
+export const kpiEvaluationSchema = kpiEvaluationFieldsSchema.superRefine((data, ctx) => {
   switch (data.role) {
     case "owner":
       if (!data.actualOwner) {
@@ -96,6 +98,7 @@ export const kpisEvaluationSchema = z.object({
   }
 });
 
+export const kpiEvaluationInputSchema = kpiEvaluationFieldsSchema.omit({ role: true });
 export type KpiEvaluation = z.infer<typeof kpiEvaluationSchema>;
 export type KpisEvaluation = z.infer<typeof kpisEvaluationSchema>;
 export type OverallComment = z.infer<typeof overallCommentWithRoleSchema>;
