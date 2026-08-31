@@ -21,6 +21,11 @@ export function openPeriodTask({
   onCreate: () => void;
   push: (href: string) => void;
 }) {
+  if (href) {
+    push(href);
+    return;
+  }
+
   if (!isWindowActive(window)) {
     toast.error(windowClosedMessage(windowLabel, window));
     return;
@@ -28,11 +33,6 @@ export function openPeriodTask({
 
   if (blockedMessage) {
     toast.error(blockedMessage);
-    return;
-  }
-
-  if (href) {
-    push(href);
     return;
   }
 

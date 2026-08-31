@@ -32,8 +32,11 @@ export const KpiInfo = ({ year }: Props) => {
 
   const draftCompleted = data.task.draft?.status === Status.COMPLETED;
   const isCurrentYear = year === new Date().getFullYear();
-  const draftActive = isCurrentYear && isWindowActive(data.windows.draft);
-  const evaluationActive = isWindowActive(data.windows.evaluation);
+  const draftWindowOpen = isCurrentYear && isWindowActive(data.windows.draft);
+  const evaluationWindowOpen = isWindowActive(data.windows.evaluation);
+  const draftActive = draftWindowOpen || !!data.task.draft;
+  const evaluationActive =
+    (draftCompleted && evaluationWindowOpen) || !!data.task.evaluation;
 
   return (
     <InfoPanel title="KPI Bonus" chart={<KpiScoreChart data={data.chart} />}>
@@ -63,7 +66,7 @@ export const KpiInfo = ({ year }: Props) => {
         status={getTaskStatus(data.task.evaluation?.status)}
         buttonCtx={{
           disabled: createKpiTaskCtx.isPending,
-          active: draftCompleted && evaluationActive,
+          active: evaluationActive,
           label: getEvaluationTaskButtonLabel(data.task.evaluation),
           onClick: () =>
             openPeriodTask({

@@ -47,9 +47,15 @@ export const MeritInfo = ({ year }: Props) => {
   const evaluation1stCompleted =
     data.task.evaluation1st?.status === Status.COMPLETED;
   const isCurrentYear = year === new Date().getFullYear();
-  const draftActive = isCurrentYear && isWindowActive(data.windows.draft);
-  const evaluation1stActive = isWindowActive(data.windows.evaluation1st);
-  const evaluation2ndActive = isWindowActive(data.windows.evaluation2nd);
+  const draftWindowOpen = isCurrentYear && isWindowActive(data.windows.draft);
+  const evaluation1stWindowOpen = isWindowActive(data.windows.evaluation1st);
+  const evaluation2ndWindowOpen = isWindowActive(data.windows.evaluation2nd);
+  const draftActive = draftWindowOpen || !!data.task.draft;
+  const evaluation1stActive =
+    (draftCompleted && evaluation1stWindowOpen) || !!data.task.evaluation1st;
+  const evaluation2ndActive =
+    (draftCompleted && evaluation1stCompleted && evaluation2ndWindowOpen) ||
+    !!data.task.evaluation2nd;
 
   const chartData = data.chart.map((item) => ({
     period: item.period,
@@ -109,7 +115,7 @@ export const MeritInfo = ({ year }: Props) => {
         status={getTaskStatus(data.task.evaluation1st?.status)}
         buttonCtx={{
           disabled: createMeritTaskCtx.isPending,
-          active: draftCompleted && evaluation1stActive,
+          active: evaluation1stActive,
           label: getEvaluationTaskButtonLabel(data.task.evaluation1st),
           onClick: () =>
             openPeriodTask({
@@ -133,7 +139,7 @@ export const MeritInfo = ({ year }: Props) => {
         status={getTaskStatus(data.task.evaluation2nd?.status)}
         buttonCtx={{
           disabled: createMeritTaskCtx.isPending,
-          active: draftCompleted && evaluation1stCompleted && evaluation2ndActive,
+          active: evaluation2ndActive,
           label: getEvaluationTaskButtonLabel(data.task.evaluation2nd),
           onClick: () =>
             openPeriodTask({
