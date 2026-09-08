@@ -13,12 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Period, Status } from "@/generated/prisma/enums";
+import { Period } from "@/generated/prisma/enums";
 import { getTaskStatus } from "@/modules/tasks/constant";
 import { openPeriodTask } from "@/modules/tasks/ui/open-period-task";
 import {
   getDefinitionTaskButtonLabel,
   getEvaluationTaskButtonLabel,
+  isPeriodActive,
+  isTaskCompleted,
 } from "@/modules/tasks/utils";
 import { isWindowActive } from "@/modules/tasks/window-utils";
 import { useTRPC } from "@/trpc/client";
@@ -43,19 +45,25 @@ export const MeritInfo = ({ year }: Props) => {
   const { mutation: createTask, ctx: createMeritTaskCtx } =
     useCreateMeritTask();
 
-  const draftCompleted = data.task.draft?.status === Status.COMPLETED;
-  const evaluation1stCompleted =
-    data.task.evaluation1st?.status === Status.COMPLETED;
+  const draftCompleted = isTaskCompleted(data.task.draft?.status);
+  const evaluation1stCompleted = isTaskCompleted(
+    data.task.evaluation1st?.status,
+  );
   const isCurrentYear = year === new Date().getFullYear();
   const draftWindowOpen = isCurrentYear && isWindowActive(data.windows.draft);
   const evaluation1stWindowOpen = isWindowActive(data.windows.evaluation1st);
   const evaluation2ndWindowOpen = isWindowActive(data.windows.evaluation2nd);
   const draftActive = draftWindowOpen || !!data.task.draft;
-  const evaluation1stActive =
-    (draftCompleted && evaluation1stWindowOpen) || !!data.task.evaluation1st;
-  const evaluation2ndActive =
-    (draftCompleted && evaluation1stCompleted && evaluation2ndWindowOpen) ||
-    !!data.task.evaluation2nd;
+  const evaluation1stActive = isPeriodActive({
+    previousCompleted: draftCompleted,
+    windowOpen: evaluation1stWindowOpen,
+    hasTask: !!data.task.evaluation1st,
+  });
+  const evaluation2ndActive = isPeriodActive({
+    previousCompleted: draftCompleted && evaluation1stCompleted,
+    windowOpen: evaluation2ndWindowOpen,
+    hasTask: !!data.task.evaluation2nd,
+  });
 
   const chartData = data.chart.map((item) => ({
     period: item.period,

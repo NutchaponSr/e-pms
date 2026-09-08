@@ -5,12 +5,14 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Event } from "@/components/event";
 import { InfoPanel } from "@/components/info-panel";
-import { Period, Status } from "@/generated/prisma/enums";
+import { Period } from "@/generated/prisma/enums";
 import { getTaskStatus } from "@/modules/tasks/constant";
 import { openPeriodTask } from "@/modules/tasks/ui/open-period-task";
 import {
   getDefinitionTaskButtonLabel,
   getEvaluationTaskButtonLabel,
+  isPeriodActive,
+  isTaskCompleted,
 } from "@/modules/tasks/utils";
 import { isWindowActive } from "@/modules/tasks/window-utils";
 import { useTRPC } from "@/trpc/client";
@@ -30,13 +32,16 @@ export const KpiInfo = ({ year }: Props) => {
   const { mutation: createKpiTask, ctx: createKpiTaskCtx } = useCreateKpiTask();
   const { data } = useSuspenseQuery(trpc.kpi.getInfo.queryOptions({ year }));
 
-  const draftCompleted = data.task.draft?.status === Status.COMPLETED;
+  const draftCompleted = isTaskCompleted(data.task.draft?.status);
   const isCurrentYear = year === new Date().getFullYear();
   const draftWindowOpen = isCurrentYear && isWindowActive(data.windows.draft);
   const evaluationWindowOpen = isWindowActive(data.windows.evaluation);
   const draftActive = draftWindowOpen || !!data.task.draft;
-  const evaluationActive =
-    (draftCompleted && evaluationWindowOpen) || !!data.task.evaluation;
+  const evaluationActive = isPeriodActive({
+    previousCompleted: draftCompleted,
+    windowOpen: evaluationWindowOpen,
+    hasTask: !!data.task.evaluation,
+  });
 
   return (
     <InfoPanel title="KPI Bonus" chart={<KpiScoreChart data={data.chart} />}>

@@ -46,6 +46,7 @@ interface Props {
   period: Period;
   permissions: Record<Action, boolean>;
   form: inferProcedureOutput<AppRouter["kpi"]["getOne"]>["form"];
+  hasChecker: boolean;
 }
 
 const BLUE_FORM_CLASS = {
@@ -127,13 +128,12 @@ export const KpiEvaluationScreen = ({
   role,
   period,
   permissions,
+  hasChecker,
 }: Props) => {
   const { setWeight } = useWeight();
   const { mutation: evaluateKpis, mutationAsync: evaluateKpisAsync } =
     useEvaluateKpis(id, period);
   const startWorkflow = useStartWorkflow(id, period);
-
-  const hasChecker = form.tasks.checker !== null;
 
   const defaultValues = useMemo(
     () => ({

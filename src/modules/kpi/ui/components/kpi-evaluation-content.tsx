@@ -16,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { KpiEvaluation as KPI } from "@/generated/prisma/client";
 import type { Period } from "@/generated/prisma/enums";
 import { useSyncTextareaHeights } from "@/hooks/use-sync-textarea-heights";
@@ -128,7 +127,6 @@ const ACHIEVEMENT_COLUMNS = [
     subtitle: "(Employee)",
     mobileTitle: "พนักงาน",
     mobileSubtitle: "(Emp)",
-    borderColor: "border" as const,
     requiresChecker: false,
   },
   {
@@ -138,7 +136,6 @@ const ACHIEVEMENT_COLUMNS = [
     subtitle: "(Evaluator 1)",
     mobileTitle: "ผู้ประเมิน 1",
     mobileSubtitle: "(E1)",
-    borderColor: "foreground" as const,
     requiresChecker: true,
   },
   {
@@ -148,7 +145,6 @@ const ACHIEVEMENT_COLUMNS = [
     subtitle: "(Evaluator 2)",
     mobileTitle: "ผู้ประเมิน 2",
     mobileSubtitle: "(E2)",
-    borderColor: "foreground" as const,
     requiresChecker: false,
   },
 ];
@@ -190,7 +186,6 @@ function AchievementRadioCell({
   checked,
   disabled,
   onValueChange,
-  borderColor = "border",
 }: {
   id: string;
   label: string;
@@ -198,37 +193,26 @@ function AchievementRadioCell({
   checked: boolean;
   disabled: boolean;
   onValueChange: (value: string) => void;
-  borderColor?: "border" | "foreground";
 }) {
   return (
     <div className="flex items-center justify-center">
-      <RadioGroup
-        className="items-center"
-        value={checked ? value : ""}
+      <button
+        type="button"
+        id={id}
+        aria-label={label}
+        aria-pressed={checked}
         disabled={disabled}
-        onValueChange={onValueChange}
+        onClick={() => onValueChange(checked ? "" : value)}
+        className={cn(
+          "size-7 rounded-xs border-2 border-neutral-500 grid place-items-center cursor-pointer bg-background",
+          checked && "bg-marine text-white border-marine",
+          disabled && "opacity-50 cursor-not-allowed",
+        )}
       >
-        <RadioGroupItem
-          id={id}
-          value={value}
-          aria-label={label}
-          className="sr-only"
-          disabled={disabled}
+        <CheckIcon
+          className={cn("size-5", checked ? "opacity-100" : "opacity-0")}
         />
-        <label
-          htmlFor={id}
-          className={cn(
-            "size-5 rounded-xs border grid place-items-center cursor-pointer bg-background",
-            borderColor === "border" ? "border-border" : "border-foreground",
-            checked && "bg-marine text-white border-marine",
-            disabled && "opacity-50 cursor-not-allowed",
-          )}
-        >
-          <CheckIcon
-            className={cn("size-4", checked ? "opacity-100" : "opacity-0")}
-          />
-        </label>
-      </RadioGroup>
+      </button>
     </div>
   );
 }
@@ -261,7 +245,7 @@ function ColumnHeader({
 }) {
   return (
     <div className={cn(header(), className)}>
-      <div className="flex items-start h-full">
+      <div className="flex items-center justify-center h-full text-center">
         <div className="text-xs font-normal text-secondary leading-tight wrap-break-word">
           {title}
           <br />
@@ -277,7 +261,7 @@ function AchievementGroupHeader({ columnCount }: { columnCount: number }) {
     <div
       className={cn(
         header(),
-        "flex items-start justify-start text-start border-none",
+        "flex items-center justify-center text-center border-none",
         columnCount >= 3 ? "col-span-3" : "col-span-2",
       )}
     >
@@ -290,9 +274,9 @@ function AchievementGroupHeader({ columnCount }: { columnCount: number }) {
 
 function KpiTitleCell({ index }: { index: number }) {
   return (
-    <div className="flex items-start h-full gap-2">
+    <div className="flex items-center justify-center h-full gap-2">
       <Badge color="orange" label={(index + 1).toString()} />
-      <div className="text-xs font-normal text-secondary leading-tight text-start">
+      <div className="text-xs font-normal text-secondary leading-tight text-center">
         Individual KPI
       </div>
     </div>
@@ -420,7 +404,6 @@ function EvaluationTable({
                     onValueChange={(value) =>
                       onAchievementChange(column.field, value)
                     }
-                    borderColor={column.borderColor}
                   />
                 </div>
               );
@@ -549,7 +532,6 @@ function MobileEvaluationTable({
                   onValueChange={(value) =>
                     onAchievementChange(column.field, value)
                   }
-                  borderColor={column.borderColor}
                 />
               </div>
             );

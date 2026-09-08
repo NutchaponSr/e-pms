@@ -475,9 +475,9 @@ type MeritExportCol = (typeof MERIT_EXPORT_COLS)[number];
 /** ความกว้างคอลัมน์ (หน่วย Excel character width ตาม exceljs column.width) */
 const MERIT_EXPORT_COLUMN_WIDTHS: Record<MeritExportCol, number> = {
   A: 5,
-  B: 25,
+  B: 40,
   C: 10,
-  D: 30,
+  D: 35,
   E: 30,
   F: 30,
   G: 25,
@@ -603,22 +603,44 @@ const LEVEL_SUB_HEADERS = {
   evaluator2: "ผู้ประเมินลำดับที่ 2 \n(Evaluator 2)",
 } as const;
 
-const MERIT_COMMENT_MID_YEAR_COLS = ["A", "B", "C", "D", "E", "F"] as const;
-const MERIT_COMMENT_YEAR_END_COLS = ["G", "H", "I", "J", "K", "L", "M", "N", "O", "P"] as const;
-
 function splitMeritExportColumns(cols: readonly string[], groupCount: number): string[][] {
-  const groups: string[][] = [];
-  let index = 0;
-  const baseSize = Math.floor(cols.length / groupCount);
-  const remainder = cols.length % groupCount;
+  const total = cols.length;
+  if (groupCount <= 1) return [[...cols]];
+  if (groupCount >= total) return cols.map((col) => [col]);
 
-  for (let i = 0; i < groupCount; i++) {
-    const size = baseSize + (i < remainder ? 1 : 0);
-    groups.push([...cols.slice(index, index + size)]);
-    index += size;
-  }
+  const best = {
+    range: Number.POSITIVE_INFINITY,
+    variance: Number.POSITIVE_INFINITY,
+    groups: [[...cols]] as string[][],
+  };
 
-  return groups;
+  const search = (start: number, remaining: number, groups: string[][]) => {
+    if (remaining === 1) {
+      const next = [...groups, [...cols.slice(start)]];
+      const widths = next.map((group) => getMeritExportMergedWidthChars(group));
+      const range = Math.max(...widths) - Math.min(...widths);
+      const mean = widths.reduce((sum, width) => sum + width, 0) / widths.length;
+      const variance = widths.reduce((sum, width) => sum + (width - mean) ** 2, 0);
+
+      if (range < best.range || (range === best.range && variance < best.variance)) {
+        best.range = range;
+        best.variance = variance;
+        best.groups = next;
+      }
+      return;
+    }
+
+    const maxTake = total - start - (remaining - 1);
+    for (let take = 1; take <= maxTake; take++) {
+      search(start + take, remaining - 1, [
+        ...groups,
+        [...cols.slice(start, start + take)],
+      ]);
+    }
+  };
+
+  search(0, groupCount, []);
+  return best.groups;
 }
 
 function resolveOverallComments(meritForm: MeritDefinitionWithTasks): OverallComment[] {
@@ -1328,14 +1350,8 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   }
   currentRow++
 
-  const midYearColGroups = splitMeritExportColumns(
-    MERIT_COMMENT_MID_YEAR_COLS,
-    hasChecker ? 3 : 2,
-  )
-  const yearEndColGroups = splitMeritExportColumns(
-    MERIT_COMMENT_YEAR_END_COLS,
-    hasChecker ? 3 : 2,
-  )
+  const commentPeriodColGroups = splitMeritExportColumns(MERIT_EXPORT_COLS, 2)
+  const commentRoleCount = hasChecker ? 3 : 2
   const commentGroupLabels = hasChecker
     ? [LEVEL_SUB_HEADERS.employee, LEVEL_SUB_HEADERS.evaluator1, LEVEL_SUB_HEADERS.evaluator2]
     : [LEVEL_SUB_HEADERS.employee, LEVEL_SUB_HEADERS.evaluator2]
@@ -1356,56 +1372,55 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
     }
   }
 
-  const applyCommentGroupHeader = (cols: string[], row: number, label: string) => {
-    mergeColsInRow(cols, row)
-    const cell = worksheet.getCell(`${cols[0]}${row}`)
-    cell.value = label
-    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true }
-  }
+  const commentPeriods = [
+    {
+      title: "การทบทวนผลการปฏิบัติงานกลางปี (JAN - JUN) \n(Mid-Year Review)",
+      comment: commentMidYear,
+      cols: commentPeriodColGroups[0] ?? [],
+    },
+    {
+      title: "การประเมินผลการปฏิบัติงานปลายปี (JUN - DEC) \n(End-Year Evaluation)",
+      comment: commentEndYear,
+      cols: commentPeriodColGroups[1] ?? [],
+    },
+  ]
+  const commentRoleColGroups = commentPeriods.map((period) =>
+    splitMeritExportColumns(period.cols, commentRoleCount),
+  )
 
   const commentHeaderRow1 = currentRow
-  const midYearFirstCol = MERIT_COMMENT_MID_YEAR_COLS[0]
-  const midYearLastCol = MERIT_COMMENT_MID_YEAR_COLS[MERIT_COMMENT_MID_YEAR_COLS.length - 1]
-  const yearEndFirstCol = MERIT_COMMENT_YEAR_END_COLS[0]
-  const yearEndLastCol = MERIT_COMMENT_YEAR_END_COLS[MERIT_COMMENT_YEAR_END_COLS.length - 1]
-
-  worksheet.mergeCells(`${midYearFirstCol}${commentHeaderRow1}:${midYearLastCol}${commentHeaderRow1}`)
-  worksheet.getCell(`${midYearFirstCol}${commentHeaderRow1}`).value =
-    "การทบทวนผลการปฏิบัติงานกลางปี (JAN - JUN) \n(Mid-Year Review)"
-  worksheet.mergeCells(`${yearEndFirstCol}${commentHeaderRow1}:${yearEndLastCol}${commentHeaderRow1}`)
-  worksheet.getCell(`${yearEndFirstCol}${commentHeaderRow1}`).value =
-    "การประเมินผลการปฏิบัติงานปลายปี (JUN - DEC) \n(End-Year Evaluation)"
-  worksheet.getCell(`${midYearFirstCol}${commentHeaderRow1}`).alignment = {
-    horizontal: "center",
-    vertical: "middle",
-    wrapText: true,
-  }
-  worksheet.getCell(`${yearEndFirstCol}${commentHeaderRow1}`).alignment = {
-    horizontal: "center",
-    vertical: "middle",
-    wrapText: true,
-  }
+  commentPeriods.forEach((period) => {
+    mergeColsInRow(period.cols, commentHeaderRow1)
+    const cell = worksheet.getCell(`${period.cols[0]}${commentHeaderRow1}`)
+    cell.value = period.title
+    cell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+      wrapText: true,
+    }
+  })
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${commentHeaderRow1}`).style = blueHeader
   }
-  setMeritExportRowHeight(worksheet, commentHeaderRow1, [
-    {
-      text: worksheet.getCell(`${midYearFirstCol}${commentHeaderRow1}`).value as string,
-      cols: MERIT_COMMENT_MID_YEAR_COLS,
-    },
-    {
-      text: worksheet.getCell(`${yearEndFirstCol}${commentHeaderRow1}`).value as string,
-      cols: MERIT_COMMENT_YEAR_END_COLS,
-    },
-  ], { minHeight: 28 })
+  setMeritExportRowHeight(
+    worksheet,
+    commentHeaderRow1,
+    commentPeriods.map((period) => ({
+      text: period.title,
+      cols: period.cols,
+    })),
+    { minHeight: 28 },
+  )
   currentRow++
 
   const commentHeaderRow2 = currentRow
-  midYearColGroups.forEach((cols, index) => {
-    applyCommentGroupHeader(cols, commentHeaderRow2, commentGroupLabels[index])
-  })
-  yearEndColGroups.forEach((cols, index) => {
-    applyCommentGroupHeader(cols, commentHeaderRow2, commentGroupLabels[index])
+  commentRoleColGroups.forEach((groups) => {
+    groups.forEach((cols, index) => {
+      mergeColsInRow(cols, commentHeaderRow2)
+      const cell = worksheet.getCell(`${cols[0]}${commentHeaderRow2}`)
+      cell.value = commentGroupLabels[index]
+      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true }
+    })
   })
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${commentHeaderRow2}`).style = blueHeader
@@ -1413,54 +1428,39 @@ export async function exportMeritDefinition(meritForm: MeritDefinitionWithTasks)
   setMeritExportRowHeight(
     worksheet,
     commentHeaderRow2,
-    [
-      ...midYearColGroups.map((cols, index) => ({
+    commentRoleColGroups.flatMap((groups) =>
+      groups.map((cols, index) => ({
         text: commentGroupLabels[index],
         cols,
       })),
-      ...yearEndColGroups.map((cols, index) => ({
-        text: commentGroupLabels[index],
-        cols,
-      })),
-    ],
+    ),
     { minHeight: 28 },
   )
   currentRow++
 
   const commentDataRow = currentRow
-  const writeCommentGroup = (cols: string[], value: string | null | undefined) => {
-    mergeColsInRow(cols, commentDataRow)
-    const cell = worksheet.getCell(`${cols[0]}${commentDataRow}`)
-    cell.value = value ?? ""
-    cell.alignment = { vertical: "top", wrapText: true }
-    cell.border = cellBorder
-    cell.font = { size: 9 }
-  }
-
-  midYearColGroups.forEach((cols, index) => {
-    writeCommentGroup(cols, getCommentValue(commentMidYear, index))
+  commentPeriods.forEach((period, periodIndex) => {
+    commentRoleColGroups[periodIndex]?.forEach((cols, index) => {
+      mergeColsInRow(cols, commentDataRow)
+      const cell = worksheet.getCell(`${cols[0]}${commentDataRow}`)
+      cell.value = getCommentValue(period.comment, index) ?? ""
+      cell.alignment = { vertical: "top", wrapText: true }
+      cell.border = cellBorder
+      cell.font = { size: 9 }
+    })
   })
-  yearEndColGroups.forEach((cols, index) => {
-    writeCommentGroup(cols, getCommentValue(commentEndYear, index))
-  })
-
   for (const col of MERIT_EXPORT_COLS) {
     worksheet.getCell(`${col}${commentDataRow}`).border = cellBorder
   }
-
   setMeritExportRowHeight(
     worksheet,
     commentDataRow,
-    [
-      ...midYearColGroups.map((cols, index) => ({
-        text: getCommentValue(commentMidYear, index),
+    commentPeriods.flatMap((period, periodIndex) =>
+      (commentRoleColGroups[periodIndex] ?? []).map((cols, index) => ({
+        text: getCommentValue(period.comment, index),
         cols,
       })),
-      ...yearEndColGroups.map((cols, index) => ({
-        text: getCommentValue(commentEndYear, index),
-        cols,
-      })),
-    ],
+    ),
     { minHeight: 40 },
   )
 

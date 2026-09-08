@@ -4,6 +4,22 @@ const TIMEZONE_BANGKOK = "Asia/Bangkok";
 
 type TaskWithStatus = { status: Status } | null | undefined;
 
+export function isTaskCompleted(status?: Status | null): boolean {
+  return status === Status.COMPLETED;
+}
+
+export function isPeriodActive({
+  previousCompleted,
+  windowOpen,
+  hasTask,
+}: {
+  previousCompleted: boolean;
+  windowOpen: boolean;
+  hasTask: boolean;
+}): boolean {
+  return previousCompleted && (windowOpen || hasTask);
+}
+
 export function getDefinitionTaskButtonLabel(task: TaskWithStatus): "Create" | "View" {
   return task ? "View" : "Create";
 }

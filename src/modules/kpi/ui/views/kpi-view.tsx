@@ -55,6 +55,7 @@ export const KpiView = ({ id, period, year }: Props) => {
       role={role}
       form={data.form}
       permissions={permissions}
+      hasChecker={!!data.permission.checkerId}
     />
   );
 };

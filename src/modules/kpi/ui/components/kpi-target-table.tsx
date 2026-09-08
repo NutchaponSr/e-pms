@@ -1,7 +1,6 @@
 "use client"
 
 import { UseFormReturn } from "react-hook-form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "lucide-react";
 import { KpisEvaluation } from "../../schema/evaluation";
@@ -12,7 +11,6 @@ interface AchievementRadioCellProps {
   checked: boolean;
   disabled: boolean;
   onValueChange: (value: string) => void;
-  borderColor?: "border" | "foreground";
 }
 
 const AchievementRadioCell = ({
@@ -21,35 +19,24 @@ const AchievementRadioCell = ({
   checked,
   disabled,
   onValueChange,
-  borderColor = "border",
 }: AchievementRadioCellProps) => {
   return (
     <div className="flex items-center justify-center">
-      <RadioGroup
-        className="items-center"
-        value={checked ? value : ""}
+      <button
+        type="button"
+        id={id}
+        aria-label={id}
+        aria-pressed={checked}
         disabled={disabled}
-        onValueChange={onValueChange}
+        onClick={() => onValueChange(checked ? "" : value)}
+        className={cn(
+          "size-7 rounded-xs border-2 border-secondary grid place-items-center cursor-pointer bg-background",
+          checked && "bg-marine text-white border-marine",
+          disabled && "opacity-50 cursor-not-allowed",
+        )}
       >
-        <RadioGroupItem
-          id={id}
-          value={value}
-          aria-label={id}
-          className="sr-only"
-          disabled={disabled}
-        />
-        <label
-          htmlFor={id}
-          className={cn(
-            "size-5 rounded-xs border grid place-items-center cursor-pointer bg-background",
-            borderColor === "border" ? "border-border" : "border-foreground",
-            checked && "bg-marine text-white border-marine",
-            disabled && "opacity-50 cursor-not-allowed",
-          )}
-        >
-          <CheckIcon className={cn("size-4", checked ? "opacity-100" : "opacity-0")} />
-        </label>
-      </RadioGroup>
+        <CheckIcon className={cn("size-5", checked ? "opacity-100" : "opacity-0")} />
+      </button>
     </div>
   );
 };
@@ -77,21 +64,21 @@ interface KpiTargetTableProps {
 const TableHeader = ({ hasChecker }: { hasChecker: boolean }) => (
   <thead>
     <tr className="bg-background border-b border-border">
-      <th className="text-left p-3 text-sm font-medium text-primary w-[10%]">
+      <th className="text-center p-3 text-sm font-medium text-primary w-[10%]">
         Success Target Range
       </th>
-      <th className="text-left p-3 text-sm font-medium text-primary" style={{ width: hasChecker ? "60%" : "70%" }}>
+      <th className="text-center p-3 text-sm font-medium text-primary" style={{ width: hasChecker ? "60%" : "70%" }}>
         Target Detail
       </th>
-      <th className="text-center p-3 text-sm font-medium text-primary w-[10%]">
+      <th className="text-center p-3 text-sm font-medium text-primary w-[5%]">
         Owner
       </th>
       {hasChecker && (
-        <th className="text-center p-3 text-sm font-medium text-primary w-[10%]">
+        <th className="text-center p-3 text-sm font-medium text-primary w-[5%]">
           Checker
         </th>
       )}
-      <th className="text-center p-3 text-sm font-medium text-primary w-[10%]">
+      <th className="text-center p-3 text-sm font-medium text-primary w-[5%]">
         Approver
       </th>
     </tr>
@@ -214,10 +201,9 @@ export const KpiTargetTable = ({
                       id={checkerId}
                       value={valueStr}
                       checked={checkerChecked}
-                      disabled={!canPerformChecker}
-                      onValueChange={(v) => handleValueChange("achievementChecker", v)}
-                      borderColor="foreground"
-                    />
+                    disabled={!canPerformChecker}
+                    onValueChange={(v) => handleValueChange("achievementChecker", v)}
+                  />
                   </td>
                 )}
                 <td className="p-3">
@@ -227,7 +213,6 @@ export const KpiTargetTable = ({
                     checked={approverChecked}
                     disabled={!canPerformApprover}
                     onValueChange={(v) => handleValueChange("achievementApprover", v)}
-                    borderColor="foreground"
                   />
                 </td>
               </tr>

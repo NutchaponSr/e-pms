@@ -19,6 +19,18 @@ export function readCSV<T>(
   });
 }
 
+export function readCSVRows(filePath: string): string[][] {
+  const content = fs.readFileSync(filePath, "utf-8");
+
+  return parse(content, {
+    columns: false,
+    skipEmptyLines: true,
+    bom: true,
+    relax_quotes: true,
+    relax_column_count: true,
+  });
+}
+
 /** แปลง array of objects เป็น string CSV (escape comma, newline, double quote) */
 export function toCSV<T extends Record<string, unknown>>(
   rows: T[],

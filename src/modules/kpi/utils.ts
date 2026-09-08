@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 
 import { z } from "zod";
 
-import { KpiCategory, Period } from "@/generated/prisma/enums";
+import { KpiCategory, Period, Status } from "@/generated/prisma/enums";
 import { chiefDown, managerUp, Rank } from "@/types/employees";
 
 import { kpiUploadSchema } from "@/modules/kpi/schema/upload";
@@ -73,6 +73,9 @@ const KPI_COMMENT_ROLE_LABELS = {
   evaluator2: "ผู้ประเมินลำดับที่ 2 \n(Evaluator 2)",
 } as const;
 
+const KPI_COMMENT_LEADING_COLS = ["A", "B", "C", "D", "E", "F", "G"] as const;
+const KPI_COMMENT_EVALUATOR2_COLS = ["H", "I", "J", "K", "L"] as const;
+
 function splitKpiExportColumns(cols: readonly string[], groupCount: number): string[][] {
   const groups: string[][] = [];
   let index = 0;
@@ -90,9 +93,9 @@ function splitKpiExportColumns(cols: readonly string[], groupCount: number): str
 
 const KPI_EXPORT_COLUMN_WIDTHS: Record<KpiExportCol, number> = {
   A: 5,
-  B: 25,
+  B: 30,
   C: 10,
-  D: 8,
+  D: 14,
   E: 30,
   F: 28,
   G: 28,
@@ -158,6 +161,21 @@ function setKpiExportBodyCell(
     variant === "wrap" ? kpiExportBodyAlignmentWrap : kpiExportBodyAlignmentCenter;
   cell.border = border;
   cell.font = { size: fontSize };
+}
+
+/** Result ใช้ของ employee เป็นหลัก — ถ้า evaluator 2 reject ให้ใช้ของ evaluator 1 */
+function getKpiExportResultText(
+  kpi: KpiEvaluation,
+  task: Pick<Task, "status" | "checkedAt">,
+) {
+  const evaluator2Rejected =
+    task.status === Status.IN_DRAFT && Boolean(task.checkedAt);
+
+  if (evaluator2Rejected) {
+    return kpi.actualChecker || kpi.actualOwner || "";
+  }
+
+  return kpi.actualOwner || "";
 }
 
 function getKpiExportColumnWidthChars(col: KpiExportCol): number {
@@ -672,7 +690,7 @@ export async function exportDefinitionKpi(
       kpi.achievementApprover != null
         ? formatDecimal((Number(kpi.weight) * Number(kpi.achievementApprover)) / 100)
         : null
-    const resultText = kpi.actualApprover || kpi.actualChecker || kpi.actualOwner || ""
+    const resultText = getKpiExportResultText(kpi, kpiForm.task)
 
     for (let levelIndex = 0; levelIndex < targetLevels.length; levelIndex++) {
       const level = targetLevels[levelIndex];
@@ -772,17 +790,14 @@ export async function exportDefinitionKpi(
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
   }
 
-  worksheet.mergeCells(`H${currentRow}:L${currentRow}`)
-  worksheet.getCell(`H${currentRow}`).value =
-    totalScore != null
-      ? `คะแนนที่ได้ (Score achieved): ${formatDecimal(totalScore)}`
-      : "คะแนนที่ได้ (Score achieved):"
+  worksheet.mergeCells(`H${currentRow}:K${currentRow}`)
+  worksheet.getCell(`H${currentRow}`).value = "คะแนนที่ได้ (Score achieved):"
   worksheet.getCell(`H${currentRow}`).alignment = { horizontal: "right", vertical: "middle" }
   worksheet.getCell(`H${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
   worksheet.getCell(`H${currentRow}`).border = cellBorder
   worksheet.getCell(`H${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
 
-  for (const col of ["H", "I", "J", "K", "L"] as const) {
+  for (const col of ["H", "I", "J", "K"] as const) {
     worksheet.getCell(`${col}${currentRow}`).border = cellBorder
     worksheet.getCell(`${col}${currentRow}`).fill = {
       type: "pattern",
@@ -790,6 +805,13 @@ export async function exportDefinitionKpi(
       fgColor: { argb: "FFF0F7FF" },
     }
   }
+
+  worksheet.getCell(`L${currentRow}`).value =
+    totalScore != null ? formatDecimal(totalScore) : ""
+  worksheet.getCell(`L${currentRow}`).alignment = { horizontal: "center", vertical: "middle" }
+  worksheet.getCell(`L${currentRow}`).font = { size: 9, color: { argb: "FF1E40AF" } }
+  worksheet.getCell(`L${currentRow}`).border = cellBorder
+  worksheet.getCell(`L${currentRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F7FF" } }
 
   currentRow += 2
 
@@ -805,10 +827,15 @@ export async function exportDefinitionKpi(
   }
   currentRow++
 
-  const commentColGroups = splitKpiExportColumns(
-    KPI_EXPORT_COLS,
-    hasChecker ? 3 : 2,
-  )
+  const commentColGroups = hasChecker
+    ? [
+        ...splitKpiExportColumns(KPI_COMMENT_LEADING_COLS, 2),
+        [...KPI_COMMENT_EVALUATOR2_COLS],
+      ]
+    : [
+        [...KPI_COMMENT_LEADING_COLS],
+        [...KPI_COMMENT_EVALUATOR2_COLS],
+      ]
   const commentGroupLabels = hasChecker
     ? [KPI_COMMENT_ROLE_LABELS.employee, KPI_COMMENT_ROLE_LABELS.evaluator1, KPI_COMMENT_ROLE_LABELS.evaluator2]
     : [KPI_COMMENT_ROLE_LABELS.employee, KPI_COMMENT_ROLE_LABELS.evaluator2]
