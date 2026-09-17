@@ -832,10 +832,7 @@ export async function exportDefinitionKpi(
         ...splitKpiExportColumns(KPI_COMMENT_LEADING_COLS, 2),
         [...KPI_COMMENT_EVALUATOR2_COLS],
       ]
-    : [
-        [...KPI_COMMENT_LEADING_COLS],
-        [...KPI_COMMENT_EVALUATOR2_COLS],
-      ]
+    : splitKpiExportColumns(KPI_EXPORT_COLS, 2)
   const commentGroupLabels = hasChecker
     ? [KPI_COMMENT_ROLE_LABELS.employee, KPI_COMMENT_ROLE_LABELS.evaluator1, KPI_COMMENT_ROLE_LABELS.evaluator2]
     : [KPI_COMMENT_ROLE_LABELS.employee, KPI_COMMENT_ROLE_LABELS.evaluator2]

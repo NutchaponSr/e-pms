@@ -711,15 +711,15 @@ export const KpiEvaluationContent = ({
         onAchievementChange={handleAchievementChange}
       />
 
-      <div>
+      <div className="flex w-full flex-row justify-end text-right">
         {visibleAchievementColumns.map((column) => (
           <FormField
             key={column.field}
             control={form.control}
             name={`kpis.${index}.${column.field}`}
             render={() => (
-              <FormItem>
-                <FormMessage />
+              <FormItem className="text-right">
+                <FormMessage className="text-right whitespace-nowrap" />
               </FormItem>
             )}
           />
