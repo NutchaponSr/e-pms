@@ -213,7 +213,7 @@ export const CultureEvaluationContent = ({
                   name={`cultures.${index}.fileUrl`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center justify-between gap-0.5 text-xs text-marine whitespace-normal">
+                      <FormLabel className="flex items-center justify-between gap-0.5 text-xs text-secondary whitespace-normal">
                         <span>
                           ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)
                         </span>
@@ -325,7 +325,7 @@ const MidYearEvaluationSection = ({
             value={evaluation?.actualOwner}
             fileUpload={
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-0.5 text-xs text-marine whitespace-normal">
+                <div className="flex items-center justify-between gap-0.5 text-xs text-secondary whitespace-normal">
                   <span>ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)</span>
                   <span className="font-normal text-secondary">
                     ไม่บังคับแนบไฟล์ (optional)
