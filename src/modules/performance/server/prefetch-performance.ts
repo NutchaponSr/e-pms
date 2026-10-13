@@ -8,5 +8,6 @@ export async function prefetchPerformancePage(year: number) {
     queryClient.prefetchQuery(trpc.kpi.getInfo.queryOptions({ year })),
     queryClient.prefetchQuery(trpc.merit.getInfo.queryOptions({ year })),
     queryClient.prefetchQuery(trpc.task.getManyByYear.queryOptions({ year })),
+    queryClient.prefetchQuery(trpc.task.getEvaluationYears.queryOptions()),
   ]);
 }

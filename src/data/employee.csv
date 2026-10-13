@@ -1,5 +1,6 @@
 order,id,fullName,position,division,level,rank,department,email,password
 1,0001,admin,admin,SAT,MGR,MGR,สำนักรองกรรมการผู้อำนวยการ - สายงานทรัพยากรบุคคล,,12345
+0,0002,admin 2,admin,SAT,MGR,MGR,สำนักรองกรรมการผู้อำนวยการ - สายงานทรัพยากรบุคคล,,23456
 2,8736,วัชรธร กิตะพาณิชย์,กรรมการผู้อำนวยการ,SAT,President,President,สำนักกรรมการผู้อำนวยการ,vacharatorn.k@somboon.co.th,14745
 3,4326,วารสา สวนดี,กรรมการผู้จัดการ บริษัท - SBM&ICP,SAT,MD,MD,สำนักกรรมการผู้จัดการ,varasa.s@somboon.co.th,14092
 4,6222,โสภณ ฉัตรวัฒนานนท์,กรรมการผู้จัดการ บริษัท - SFT,SAT,MD,MD,สำนักกรรมการผู้จัดการ,sophon.c@somboon.co.th,67133

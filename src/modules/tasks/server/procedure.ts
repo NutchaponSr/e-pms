@@ -1,14 +1,16 @@
-import z from "zod/v4";
-import db from "@/lib/db";
-
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { FormType, Period, Status } from "@/generated/prisma/enums";
-
 import { TRPCError } from "@trpc/server";
+import z from "zod/v4";
+import { FormType, Period, Status } from "@/generated/prisma/enums";
+import db from "@/lib/db";
+import { getApprovalChain, taskChainInclude } from "@/modules/tasks/chain";
 
 import { STATUSES } from "@/modules/tasks/constant";
-import { getApprovalChain, taskChainInclude } from "@/modules/tasks/chain";
-import { buildPermissionContext, canPerform, getUserRole } from "@/modules/tasks/permissions";
+import {
+  buildPermissionContext,
+  canPerform,
+  getUserRole,
+} from "@/modules/tasks/permissions";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 function emptyTrackerResult() {
   return {
@@ -65,43 +67,45 @@ export const taskProcedure = createTRPCRouter({
         },
       };
     }),
-  todo: protectedProcedure
-    .query(async ({ ctx }) => {
-      const tasks = await db.task.findMany({
-        where: {
-          OR: [
-            {
-              status: Status.WAITING_APPROVER_1,
-              approval: { checkerId: ctx.user.username },
-            },
-            {
-              status: Status.WAITING_APPROVER_2,
-              approval: { approverId: ctx.user.username },
-            },
-          ],
-        },
-        include: {
-          form: true,
-          owner: true,
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-      });
+  todo: protectedProcedure.query(async ({ ctx }) => {
+    const tasks = await db.task.findMany({
+      where: {
+        OR: [
+          {
+            status: Status.WAITING_APPROVER_1,
+            approval: { checkerId: ctx.user.username },
+          },
+          {
+            status: Status.WAITING_APPROVER_2,
+            approval: { approverId: ctx.user.username },
+          },
+        ],
+      },
+      include: {
+        form: true,
+        owner: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
 
-      return tasks.map((task) => ({
-        taskId: task.id,
-        formType: task.form.type,
-        status: task.status,
-        formId: task.form.id,
-        year: task.form.year,
-        owner: task.owner.name,
-        updatedAt: task.updatedAt,
-        period: typeof task.context === 'object' && task.context !== null && 'period' in task.context
+    return tasks.map((task) => ({
+      taskId: task.id,
+      formType: task.form.type,
+      status: task.status,
+      formId: task.form.id,
+      year: task.form.year,
+      owner: task.owner.name,
+      updatedAt: task.updatedAt,
+      period:
+        typeof task.context === "object" &&
+        task.context !== null &&
+        "period" in task.context
           ? (task.context as { period?: Period }).period
           : undefined,
-      }));
-    }),
+    }));
+  }),
   startWorkflow: protectedProcedure
     .input(
       z.object({
@@ -127,9 +131,14 @@ export const taskProcedure = createTRPCRouter({
       }
 
       const chain = getApprovalChain(task);
-      const role = getUserRole(buildPermissionContext(ctx.user.username, chain, task.status));
+      const role = getUserRole(
+        buildPermissionContext(ctx.user.username, chain, task.status),
+      );
 
-      if (role !== "owner" || !canPerform(role, ["start-workflow"], task.status)) {
+      if (
+        role !== "owner" ||
+        !canPerform(role, ["start-workflow"], task.status)
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "No permission to start this workflow",
@@ -150,7 +159,9 @@ export const taskProcedure = createTRPCRouter({
           id: input.id,
         },
         data: {
-          status: hasChecker ? Status.WAITING_APPROVER_1 : Status.WAITING_APPROVER_2,
+          status: hasChecker
+            ? Status.WAITING_APPROVER_1
+            : Status.WAITING_APPROVER_2,
         },
         include: {
           ...taskChainInclude,
@@ -197,7 +208,11 @@ export const taskProcedure = createTRPCRouter({
       }
 
       const chain = getApprovalChain(task);
-      const permissionContext = buildPermissionContext(ctx.user.username, chain, task.status);
+      const permissionContext = buildPermissionContext(
+        ctx.user.username,
+        chain,
+        task.status,
+      );
       const role = getUserRole(permissionContext);
 
       if (!role || !canPerform(role, ["approve"], task.status)) {
@@ -291,10 +306,48 @@ export const taskProcedure = createTRPCRouter({
         approvedAt: res.approvedAt,
         checkedAt: res.checkedAt,
         isApproved: res.status === Status.COMPLETED,
-        checkedBy: res.status === Status.WAITING_APPROVER_1 ? next.checker?.name : res.status === Status.WAITING_APPROVER_2 ? next.approver?.name : undefined,
+        checkedBy:
+          res.status === Status.WAITING_APPROVER_1
+            ? next.checker?.name
+            : res.status === Status.WAITING_APPROVER_2
+              ? next.approver?.name
+              : undefined,
         period: (res.context as { period: Period })?.period,
       };
     }),
+  getEvaluationYears: protectedProcedure.query(async ({ ctx }) => {
+    const employeeId = ctx.user.username;
+    const subordinates = await db.approval.findMany({
+      where: {
+        OR: [{ checkerId: employeeId }, { approverId: employeeId }],
+      },
+      select: { employeeId: true },
+    });
+    const employeeIds = [
+      employeeId,
+      ...subordinates.map((record) => record.employeeId),
+    ];
+
+    const forms = await db.form.findMany({
+      where: {
+        employeeId: { in: employeeIds },
+        tasks: {
+          some: {
+            OR: [
+              { context: { path: ["period"], equals: Period.EVALUATION } },
+              { context: { path: ["period"], equals: Period.EVALUATION_1ST } },
+              { context: { path: ["period"], equals: Period.EVALUATION_2ND } },
+            ],
+          },
+        },
+      },
+      distinct: ["year"],
+      select: { year: true },
+      orderBy: { year: "desc" },
+    });
+
+    return forms.map((form) => form.year);
+  }),
   getManyByYear: protectedProcedure
     .input(
       z.object({
@@ -368,31 +421,47 @@ export const taskProcedure = createTRPCRouter({
           !meritFormsByEmployee[emp.id]?.length,
       );
 
-
-      const kpiPending = forms.filter((f) => f.type === FormType.KPI)
+      const kpiPending = forms
+        .filter((f) => f.type === FormType.KPI)
         .flatMap((k) => k.tasks)
-        .filter((t) => t.status === Status.WAITING_APPROVER_1 || t.status === Status.WAITING_APPROVER_2)
-        .length;
+        .filter(
+          (t) =>
+            t.status === Status.WAITING_APPROVER_1 ||
+            t.status === Status.WAITING_APPROVER_2,
+        ).length;
 
-      const meritPending = forms.filter((f) => f.type === FormType.MERIT)
+      const meritPending = forms
+        .filter((f) => f.type === FormType.MERIT)
         .flatMap((m) => m.tasks)
-        .filter((t) => t.status === Status.WAITING_APPROVER_1 || t.status === Status.WAITING_APPROVER_2)
-        .length;
+        .filter(
+          (t) =>
+            t.status === Status.WAITING_APPROVER_1 ||
+            t.status === Status.WAITING_APPROVER_2,
+        ).length;
 
       return {
         info: {
           total: employees.length,
           done: {
-            bonus: forms.filter((f) => f.type === FormType.KPI && f.period === Period.EVALUATION).length,
-            merit: forms.filter((f) => f.type === FormType.MERIT && f.period === Period.EVALUATION).length,
+            bonus: forms.filter(
+              (f) => f.type === FormType.KPI && f.period === Period.EVALUATION,
+            ).length,
+            merit: forms.filter(
+              (f) =>
+                f.type === FormType.MERIT && f.period === Period.EVALUATION,
+            ).length,
           },
           notDone: {
             bonus:
-              forms.filter((f) => f.type === FormType.KPI && f.period !== Period.EVALUATION).length +
-              employeesWithNoForm.length,
+              forms.filter(
+                (f) =>
+                  f.type === FormType.KPI && f.period !== Period.EVALUATION,
+              ).length + employeesWithNoForm.length,
             merit:
-              forms.filter((f) => f.type === FormType.MERIT && f.period !== Period.EVALUATION).length +
-              employeesWithNoForm.length,
+              forms.filter(
+                (f) =>
+                  f.type === FormType.MERIT && f.period !== Period.EVALUATION,
+              ).length + employeesWithNoForm.length,
           },
           pending: kpiPending + meritPending,
         },
@@ -419,15 +488,15 @@ export const taskProcedure = createTRPCRouter({
             form: {
               bonus: kpiForm
                 ? {
-                  ...kpiForm,
-                  tasks: allKpiTasks,
-                }
+                    ...kpiForm,
+                    tasks: allKpiTasks,
+                  }
                 : null,
               merit: meritForm
                 ? {
-                  ...meritForm,
-                  tasks: allMeritTasks,
-                }
+                    ...meritForm,
+                    tasks: allMeritTasks,
+                  }
                 : null,
             },
           };

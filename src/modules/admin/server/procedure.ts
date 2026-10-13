@@ -1,19 +1,19 @@
-import db from "@/lib/db";
-
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { auth } from "@/lib/auth";
-import { exportExcel } from "@/lib/utils";
-import { adminProcedure, createTRPCRouter } from "@/trpc/init";
+import { z } from "zod";
 import { FormType, Period, Status } from "@/generated/prisma/enums";
 
-import { formatKpiExport } from "@/modules/kpi/utils";
+import { auth } from "@/lib/auth";
+import db from "@/lib/db";
+import { exportExcel } from "@/lib/utils";
+import { getAdminOverview } from "@/modules/admin/server/overview";
 import { columns as kpiColumns } from "@/modules/kpi/constants";
-import { formatMeritExport } from "@/modules/merit/utils";
+import { formatKpiExport } from "@/modules/kpi/utils";
 import { columns as meritColumns } from "@/modules/merit/constant";
+import { formatMeritExport } from "@/modules/merit/utils";
 import { getApprovalChain, taskChainInclude } from "@/modules/tasks/chain";
 import { parseMonthDay, WINDOW_DEFINITIONS } from "@/modules/tasks/windows";
+import { adminProcedure, createTRPCRouter } from "@/trpc/init";
 
 const FALLBACK_EMAIL = "t@somboon.co.th";
 
@@ -91,7 +91,9 @@ export const adminRouter = createTRPCRouter({
         await db.employee.delete({ where: { id: input.id } }).catch(() => {});
 
         const message =
-          error instanceof Error ? error.message : "Failed to create user account";
+          error instanceof Error
+            ? error.message
+            : "Failed to create user account";
 
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
       }
@@ -250,7 +252,8 @@ export const adminRouter = createTRPCRouter({
           formType: task.form.type,
           year: task.form.year,
           period:
-            (task.context as { period?: Period } | null)?.period ?? Period.IN_DRAFT,
+            (task.context as { period?: Period } | null)?.period ??
+            Period.IN_DRAFT,
           status: task.status,
           owner: { id: chain.owner.id, name: chain.owner.name },
           checker: chain.checker
@@ -303,20 +306,20 @@ export const adminRouter = createTRPCRouter({
 
   // ---------- Phase 5: Evaluation windows ----------
   getWindows: adminProcedure.query(async () => {
-      const windows = await db.evaluationWindow.findMany();
+    const windows = await db.evaluationWindow.findMany();
 
-      return WINDOW_DEFINITIONS.map((def) => {
-        const window = windows.find(
-          (w) => w.formType === def.formType && w.period === def.period,
-        );
+    return WINDOW_DEFINITIONS.map((def) => {
+      const window = windows.find(
+        (w) => w.formType === def.formType && w.period === def.period,
+      );
 
-        return {
-          ...def,
-          open: parseMonthDay(window?.open) ?? null,
-          close: parseMonthDay(window?.close) ?? null,
-        };
-      });
-    }),
+      return {
+        ...def,
+        open: parseMonthDay(window?.open) ?? null,
+        close: parseMonthDay(window?.close) ?? null,
+      };
+    });
+  }),
   upsertWindow: adminProcedure
     .input(
       z.object({
@@ -390,6 +393,16 @@ export const adminRouter = createTRPCRouter({
     }),
 
   // ---------- Phase 6: Reports ----------
+  getOverview: adminProcedure
+    .input(
+      z.object({
+        year: z.number().int().min(2000).max(2100),
+        division: z.string().trim().min(1).optional(),
+        department: z.string().trim().min(1).optional(),
+        level: z.string().trim().min(1).optional(),
+      }),
+    )
+    .query(({ input }) => getAdminOverview(input)),
   getEmployeeForms: adminProcedure
     .input(
       z.object({

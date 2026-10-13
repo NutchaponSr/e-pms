@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 // - DISABLED_PATHS: แสดงแต่กดไม่ได้ (ไม่เป็นลิงก์)
 const PATH_LABELS: Record<string, string> = {
   "/performance": "e-PMS",
+  "/performance/admin": "การดูแลระบบ",
   "/performance/kpi": "KPI Bonus",
   "/performance/kpi/*/definition": "KPI Setting",
   "/performance/merit": "KPI Merit",
