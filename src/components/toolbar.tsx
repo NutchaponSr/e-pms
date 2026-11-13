@@ -36,6 +36,7 @@ interface Props {
   };
   onCreate?: () => void;
   onWorkflow: () => void | Promise<void>;
+  onBeforeWorkflow?: () => boolean | Promise<boolean>;
   onSaveDraft: () => void;
   onBeforeFinalSubmit?: () => void;
   onUpload?: () => void;
@@ -47,6 +48,7 @@ export const Toolbar = ({
   status,
   onCreate,
   onWorkflow,
+  onBeforeWorkflow,
   onSaveDraft,
   onUpload,
   onExport,
@@ -58,6 +60,8 @@ export const Toolbar = ({
   });
 
   const onStartWorkflow = async () => {
+    if (onBeforeWorkflow && !(await onBeforeWorkflow())) return;
+
     const ok = await confirm();
 
     if (ok) {

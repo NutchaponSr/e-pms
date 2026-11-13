@@ -85,5 +85,5 @@ export async function deleteFileByUrl(url: string) {
 }
 
 export function getFilePath(key: string) {
-  return path.join(UPLOAD_DIR, path.basename(key));
+  return path.join(/*turbopackIgnore: true*/ UPLOAD_DIR, path.basename(key));
 }

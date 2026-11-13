@@ -172,6 +172,26 @@ export const KpiEvaluationScreen = ({
     [kpis, form.kpis],
   );
 
+  const missingFileIndexes = () => {
+    const values = f.getValues();
+    const indexes: number[] = [];
+
+    values.kpis.forEach((kpi, index) => {
+      if (!kpi.fileUrl?.trim()) indexes.push(index);
+    });
+
+    return indexes;
+  };
+
+  const showMissingFiles = (indexes: number[]) => {
+    indexes.forEach((index) => {
+      f.setError(`kpis.${index}.fileUrl`, {
+        type: "required",
+        message: "required",
+      });
+    });
+  };
+
   const onSubmit = (data: KpisEvaluation) => {
     evaluateKpis(toEvaluationPayload(data, true));
   };
@@ -182,12 +202,20 @@ export const KpiEvaluationScreen = ({
     f.reset(values);
   };
 
-  const saveForConfirmation = async () => {
+  const validateWorkflow = async () => {
     const ok = await f.trigger();
-    if (!ok) {
-      toast.error("Please fix validation errors before confirming");
+    const missing = missingFileIndexes();
+    if (missing.length) showMissingFiles(missing);
+    if (!ok || missing.length) {
+      toast.error("some fields invalid");
       return false;
     }
+
+    return true;
+  };
+
+  const saveForConfirmation = async () => {
+    if (!(await validateWorkflow())) return false;
 
     const values = f.getValues();
     await evaluateKpisAsync(toEvaluationPayload(values, false));
@@ -196,11 +224,7 @@ export const KpiEvaluationScreen = ({
   };
 
   const onWorkflow = async () => {
-    const ok = await f.trigger();
-    if (!ok) {
-      toast.error("Please fix validation errors before starting the workflow");
-      return;
-    }
+    if (!(await validateWorkflow())) return;
 
     const values = f.getValues();
     await evaluateKpisAsync(toEvaluationPayload(values, true));
@@ -328,6 +352,7 @@ export const KpiEvaluationScreen = ({
           permissions={permissions}
           status={STATUS_VARIANTS[form.tasks?.status]}
           onWorkflow={onWorkflow}
+          onBeforeWorkflow={validateWorkflow}
           onSaveDraft={saveDraft}
           onExport={onExport}
         />
@@ -358,29 +383,50 @@ export const KpiEvaluationScreen = ({
               ข้อคิดเห็น/ข้อเสนอแนะภาพรวม (Overall Comments / Recommendations)
             </h2>
             <div className={evaluationGridClass}>
-              {visibleOverallComments.map((field) => (
-                <div key={field.name} className={EVALUATION_COLUMN_CLASS}>
-                  <FormGenerator
-                    name={field.name}
-                    form={f}
-                    variant="bigText"
-                    label={field.label}
-                    disabled={!(permissions.write && role === field.role)}
-                    maxLength={OVERALL_COMMENT_MAX_LENGTH}
-                    fillHeight
-                    className={FILL_HEIGHT_FORM_CLASS}
-                    scrollAreaClassName={OVERALL_COMMENT_SCROLL_AREA_CLASS_NAME}
-                    textareaRef={(el) => {
-                      commentRefs[field.role].current = el;
-                      syncOverallCommentTextareaHeights();
-                    }}
-                    onInput={() => {
-                      revalidateOverallComments();
-                      syncOverallCommentTextareaHeights();
-                    }}
-                  />
-                </div>
-              ))}
+              {visibleOverallComments.map((field) => {
+                const commentKey = field.name.split(".")[1] as
+                  | "commentOwner"
+                  | "commentChecker"
+                  | "commentApprover";
+                const hasError = Boolean(
+                  f.formState.errors.overallComments?.[commentKey],
+                );
+
+                return (
+                  <div key={field.name} className={EVALUATION_COLUMN_CLASS}>
+                    <FormGenerator
+                      name={field.name}
+                      form={f}
+                      variant="bigText"
+                      label={field.label}
+                      disabled={!(permissions.write && role === field.role)}
+                      maxLength={OVERALL_COMMENT_MAX_LENGTH}
+                      fillHeight
+                      className={{
+                        ...FILL_HEIGHT_FORM_CLASS,
+                        input: cn(
+                          FILL_HEIGHT_FORM_CLASS.input,
+                          hasError &&
+                            "shadow-[0_0_0_1.25px_var(--destructive)]",
+                        ),
+                        label: cn(
+                          FILL_HEIGHT_FORM_CLASS.label,
+                          hasError && "text-destructive",
+                        ),
+                      }}
+                      scrollAreaClassName={OVERALL_COMMENT_SCROLL_AREA_CLASS_NAME}
+                      textareaRef={(el) => {
+                        commentRefs[field.role].current = el;
+                        syncOverallCommentTextareaHeights();
+                      }}
+                      onInput={() => {
+                        revalidateOverallComments();
+                        syncOverallCommentTextareaHeights();
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

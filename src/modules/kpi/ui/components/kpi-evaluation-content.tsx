@@ -575,7 +575,13 @@ function EvaluationComments({
       )}
     >
       {visibleCommentColumns.map((column) => (
-        <div key={column.field} className={EVALUATION_COLUMN_CLASS}>
+        <div
+          key={column.field}
+          className={cn(
+            EVALUATION_COLUMN_CLASS,
+            column.showFileUpload && "h-auto overflow-visible",
+          )}
+        >
           <FormGenerator
             name={`kpis.${index}.${column.field}`}
             form={form}
@@ -586,7 +592,14 @@ function EvaluationComments({
             fillHeight={column.fillHeight}
             maxLength={KPI_ACTUAL_MAX_LENGTH}
             className={
-              column.fillHeight ? FILL_HEIGHT_FORM_CLASS : BLUE_FORM_CLASS
+              column.showFileUpload
+                ? {
+                    ...BLUE_FORM_CLASS,
+                    form: "flex flex-col gap-2 overflow-visible bg-transparent p-0 h-auto",
+                  }
+                : column.fillHeight
+                  ? FILL_HEIGHT_FORM_CLASS
+                  : BLUE_FORM_CLASS
             }
             textareaRef={
               column.showFileUpload
@@ -604,8 +617,8 @@ function EvaluationComments({
                 <FormField
                   control={form.control}
                   name={`kpis.${index}.fileUrl`}
-                  render={({ field }) => (
-                    <FormItem>
+                  render={({ field, fieldState }) => (
+                    <FormItem className="shrink-0 overflow-visible">
                       <FormLabel className="text-xs text-secondary flex flex-col gap-0.5 font-normal items-start">
                         <span>
                           ข้อมูล/หลักฐานการประเมิน (Evident Data/Evidence)
@@ -615,6 +628,7 @@ function EvaluationComments({
                         <AttachButton
                           value={field.value as string | null}
                           canPerform={canPerform.owner}
+                          invalid={!!fieldState.error}
                           onChange={field.onChange}
                           onUpload={onUpload}
                           onRemove={onRemove}

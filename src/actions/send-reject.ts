@@ -24,7 +24,7 @@ export const sendReject = async ({
   checkedBy?: string,
 }) => {
   await transporter.sendMail({
-    from: process.env.NODEMAILER_USER_PROD,
+    from: process.env.NODEMAILER_USER_DEV,
     to,
     cc: cc || undefined,
     subject,

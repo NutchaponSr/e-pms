@@ -36,7 +36,11 @@ export function kpiDefinitionMap(kpi: KpiDefinitionsMapping) {
   };
 }
 
-export function kpiEvaluationMap(kpi: z.infer<typeof kpiEvaluationSchema>) {
+type KpiEvaluationMapInput = Omit<z.infer<typeof kpiEvaluationSchema>, "fileUrl"> & {
+  fileUrl?: string | null;
+};
+
+export function kpiEvaluationMap(kpi: KpiEvaluationMapInput) {
   return {
     id: kpi.id,
     role: kpi.role,
@@ -46,7 +50,7 @@ export function kpiEvaluationMap(kpi: z.infer<typeof kpiEvaluationSchema>) {
     achievementChecker: kpi.achievementChecker,
     actualApprover: kpi.actualApprover,
     achievementApprover: kpi.achievementApprover,
-    fileUrl: kpi.fileUrl ?? null,
+    fileUrl: kpi.fileUrl ?? "",
   };
 }
 

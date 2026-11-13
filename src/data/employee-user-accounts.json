@@ -1,0 +1,92 @@
+{
+  "15616": {
+    "employeeId": "15616",
+    "password": "48032",
+    "userId": "hd99CCk2CcphrLvGFbld5AkYiG97AtkE",
+    "employee": {
+      "status": "skipped",
+      "id": "15616",
+      "name": "เอกสิทธิ์ อัตประชา",
+      "email": "eakkasit.att@somboon.co.th",
+      "position": "ผู้ช่วยผู้จัดการทั่วไป - ฝ่ายพัฒนาระบบดิจิทัลและข้อมูลธุรกิจ",
+      "division": "SAT",
+      "level": "AGM",
+      "rank": "AGM",
+      "department": "ฝ่ายพัฒนาระบบดิจิทัลและข้อมูลธุรกิจ"
+    },
+    "user": {
+      "status": "skipped",
+      "id": "hd99CCk2CcphrLvGFbld5AkYiG97AtkE",
+      "name": "เอกสิทธิ์ อัตประชา",
+      "email": "eakkasit.att@somboon.co.th",
+      "emailVerified": false,
+      "image": null,
+      "createdAt": "2026-11-11T06:07:05.604Z",
+      "updatedAt": "2026-11-11T06:07:05.604Z",
+      "role": "USER",
+      "username": "15616",
+      "displayUsername": "15616",
+      "banned": false,
+      "banReason": null
+    },
+    "account": {
+      "status": "skipped",
+      "id": "OcnEe7a4WexL1VeIJF5UxEM9ZssIc77j",
+      "accountId": "hd99CCk2CcphrLvGFbld5AkYiG97AtkE",
+      "providerId": "credential",
+      "accessToken": null,
+      "refreshToken": null,
+      "idToken": null,
+      "scope": null,
+      "password": "$2b$10$7.swtBaM2UJQiXy/8t5LP.B50yZWmHRjQSS/K/gg58tGHgAeR7OKK",
+      "createdAt": "2026-11-11T06:07:05.663Z",
+      "updatedAt": "2026-11-11T06:07:05.663Z",
+      "userId": "hd99CCk2CcphrLvGFbld5AkYiG97AtkE"
+    }
+  },
+  "15621": {
+    "employeeId": "15621",
+    "password": "79110",
+    "userId": "TF7pcFeIXLfRKnYTmvERce4mZgqCGu5u",
+    "employee": {
+      "status": "skipped",
+      "id": "15621",
+      "name": "สุทาทิพย์ อยู่เบิก",
+      "email": "suthathip.ube@somboon.co.th",
+      "position": "ผู้ช่วยผู้จัดการทั่วไป – ฝ่ายพัฒนาความยั่งยืน",
+      "division": "SAT",
+      "level": "AGM",
+      "rank": "AGM",
+      "department": "ฝ่ายพัฒนาความยั่งยืน"
+    },
+    "user": {
+      "status": "skipped",
+      "id": "TF7pcFeIXLfRKnYTmvERce4mZgqCGu5u",
+      "name": "สุทาทิพย์ อยู่เบิก",
+      "email": "suthathip.ube@somboon.co.th",
+      "emailVerified": false,
+      "image": null,
+      "createdAt": "2026-11-11T06:07:05.901Z",
+      "updatedAt": "2026-11-11T06:07:05.901Z",
+      "role": "USER",
+      "username": "15621",
+      "displayUsername": "15621",
+      "banned": false,
+      "banReason": null
+    },
+    "account": {
+      "status": "skipped",
+      "id": "nFNC1OvRaDwJvQTkm3Jt4Ik9kPiZV8DQ",
+      "accountId": "TF7pcFeIXLfRKnYTmvERce4mZgqCGu5u",
+      "providerId": "credential",
+      "accessToken": null,
+      "refreshToken": null,
+      "idToken": null,
+      "scope": null,
+      "password": "$2b$10$1P/z.KZg3sNmv822APxDXuGw/hf8lqCdKcfHdELWLn07raV6UqTYS",
+      "createdAt": "2026-11-11T06:07:05.945Z",
+      "updatedAt": "2026-11-11T06:07:05.945Z",
+      "userId": "TF7pcFeIXLfRKnYTmvERce4mZgqCGu5u"
+    }
+  }
+}

@@ -179,7 +179,7 @@ export const FormGenerator = <TFieldValues extends FieldValues>({
               )}
             </div>
           </FormControl>
-          {fileUpload ? fileUpload : null}
+          {fileUpload ? <div className="shrink-0 overflow-visible">{fileUpload}</div> : null}
           <FormMessage />
         </FormItem>
       )}

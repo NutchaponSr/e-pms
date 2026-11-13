@@ -16,7 +16,7 @@ export const kpiEvaluationFieldsSchema = z.object({
   achievementChecker: z.coerce.number().nullable(),
   actualApprover: kpiActualFieldSchema,
   achievementApprover: z.coerce.number().nullable(),
-  fileUrl: z.string({ error: "File is required" }).nullish(),
+  fileUrl: z.string({ error: "required" }).trim().min(1, "required"),
 });
 
 export const kpiEvaluationSchema = kpiEvaluationFieldsSchema.superRefine((data, ctx) => {
@@ -59,43 +59,30 @@ export const overallCommentFieldsSchema = z.object({
   commentApprover: overallCommentFieldSchema,
 });
 
-const overallCommentWithRoleSchema = overallCommentFieldsSchema.extend({
-  role: z.enum(["owner", "checker", "approver"]),
-});
+const overallCommentWithRoleSchema = overallCommentFieldsSchema
+  .extend({
+    role: z.enum(["owner", "checker", "approver"]),
+  })
+  .superRefine((data, ctx) => {
+    const commentField = {
+      owner: "commentOwner",
+      checker: "commentChecker",
+      approver: "commentApprover",
+    } as const;
+    const field = commentField[data.role];
+
+    if (!data[field]?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Overall comment is required",
+        path: [field],
+      });
+    }
+  });
 
 export const kpisEvaluationSchema = z.object({
   kpis: z.array(kpiEvaluationSchema),
   overallComments: overallCommentWithRoleSchema,
-}).superRefine((data, ctx) => {
-  switch (data.overallComments.role) {
-    case "owner":
-      if (!data.overallComments.commentOwner?.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Overall comment is required",
-          path: ["overallComments", "commentOwner"],
-        });
-      }
-      break;
-    case "checker":
-      if (!data.overallComments.commentChecker?.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Overall comment is required",
-          path: ["overallComments", "commentChecker"],
-        });
-      }
-      break;
-    case "approver":
-      if (!data.overallComments.commentApprover?.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Overall comment is required",
-          path: ["overallComments", "commentApprover"],
-        });
-      }
-      break;
-  }
 });
 
 export const kpiEvaluationInputSchema = kpiEvaluationFieldsSchema.omit({ role: true });

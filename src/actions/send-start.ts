@@ -1,6 +1,6 @@
 "use server";
 
-import { getMailerFrom, getTransporter, type MailerMode } from "@/lib/nodemailer";
+import { transporter } from "@/lib/nodemailer";
 
 export const sendStart = async ({
   to,
@@ -13,7 +13,6 @@ export const sendStart = async ({
   submitDate,
   status,
   url,
-  mode = "prod",
 }: {
   to: string,
   cc?: string[],
@@ -25,10 +24,9 @@ export const sendStart = async ({
   submitDate: string,
   status: string,
   url: string,
-  mode?: MailerMode,
 }) => {
-  await getTransporter(mode).sendMail({
-    from: getMailerFrom(mode),
+  await transporter.sendMail({
+    from: process.env.NODEMAILER_USER_DEV,
     to,
     cc: cc || undefined,
     subject,

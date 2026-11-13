@@ -13,6 +13,7 @@ import { Spinner } from "@/components/ui/spinner";
 interface Props {
   value?: string | null;
   canPerform: boolean;
+  invalid?: boolean;
   onChange: (url: string | null) => void;
   onRemove: () => void;
   onUpload?: (url: string) => void;
@@ -21,6 +22,7 @@ interface Props {
 export const AttachButton = ({
   value,
   canPerform,
+  invalid = false,
   onChange,
   onRemove,
   onUpload,
@@ -116,7 +118,7 @@ export const AttachButton = ({
             }
           }} 
           data-disabled={isUploading || !canPerform}
-          className="transition border border-border rounded bg-background hover:bg-primary/6 flex w-full min-w-0 items-center overflow-hidden py-1 px-2 min-h-8 group/image relative data-[disabled=true]:opacity-80"
+          className={`transition border rounded bg-background hover:bg-primary/6 flex w-full min-w-0 items-center overflow-hidden py-1 px-2 min-h-8 group/image relative data-[disabled=true]:opacity-80 ${invalid ? "border-destructive" : "border-border"}`}
         >
           <div 
             className={`flex min-w-0 flex-1 items-center overflow-hidden data-[disabled=true]:pointer-events-none ${value ? "pe-12" : ""}`}

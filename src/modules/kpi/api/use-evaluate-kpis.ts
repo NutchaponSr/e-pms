@@ -11,6 +11,22 @@ import { useSaveForm } from "@/modules/tasks/stores/use-save-form";
 type EvaluateInput = inferProcedureInput<AppRouter["kpi"]["evaluate"]>;
 type RequestType = Omit<EvaluateInput, "formId" | "period"> & { saved: boolean };
 
+function evaluationErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  const trimmed = message.trim();
+
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return "some fields invalid";
+    } catch {
+      // keep the original message when it is not a Zod issue list
+    }
+  }
+
+  return message || "Something went wrong";
+}
+
 export const useEvaluateKpis = (formId: string, period: Period) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -32,7 +48,7 @@ export const useEvaluateKpis = (formId: string, period: Period) => {
           }
         },
         onError: (ctx) => {
-          toast.error(ctx.message || "Something went wrong", { id: "update-bulk-kpis" });
+          toast.error(evaluationErrorMessage(ctx), { id: "update-bulk-kpis" });
         },
       },
     );
@@ -52,7 +68,7 @@ export const useEvaluateKpis = (formId: string, period: Period) => {
 
       return result;
     } catch (ctx) {
-      toast.error((ctx as Error).message || "Something went wrong", { id: "update-bulk-kpis" });
+      toast.error(evaluationErrorMessage(ctx), { id: "update-bulk-kpis" });
       throw ctx;
     }
   };
