@@ -16,7 +16,7 @@ export const competencyEvaluationFieldsSchema = z.object({
   achievementChecker: z.coerce.number().nullable(),
   actualApprover: competencyActualFieldSchema,
   achievementApprover: z.coerce.number().nullable(),
-  fileUrl: z.string().nullable(),
+  fileUrl: z.string({ error: "required" }).trim().min(1, "required"),
   result: z.string().nullable(),
 });
 

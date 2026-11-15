@@ -99,7 +99,7 @@ export function meritEvaluationsMap(
       achievementChecker: evaluation?.levelChecker != null ? toNumberOrZero(evaluation.levelChecker) : null,
       actualApprover: evaluation?.actualApprover ?? null,
       achievementApprover: evaluation?.levelApprover != null ? toNumberOrZero(evaluation.levelApprover) : null,
-      fileUrl: evaluation?.fileUrl ?? null,
+      fileUrl: evaluation?.fileUrl ?? "",
       result: evaluation?.result ?? null,
     };
   });
