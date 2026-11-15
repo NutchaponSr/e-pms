@@ -23,6 +23,9 @@
 # uploaded files
 /uploads
 
+# local data
+/src/data
+
 # misc
 .DS_Store
 *.pem
