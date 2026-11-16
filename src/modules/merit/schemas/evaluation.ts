@@ -194,9 +194,18 @@ export const meritEvaluationsSchema = z.object({
   }
 });
 
-export const competencyEvaluationInputSchema = competencyEvaluationFieldsSchema.omit({
-  role: true,
-});
+const savedFileUrlSchema = z
+  .string()
+  .trim()
+  .nullable()
+  .optional()
+  .transform((value) => value || null);
+
+export const competencyEvaluationInputSchema = competencyEvaluationFieldsSchema
+  .omit({ role: true, fileUrl: true })
+  .extend({
+    fileUrl: savedFileUrlSchema,
+  });
 export const cultureEvaluationInputSchema = cultureEvaluationFieldsSchema.omit({
   role: true,
 });

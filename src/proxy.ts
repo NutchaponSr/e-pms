@@ -4,6 +4,12 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const PROTECTED_ROUTES = ["/", "/performance"];
 const PUBLIC_PREFIX = ["/auth"];
+const MAINTENANCE_PATH = "/maintenance";
+
+function isMaintenanceMode() {
+  const value = process.env.MAINTENANCE_MODE?.trim().toLowerCase();
+  return value === "true" || value === "1";
+}
 
 function matchPrefix(pathname: string, prefixes: string[]) {
   return prefixes.some(
@@ -11,8 +17,41 @@ function matchPrefix(pathname: string, prefixes: string[]) {
   );
 }
 
+function isPublicAsset(pathname: string) {
+  return /\.[a-z0-9]+$/i.test(pathname);
+}
+
 export async function proxy(req: NextRequest) {
   const { nextUrl } = req;
+
+  if (isMaintenanceMode()) {
+    if (
+      nextUrl.pathname === MAINTENANCE_PATH ||
+      isPublicAsset(nextUrl.pathname)
+    ) {
+      return nextWithPath(req);
+    }
+
+    if (nextUrl.pathname.startsWith("/api")) {
+      return NextResponse.json(
+        { message: "ระบบอยู่ระหว่างการปรับปรุง" },
+        {
+          status: 503,
+          headers: {
+            "Cache-Control": "no-store",
+            "Retry-After": "3600",
+          },
+        },
+      );
+    }
+
+    const url = nextUrl.clone();
+    url.pathname = MAINTENANCE_PATH;
+    url.search = "";
+    const response = NextResponse.rewrite(url);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
+  }
 
   const sessionCookie = getSessionCookie(req);
 
@@ -46,6 +85,6 @@ function nextWithPath(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.tsx).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.tsx).*)",
   ],
 };

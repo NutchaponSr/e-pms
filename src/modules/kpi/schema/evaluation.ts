@@ -85,7 +85,18 @@ export const kpisEvaluationSchema = z.object({
   overallComments: overallCommentWithRoleSchema,
 });
 
-export const kpiEvaluationInputSchema = kpiEvaluationFieldsSchema.omit({ role: true });
+const savedFileUrlSchema = z
+  .string()
+  .trim()
+  .nullable()
+  .optional()
+  .transform((value) => value || null);
+
+export const kpiEvaluationInputSchema = kpiEvaluationFieldsSchema
+  .omit({ role: true, fileUrl: true })
+  .extend({
+    fileUrl: savedFileUrlSchema,
+  });
 export type KpiEvaluation = z.infer<typeof kpiEvaluationSchema>;
 export type KpisEvaluation = z.infer<typeof kpisEvaluationSchema>;
 export type OverallComment = z.infer<typeof overallCommentWithRoleSchema>;
