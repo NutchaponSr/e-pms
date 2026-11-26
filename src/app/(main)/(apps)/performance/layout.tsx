@@ -13,8 +13,9 @@ const Layout = async (props: LayoutProps<"/performance">) => {
 
   if (pathname.startsWith("/performance/admin")) {
     return (
-      <div className="order-3 flex h-full w-full flex-col bg-transparent relative">
-        {props.children}
+      <div className="order-3 flex h-full min-h-0 w-full flex-col bg-transparent relative">
+        <Header />
+        <div className="min-h-0 flex-1">{props.children}</div>
       </div>
     );
   }

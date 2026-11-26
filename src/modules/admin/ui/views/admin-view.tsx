@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 
-import { Header } from "@/components/header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +25,7 @@ const SECTIONS = [
   {
     value: "overview",
     label: "ภาพรวม",
-    description:
-      "ดูความคืบหน้า งานที่ยังไม่เสร็จ และคะแนนที่อนุมัติแล้วของทั้งองค์กร",
+    description: "ดูความคืบหน้า งานที่ยังไม่เสร็จ และคะแนนที่อนุมัติแล้วของทั้งองค์กร",
     icon: LayoutDashboardIcon,
   },
   {
@@ -57,7 +55,8 @@ const SECTIONS = [
   {
     value: "reports",
     label: "ส่งออก",
-    description: "เลือกพนักงานแล้วดาวน์โหลดแบบฟอร์มเป็นไฟล์ Excel",
+    description:
+      "กรองพนักงานทั้งองค์กร แล้วดาวน์โหลด Summary ของ KPI Bonus และ Merit เป็นไฟล์ Excel แยกกัน",
     icon: DownloadIcon,
   },
 ] as const;
@@ -70,11 +69,11 @@ const tabParser = parseAsStringLiteral(TAB_VALUES).withDefault("overview");
 
 export const AdminView = () => {
   const [tab, setTab] = useQueryState("tab", tabParser);
-  const active = SECTIONS.find((section) => section.value === tab) ?? SECTIONS[0];
+  const active =
+    SECTIONS.find((section) => section.value === tab) ?? SECTIONS[0];
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-[#f7f6f3] text-primary dark:bg-background">
-      <Header />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col px-4 pt-8 pb-24 sm:px-8">
           <div className="flex items-start gap-4">
@@ -127,7 +126,10 @@ export const AdminView = () => {
             <TabsContent value="overview" className="mt-5 min-w-0 outline-none">
               <OverviewSection />
             </TabsContent>
-            <TabsContent value="employees" className="mt-5 min-w-0 outline-none">
+            <TabsContent
+              value="employees"
+              className="mt-5 min-w-0 outline-none"
+            >
               <EmployeesSection />
             </TabsContent>
             <TabsContent value="chain" className="mt-5 min-w-0 outline-none">

@@ -5,12 +5,11 @@ import { FormType, Period, Status } from "@/generated/prisma/enums";
 
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
-import { exportExcel } from "@/lib/utils";
 import { getAdminOverview } from "@/modules/admin/server/overview";
-import { columns as kpiColumns } from "@/modules/kpi/constants";
-import { formatKpiExport } from "@/modules/kpi/utils";
-import { columns as meritColumns } from "@/modules/merit/constant";
-import { formatMeritExport } from "@/modules/merit/utils";
+import {
+  exportBonusSummary,
+  exportMeritSummary,
+} from "@/modules/admin/server/summary-export";
 import { getApprovalChain, taskChainInclude } from "@/modules/tasks/chain";
 import { parseMonthDay, WINDOW_DEFINITIONS } from "@/modules/tasks/windows";
 import { adminProcedure, createTRPCRouter } from "@/trpc/init";
@@ -435,90 +434,20 @@ export const adminRouter = createTRPCRouter({
         })),
       }));
     }),
-  exportForm: adminProcedure
+  exportSummary: adminProcedure
     .input(
       z.object({
-        formId: z.string(),
+        year: z.number().int(),
+        type: z.enum(FormType),
+        employeeIds: z.array(z.string().trim().min(1)).min(1),
       }),
     )
     .mutation(async ({ input }) => {
-      const form = await db.form.findUnique({
-        where: { id: input.formId },
-        select: { id: true, type: true },
-      });
+      const summary =
+        input.type === FormType.KPI
+          ? await exportBonusSummary(input.year, input.employeeIds)
+          : await exportMeritSummary(input.year, input.employeeIds);
 
-      if (!form) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      if (form.type === FormType.KPI) {
-        const kpiForm = await db.form.findUnique({
-          where: { id: input.formId },
-          include: {
-            kpis: true,
-            employee: true,
-            tasks: true,
-          },
-        });
-
-        if (!kpiForm || kpiForm.tasks.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND" });
-        }
-
-        const data = formatKpiExport({
-          ...kpiForm,
-          kpis: kpiForm.kpis,
-          employee: kpiForm.employee,
-        });
-
-        const file = exportExcel([
-          {
-            name: "Score Summary",
-            data,
-            columns: kpiColumns,
-          },
-        ]);
-
-        return { file, id: kpiForm.id, type: form.type };
-      }
-
-      const meritForm = await db.form.findUnique({
-        where: { id: input.formId, type: FormType.MERIT },
-        include: {
-          competencyRecords: {
-            include: {
-              competency: true,
-              competencyEvaluations: true,
-            },
-          },
-          cultureRecords: {
-            include: {
-              culture: true,
-              cultureEvaluations: true,
-            },
-          },
-          employee: true,
-          tasks: true,
-        },
-      });
-
-      if (!meritForm || meritForm.tasks.length === 0) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      const data = formatMeritExport({
-        ...meritForm,
-        employee: meritForm.employee,
-      });
-
-      const file = exportExcel([
-        {
-          name: "Merit Summary",
-          data,
-          columns: meritColumns,
-        },
-      ]);
-
-      return { file, id: meritForm.id, type: form.type };
+      return { ...summary, year: input.year, type: input.type };
     }),
 });
